@@ -7,7 +7,9 @@
     "EntityMixin",
     "LivingEntityMixin",
     "PlayerMixin",
-    "MobInvoker"
+    "MobInvoker",
+    "InventoryMixin",
+    "AbstractContainerMenuMixin"
   ],
   "injectors": {
     "defaultRequire": 1

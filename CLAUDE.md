@@ -24,6 +24,8 @@ through the approval gates (plan, test, merge) with full human oversight at each
   Curse totems are named "Totem of X"; the narrow ones "X Totem". After-save curses survive death.
   Stacking (`Curse.maxStack`): Weakness 2; Fatigue, Heartbreak, Hunger, Slowness, Rage, Lonely 3; rest 1.
   Each totem in a held stack adds a level, held and after the save; a pop uses one.
+  They only stack when you stack them (`TotemStacking`): a pickup or shift-click takes its own slot
+  (a pickup joins a stack only when no slot is free); the cursor stacks them.
 - **Built for Dungeon Train** (`bh679/dungeon-train-mc`), which jarJars it and sets the Void Totem's
   rescue target to the train. Works standalone: the Void Totem then uses the last safe ground.
 - **Mod Loader:** NeoForge 1.21.1 (`neo_version` 21.1.228), Java 21. No mod dependencies.
@@ -48,7 +50,7 @@ through the approval gates (plan, test, merge) with full human oversight at each
 | `curse/Breathless`, `InsomniaPhantoms` | Air drains on land; phantoms by night (100%) and day (25%, Fire Resistance) |
 | `compat/PlayerMobGifts` | A gift you give a PlayerMob counts for Lonely; chains PlayerMob's single gift observer by reflection |
 | `voidtotem/VoidRescue` | Rescue target if set (DT: the train); else a chorus-fruit hop around the last safe ground (else spawn) |
-| `mixin/` | `LivingEntityMixin`: a strider-form player stands on lava; `EntityMixin`: fire-immune forms don't burn; `PlayerMixin`: land forms' air speed follows their pace (`morph/FormAir`) |
+| `mixin/` | `InventoryMixin` + `AbstractContainerMenuMixin`: stackable totems take a free slot on pickup and shift-click (`TotemStacking`, GameTests `StackingGameTests`); `LivingEntityMixin`: a strider-form player stands on lava; `EntityMixin`: fire-immune forms don't burn; `PlayerMixin`: land forms' air speed follows their pace (`morph/FormAir`) |
 | `client/` | Pop animation with the right item; `MorphRenderer` draws the form instead of the player |
 | `advancement/`, `curse/CurseTrials` | The Dungeon Totems advancement tab (`scripts/make_advancements.py` writes the JSON and English): triggers `totem_popped`, `curse_survived`, `became_form`; `TabComplete` grants Terms and Conditions Fulfilled; `mixin/client/AdvancementWidgetMixin` shows hints until earned and Great and Small's animal list. `./gradlew runSelfTest -Dadvancements=true` screenshots the tooltips; `-Dadvancements=play` plays the whole tab (client/`AdvancementPlayTest`). Off until launch: every file needs `dungeontotems:advancements_launched`, true only when `TotemAdvancements.LAUNCHED` (dev runs set `-Ddungeontotems.advancements=true`) |
 | `api/DungeonTotemsApi` | `setRescueTarget`; a signature change is a MAJOR bump |
