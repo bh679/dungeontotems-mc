@@ -10,7 +10,7 @@ Totems of Undying that still save your life, but curse you for carrying them. Ne
 | Totem of Hunger | Hunger | Hunger, 4 min |
 | Totem of Slowness | Slowness | Slowness, 4 min |
 | Totem of Rage | Rage: hit something every 60 s | Rage II (every 40 s), 5 min |
-| Totem of Loneliness | Lonely: give a gift every 60 s | Lonely II (every 40 s), 5 min |
+| Totem of Generosity | Generous: give a gift every 60 s | Generous II (every 40 s), 5 min |
 | Totem of Pacifism | Hurt anything and it pops | Vow of Peace, 4 min |
 | Totem of Melon Diet | Eat anything but melon and it pops | Melon Diet, 10 min |
 | Totem of Restraint | Open a chest, barrel or ender chest and it pops | Restrained, 4 min |
@@ -27,8 +27,8 @@ Totems of Undying that still save your life, but curse you for carrying them. Ne
 Each one pops like a vanilla totem (Regeneration, Absorption, Fire Resistance; the Void, Feather and
 Boom Totems skip Fire Resistance) when held in either hand. A vanilla totem in hand is used first.
 
-A held curse comes off when you let go, except Rage and Lonely, which stay for another minute at level I.
-Rage and Lonely are timers: miss one and you take true damage at Poison's rate until you hit something
+A held curse comes off when you let go, except Rage and Generous, which stay for another minute at level I.
+Rage and Generous are timers: miss one and you take true damage at Poison's rate until you hit something
 or give a gift (a villager trade, food a villager picks up, or a PlayerMob gift). Their effect box's
 border is the countdown: it drains from the curse's colour to grey, then flashes when time is up. Break Pacifism,
 Melon Diet or Restraint while holding the totem and it pops, saving you, with a line in chat.
