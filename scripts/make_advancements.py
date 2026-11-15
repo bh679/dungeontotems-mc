@@ -53,7 +53,7 @@ ADVANCEMENTS = {
                        "Live through Weakness, Fatigue, Heartbreak, Hunger, Slowness, Breathlessness, Insomnia, Blindness and Morphing after a save", None,
                        per_key("curse_survived", "curse", TIMED)),
     "promises_kept": (ROOT, "minecraft:writable_book", "challenge", "Promises Kept",
-                      "Cure Zombification, and live through Rage, Loneliness, Pacifism, Melon Diet and Restraint after a save", None,
+                      "Cure Zombification, and live through Rage, Generosity, Pacifism, Melon Diet and Restraint after a save", None,
                       per_key("curse_survived", "curse", DEADLINES_AND_VOWS)),
     "close_calls": (ROOT, "minecraft:tnt", "goal", "Close Calls",
                     "Be saved by the Void, Feather, Boom and Fire totems", "Even with limits, theyre useful",

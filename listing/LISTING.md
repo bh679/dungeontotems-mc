@@ -12,7 +12,7 @@ Dungeon Totems adds Totems of Undying that still save your life, but curse you f
 | <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/hunger_totem.png" width="48" alt="Totem of Hunger"> | Totem&nbsp;of&nbsp;Hunger | Hunger | Hunger for 4 minutes |
 | <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/slowness_totem.png" width="48" alt="Totem of Slowness"> | Totem&nbsp;of&nbsp;Slowness | Slowness | Slowness for 4 minutes |
 | <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/rage_totem.png" width="48" alt="Totem of Rage"> | Totem&nbsp;of&nbsp;Rage | Hit something every 60 seconds, or take damage until you do | Rage II for 5 minutes: every 40 seconds |
-| <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/loneliness_totem.png" width="48" alt="Totem of Loneliness"> | Totem&nbsp;of&nbsp;Loneliness | Give a gift every 60 seconds, or take damage until you do | Lonely II for 5 minutes: every 40 seconds |
+| <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/loneliness_totem.png" width="48" alt="Totem of Generosity"> | Totem&nbsp;of&nbsp;Generosity | Give a gift every 60 seconds, or take damage until you do | Lonely II for 5 minutes: every 40 seconds |
 | <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/pacifism_totem.png" width="48" alt="Totem of Pacifism"> | Totem&nbsp;of&nbsp;Pacifism | Hurt anything and it breaks, taking your life and giving it back | Vow of Peace for 4 minutes |
 | <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/melon_diet_totem.png" width="48" alt="Totem of Melon Diet"> | Totem&nbsp;of&nbsp;Melon&nbsp;Diet | Eat anything but melon and it breaks, taking your life and giving it back | Melon Diet for 10 minutes |
 | <img src="https://raw.githubusercontent.com/bh679/dungeontotems-mc/main/listing/totems/restraint_totem.png" width="48" alt="Totem of Restraint"> | Totem&nbsp;of&nbsp;Restraint | Open a chest, barrel or ender chest and it breaks, taking your life and giving it back | Restrained for 4 minutes |
@@ -28,13 +28,13 @@ Dungeon Totems adds Totems of Undying that still save your life, but curse you f
 
 - **Evokers drop them.** An evoker drops one at random instead of the vanilla Totem of Undying. Its emeralds are unchanged.
 - **Hold it in either hand.** A vanilla totem in hand is used first.
-- **Stack them for more saves, and a worse curse.** Weakness stacks to 2; Fatigue, Heartbreak, Hunger, Slowness, Rage and Loneliness stack to 3. Each totem in the stack adds a level: a stack of 3 Totems of Heartbreak takes 9 hearts, and Rage III wants a hit every 30 seconds. A save uses one totem, so the curse eases as the stack shrinks. The other totems don't stack.
-- **Let go and it ends.** A held curse comes off when you put the totem away. Rage and Loneliness stay for another minute.
+- **Stack them for more saves, and a worse curse.** Weakness stacks to 2; Fatigue, Heartbreak, Hunger, Slowness, Rage and Generosity stack to 3. Each totem in the stack adds a level: a stack of 3 Totems of Heartbreak takes 9 hearts, and Rage III wants a hit every 30 seconds. A save uses one totem, so the curse eases as the stack shrinks. The other totems don't stack.
+- **Let go and it ends.** A held curse comes off when you put the totem away. Rage and Generosity stay for another minute.
 - **After a save, a curse can't kill you.** A broken rule, a missed timer or drowning on land leaves you on half a heart and starts that curse over. Curses from a save come back after you respawn.
-- **Watch the border.** Rage and Loneliness count down on their effect box's border, which flashes when time is up.
+- **Watch the border.** Rage and Generosity count down on their effect box's border, which flashes when time is up.
 - **Melon means melon.** Other food doesn't fill you while you're on the Melon Diet.
 - **Milk won't save you.** It doesn't lift the Morphed, Zombified or Rage curses.
-- **Gifts.** Trading with a villager, food a villager picks up, or a gift to a Player Mob all count for Loneliness.
+- **Gifts.** Trading with a villager, food a villager picks up, or a gift to a Player Mob all count for Generosity.
 
 ## Morphing
 
