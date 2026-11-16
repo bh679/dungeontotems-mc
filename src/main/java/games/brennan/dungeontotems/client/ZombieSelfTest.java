@@ -17,6 +17,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
@@ -198,7 +199,27 @@ public final class ZombieSelfTest {
         new Step("the hotbar name mumbles", false, NO_HOVER, CHECK - HOTBAR_NAME_LEAD,
             player -> { packed(player); put(player, 1, enchantedSword(player)); },
             (minecraft, player) -> minecraft.player.getInventory().selected = 1, // client side: the name pops up over the hotbar
-            player -> player.getInventory().getItem(1).isEnchanted()));
+            player -> player.getInventory().getItem(1).isEnchanted()),
+        new Step("Jade mumbles about a chest (with -PwithJade)", false, player -> {
+                packed(player);
+                BlockPos at = ahead(player);
+                player.serverLevel().setBlockAndUpdate(at, Blocks.CHEST.defaultBlockState());
+                if (player.serverLevel().getBlockEntity(at) instanceof ChestBlockEntity chest) {
+                    chest.setItem(0, new ItemStack(Items.DIAMOND, 5));
+                    chest.setItem(1, new ItemStack(Items.ROTTEN_FLESH, 12));
+                }
+                player.lookAt(EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(at));
+            },
+            (minecraft, player) -> {}, player -> player.level().getBlockState(ahead(player)).is(Blocks.CHEST)),
+        new Step("Jade mumbles about a cow (with -PwithJade)", false, player -> {
+                packed(player);
+                Mob cow = EntityType.COW.create(player.serverLevel());
+                cow.moveTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
+                cow.setNoAi(true);
+                player.serverLevel().addFreshEntity(cow);
+                player.lookAt(EntityAnchorArgument.Anchor.EYES, cow.getEyePosition());
+            },
+            (minecraft, player) -> {}, player -> true));
 
     private static final List<String> REPORT = new ArrayList<>();
     private static int tick;
