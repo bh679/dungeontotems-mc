@@ -6,6 +6,7 @@ import net.minecraft.network.chat.MutableComponent;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Random;
+import java.util.function.UnaryOperator;
 
 /**
  * Zombies can't read: what a Zombified player sees in place of an item's name and every tooltip line.
@@ -35,6 +36,8 @@ public final class ZombieGibberish {
     /** The line index whose seed rolls the item's thought, apart from every real line's. */
     private static final int THOUGHT_ROLL = -1;
     private static final int MAX_MUMBLES = 3;
+    private static final int MIN_PAGE_MUMBLES = 3;
+    private static final int PARAGRAPH_ODDS = 12;
 
     private ZombieGibberish() {}
 
@@ -52,6 +55,38 @@ public final class ZombieGibberish {
             line.append(Component.translatable("zombie.dungeontotems.mumble." + mumble(random)));
         }
         return line;
+    }
+
+    /**
+     * A book page as a zombie reads it: about as many mumbles as the page has words, now and then a new
+     * paragraph, the same every time for the same page.
+     */
+    public static MutableComponent page(int pageSeed, int words) {
+        Random random = new Random(pageSeed);
+        MutableComponent page = Component.empty();
+        for (int i = 0; i < Math.max(MIN_PAGE_MUMBLES, words); i++) {
+            if (i > 0) page.append(random.nextInt(PARAGRAPH_ODDS) == 0 ? "\n\n" : " ");
+            page.append(Component.translatable("zombie.dungeontotems.mumble." + mumble(random)));
+        }
+        return page;
+    }
+
+    /** Text after a zombie's edit, with where the cursor now sits. */
+    public record Edit(String text, int cursor) {}
+
+    /** One word in {@code WORD_THROUGH_ODDS} a zombie writes comes through as typed. */
+    public static final int WORD_THROUGH_ODDS = 6;
+
+    /**
+     * The word just before {@code cursor} as a zombie writes it: a mumble ({@code mumbleText} turns a
+     * mumble's lang key into text), or, one time in {@link #WORD_THROUGH_ODDS}, the word itself.
+     */
+    public static Edit writeWord(String text, int cursor, Random random, UnaryOperator<String> mumbleText) {
+        int start = cursor;
+        while (start > 0 && !Character.isWhitespace(text.charAt(start - 1))) start--;
+        if (start == cursor || random.nextInt(WORD_THROUGH_ODDS) == 0) return new Edit(text, cursor);
+        String mumble = mumbleText.apply("zombie.dungeontotems.mumble." + mumble(random));
+        return new Edit(text.substring(0, start) + mumble + text.substring(cursor), start + mumble.length());
     }
 
     /** The thought this item stirs, or null for the {@code THOUGHT_ODDS - 1} items in {@code THOUGHT_ODDS} that stir none. */

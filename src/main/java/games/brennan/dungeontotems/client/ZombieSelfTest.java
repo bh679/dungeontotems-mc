@@ -4,13 +4,19 @@ import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.Curses;
 import games.brennan.dungeontotems.curse.ZombieGibberish;
+import games.brennan.dungeontotems.mixin.client.BookEditScreenAccess;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.BookEditScreen;
+import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.core.component.DataComponents;
@@ -43,6 +49,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.WrittenBookContent;
+import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
@@ -54,6 +62,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.ClientHooks;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import java.io.IOException;
@@ -97,6 +106,9 @@ public final class ZombieSelfTest {
     }
 
     private static final int NO_HOVER = -1;
+    private static final String TYPED = "hello there my good friend how are you today ";
+    /** What a typing step left in its box, read on the client and checked on the server. */
+    private static volatile String written = "";
 
     private interface Setup { void run(ServerPlayer player); }
 
@@ -200,6 +212,35 @@ public final class ZombieSelfTest {
             player -> { packed(player); put(player, 1, enchantedSword(player)); },
             (minecraft, player) -> minecraft.player.getInventory().selected = 1, // client side: the name pops up over the hotbar
             player -> player.getInventory().getItem(1).isEnchanted()),
+        new Step("a book reads as gibberish", false, NO_HOVER, ACT, ZombieSelfTest::packed,
+            (minecraft, player) -> {
+                BookViewScreen.BookAccess book = BookViewScreen.BookAccess.fromItem(storyBook());
+                if (book != null) minecraft.setScreen(new BookViewScreen(book));
+            },
+            player -> true),
+        new Step("chat reads as gibberish", false, NO_HOVER, ACT, player -> {
+                packed(player);
+                player.sendSystemMessage(Component.literal("The train leaves at dawn. Do not be late, and bring bread."));
+                player.sendSystemMessage(Component.literal("<Conductor> All aboard! Mind the gap between carriages."));
+            },
+            (minecraft, player) -> minecraft.setScreen(new ChatScreen("")),
+            player -> true),
+        new Step("typing in chat mumbles", false, NO_HOVER, ACT, ZombieSelfTest::packed,
+            (minecraft, player) -> {
+                ChatScreen chat = new ChatScreen("");
+                minecraft.setScreen(chat);
+                type(chat, TYPED);
+                written = chat.getFocused() instanceof EditBox input ? input.getValue() : "";
+            },
+            player -> !written.equals(TYPED) && !written.isBlank()),
+        new Step("writing in a book mumbles", false, NO_HOVER, ACT, ZombieSelfTest::packed,
+            (minecraft, player) -> {
+                BookEditScreen book = new BookEditScreen(minecraft.player, new ItemStack(Items.WRITABLE_BOOK), InteractionHand.MAIN_HAND);
+                minecraft.setScreen(book);
+                type(book, TYPED);
+                written = ((BookEditScreenAccess) book).dungeontotems$pageText();
+            },
+            player -> !written.equals(TYPED) && !written.isBlank()),
         new Step("Jade mumbles about a chest (with -PwithJade)", false, player -> {
                 packed(player);
                 BlockPos at = ahead(player);
@@ -320,6 +361,23 @@ public final class ZombieSelfTest {
             blade.set(DataComponents.CUSTOM_NAME, Component.literal("Old Blade " + n));
             if (ZombieGibberish.thought(ItemStack.hashItemAndComponents(blade)) != null) return blade;
         }
+    }
+
+    /** Types {@code text} into {@code screen} key by key, through the same hooks a keyboard goes through. */
+    private static void type(Screen screen, String text) {
+        for (char c : text.toCharArray()) {
+            if (!ClientHooks.onScreenCharTypedPre(screen, c, 0)) screen.charTyped(c, 0);
+        }
+    }
+
+    /** A written book with a page of plain prose, to see it mumbled. */
+    private static ItemStack storyBook() {
+        ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
+        Component page = Component.literal("Dear traveller, the train leaves at dawn. Bring bread for the journey and do not "
+            + "open the last carriage, whatever you hear knocking inside it.");
+        book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(Filterable.passThrough("Warning"), "Conductor", 0,
+            List.of(Filterable.passThrough(page)), true));
+        return book;
     }
 
     /** Holds the use key down, as a player eating does, until the next step starts. */

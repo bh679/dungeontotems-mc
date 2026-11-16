@@ -352,6 +352,36 @@ public final class ZombieGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public static void aboutOneWordInSixComesThrough(GameTestHelper helper) {
+        Random random = new Random(7);
+        int through = 0;
+        for (int i = 0; i < MUMBLE_SAMPLES; i++) {
+            ZombieGibberish.Edit edit = ZombieGibberish.writeWord("hello there", 11, random, key -> "<" + key + ">");
+            if (edit.text().equals("hello there")) {
+                through++;
+            } else {
+                check(helper, edit.text().startsWith("hello <zombie.dungeontotems.mumble.") && edit.cursor() == edit.text().length(),
+                    "only the word before the cursor turns, and the cursor follows it: " + edit);
+            }
+        }
+        double share = through / (double) MUMBLE_SAMPLES;
+        check(helper, Math.abs(share - 1.0 / ZombieGibberish.WORD_THROUGH_ODDS) < 0.02, "about 1 word in 6 comes through, got " + share);
+        check(helper, ZombieGibberish.writeWord("hello ", 6, random, key -> "x").text().equals("hello "), "no word, no change");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void aBookPageMumblesToItsLength(GameTestHelper helper) {
+        Component page = ZombieGibberish.page(42, 30);
+        check(helper, page.getString().equals(ZombieGibberish.page(42, 30).getString()), "a page must read the same every time");
+        check(helper, page.getSiblings().stream().filter(c -> c.getContents() instanceof TranslatableContents).count() == 30,
+            "30 words read as 30 mumbles");
+        check(helper, ZombieGibberish.page(42, 0).getSiblings().stream().anyMatch(c -> c.getContents() instanceof TranslatableContents),
+            "even an empty page mumbles");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public static void halfWordsAreRarerThanBrains(GameTestHelper helper) {
         Random random = new Random(1);
         Map<String, Integer> counts = new HashMap<>();
