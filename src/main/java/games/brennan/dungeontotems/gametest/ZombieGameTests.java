@@ -49,7 +49,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * Life as a Zombified player: raw meat only ({@link ZombieDiet}), no trading
@@ -68,6 +71,7 @@ public final class ZombieGameTests {
     private static final int TAME_TRIES = 40;
     private static final int SETTLE_TICKS = 10;
     private static final int GIBBERISH_LINES = 50;
+    private static final int MUMBLE_SAMPLES = 20000;
 
     private ZombieGameTests() {}
 
@@ -321,6 +325,18 @@ public final class ZombieGameTests {
             || !ZombieGibberish.line(seed, 1).getString().equals(
             ZombieGibberish.line(ItemStack.hashItemAndComponents(new ItemStack(Items.BREAD)), 1).getString()),
             "different items should mostly read differently");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void halfWordsAreRarerThanBrains(GameTestHelper helper) {
+        Random random = new Random(1);
+        Map<String, Integer> counts = new HashMap<>();
+        for (int i = 0; i < MUMBLE_SAMPLES; i++) counts.merge(ZombieGibberish.mumble(random), 1, Integer::sum);
+        int brains = counts.getOrDefault("brains", 0);
+        for (String rare : ZombieGibberish.RARE_MUMBLES) {
+            check(helper, counts.getOrDefault(rare, 0) * 2 < brains, rare + " should be rarer than brains");
+        }
         helper.succeed();
     }
 
