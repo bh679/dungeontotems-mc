@@ -26,7 +26,7 @@ public class EffectRenderingInventoryScreenMixin {
 
     @ModifyArg(method = "renderBackgrounds",
                at = @At(value = "INVOKE",
-                        target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"),
+                        target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"),
                index = 2)
     private int dungeontotems$recordRow(int y) {
         DrawnEffectRows.add(y);
