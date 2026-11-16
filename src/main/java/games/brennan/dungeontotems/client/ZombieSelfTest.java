@@ -27,7 +27,9 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
+import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
@@ -228,7 +230,10 @@ public final class ZombieSelfTest {
         new Step("chat reads as gibberish", false, NO_HOVER, ACT, player -> {
                 packed(player);
                 player.sendSystemMessage(Component.literal("The train leaves at dawn. Do not be late, and bring bread."));
-                player.sendSystemMessage(Component.literal("<Conductor> All aboard! Mind the gap between carriages."));
+                // A player's own chat line: 1 word in 3 of it reads.
+                player.server.getPlayerList().broadcastChatMessage(
+                    PlayerChatMessage.unsigned(player.getUUID(), "Has anyone seen my lost cat near the third carriage? She is grey and very fluffy."),
+                    player, ChatType.bind(ChatType.CHAT, player));
             },
             (minecraft, player) -> minecraft.setScreen(new ChatScreen("")),
             player -> true),

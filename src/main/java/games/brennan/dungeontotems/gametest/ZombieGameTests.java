@@ -405,6 +405,21 @@ public final class ZombieGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public static void readingKeepsAboutOneWordInTwo(GameTestHelper helper) {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < MUMBLE_SAMPLES / 10; i++) text.append("word").append(i).append(i % 7 == 0 ? "\n" : " ");
+        Component read = ZombieGibberish.read(text.toString(), 3);
+        check(helper, read.getString().equals(ZombieGibberish.read(text.toString(), 3).getString()), "the same text reads the same");
+        // Kept words are plain text; mumbles are lang keys (and some of them start with "word" too).
+        long kept = read.getSiblings().stream()
+            .filter(c -> !(c.getContents() instanceof TranslatableContents) && c.getString().startsWith("word")).count();
+        double share = kept / (double) (MUMBLE_SAMPLES / 10);
+        check(helper, Math.abs(share - 1.0 / ZombieGibberish.READ_THROUGH_ODDS) < 0.03, "about 1 word in 2 reads, got " + share);
+        check(helper, read.getString().contains("\n"), "line breaks stay");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public static void aBookPageMumblesToItsLength(GameTestHelper helper) {
         Component page = ZombieGibberish.page(42, 30);
         check(helper, page.getString().equals(ZombieGibberish.page(42, 30).getString()), "a page must read the same every time");

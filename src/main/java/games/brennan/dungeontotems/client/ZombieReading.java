@@ -52,19 +52,25 @@ public final class ZombieReading {
         return ZombieGibberish.weakens(stack) ? ZombieGibberish.weaknessLabel(seed) : ZombieGibberish.line(seed, 0);
     }
 
-    /** Chat reads as mumbles too. Action-bar lines stay, so a zombie's own "Yuck!" still reads. */
+    /** Chat reads as mumbles too, a player's 1 word in 2 excepted. Action-bar lines stay, so a zombie's own "Yuck!" still reads. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onChat(ClientChatReceivedEvent event) {
         if (!cantRead(Minecraft.getInstance().player)) return;
         if (event instanceof ClientChatReceivedEvent.System system && system.isOverlay()) return;
         Component message = event.getMessage();
-        event.setMessage(ZombieGibberish.page(message.getString().hashCode(), words(message.getString())).withStyle(message.getStyle()));
+        String text = message.getString();
+        // A player's words: 1 in 2 gets through. The game's own messages are all mumbles.
+        MutableComponent read = event.isSystem()
+            ? ZombieGibberish.page(text.hashCode(), words(text))
+            : ZombieGibberish.read(text, text.hashCode());
+        event.setMessage(read.withStyle(message.getStyle()));
     }
 
-    /** A book page, mumbled to about its own length. */
+    /** A book page: 1 word in 2 gets through, the rest mumble. An empty page still mumbles. */
     public static FormattedText page(FormattedText page, int pageIndex) {
         String text = page.getString();
-        return ZombieGibberish.page(text.hashCode() * 31 + pageIndex, words(text));
+        int seed = text.hashCode() * 31 + pageIndex;
+        return text.isBlank() ? ZombieGibberish.page(seed, 0) : ZombieGibberish.read(text, seed);
     }
 
     private static int words(String text) {
