@@ -27,7 +27,9 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
+import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
@@ -49,6 +51,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -206,6 +210,11 @@ public final class ZombieSelfTest {
                 && player.level().getEntitiesOfClass(Wolf.class, near(player)).stream().noneMatch(Wolf::isTame)),
         new Step("an enchanted sword mumbles", true, MENU_HOTBAR + 1, player -> { packed(player); put(player, 1, enchantedSword(player)); },
             (minecraft, player) -> {}, player -> player.getInventory().getItem(1).isEnchanted()),
+        new Step("a weakness potion gives itself away", true, MENU_HOTBAR + 3, player -> {
+                packed(player);
+                put(player, 3, PotionContents.createItemStack(Items.SPLASH_POTION, Potions.WEAKNESS));
+            },
+            (minecraft, player) -> {}, player -> ZombieGibberish.weakens(player.getInventory().getItem(3))),
         new Step("a lucid item thinks", true, MENU_HOTBAR + 2, player -> { packed(player); put(player, 2, thoughtfulBlade()); },
             (minecraft, player) -> {}, player -> ZombieGibberish.thought(ItemStack.hashItemAndComponents(player.getInventory().getItem(2))) != null),
         new Step("the hotbar name mumbles", false, NO_HOVER, CHECK - HOTBAR_NAME_LEAD,
@@ -221,7 +230,10 @@ public final class ZombieSelfTest {
         new Step("chat reads as gibberish", false, NO_HOVER, ACT, player -> {
                 packed(player);
                 player.sendSystemMessage(Component.literal("The train leaves at dawn. Do not be late, and bring bread."));
-                player.sendSystemMessage(Component.literal("<Conductor> All aboard! Mind the gap between carriages."));
+                // A player's own chat line: 1 word in 3 of it reads.
+                player.server.getPlayerList().broadcastChatMessage(
+                    PlayerChatMessage.unsigned(player.getUUID(), "Has anyone seen my lost cat near the third carriage? She is grey and very fluffy."),
+                    player, ChatType.bind(ChatType.CHAT, player));
             },
             (minecraft, player) -> minecraft.setScreen(new ChatScreen("")),
             player -> true),

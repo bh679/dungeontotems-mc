@@ -1,11 +1,18 @@
 package games.brennan.dungeontotems.curse;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.function.UnaryOperator;
 
 /**
@@ -69,6 +76,52 @@ public final class ZombieGibberish {
             page.append(Component.translatable("zombie.dungeontotems.mumble." + mumble(random)));
         }
         return page;
+    }
+
+    /**
+     * Words someone else wrote, as a zombie reads them (a book page, another player's chat): each word
+     * reads, except one in {@link #READ_MUMBLE_ODDS}, which turns to a mumble. Spacing and line breaks stay.
+     * The same text always reads the same.
+     */
+    public static MutableComponent read(String text, int seed) {
+        Random random = new Random(seed);
+        MutableComponent read = Component.empty();
+        Matcher token = TOKEN.matcher(text);
+        while (token.find()) {
+            String part = token.group();
+            if (Character.isWhitespace(part.charAt(0)) || random.nextInt(READ_MUMBLE_ODDS) != 0) {
+                read.append(part);
+            } else {
+                read.append(Component.translatable("zombie.dungeontotems.mumble." + mumble(random)));
+            }
+        }
+        return read;
+    }
+
+    /** One word in {@code READ_MUMBLE_ODDS} a zombie reads in a book or a player's chat turns to a mumble. */
+    public static final int READ_MUMBLE_ODDS = 3;
+
+    /** A run of whitespace or a word. */
+    private static final Pattern TOKEN = Pattern.compile("\\s+|\\S+");
+
+    /**
+     * What a zombie reads on a potion of Weakness, the cure's first half: still gibberish, but it gives the
+     * game away. Lang keys {@code zombie.dungeontotems.weakness.*}, one picked per potion.
+     */
+    public static final int WEAKNESS_LABELS = 6;
+
+    public static MutableComponent weaknessLabel(int itemSeed) {
+        return Component.translatable("zombie.dungeontotems.weakness." + (1 + Math.floorMod(itemSeed, WEAKNESS_LABELS)));
+    }
+
+    /** A potion, splash, lingering potion or tipped arrow with Weakness in it. */
+    public static boolean weakens(ItemStack stack) {
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        if (contents == null) return false;
+        for (MobEffectInstance effect : contents.getAllEffects()) {
+            if (effect.is(MobEffects.WEAKNESS)) return true;
+        }
+        return false;
     }
 
     /** Text after a zombie's edit, with where the cursor now sits. */

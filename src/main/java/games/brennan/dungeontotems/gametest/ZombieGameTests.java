@@ -6,6 +6,7 @@ import games.brennan.dungeontotems.curse.Curses;
 import games.brennan.dungeontotems.curse.ZombieDiet;
 import games.brennan.dungeontotems.curse.ZombieGibberish;
 import games.brennan.dungeontotems.curse.ZombiePack;
+import games.brennan.dungeontotems.morph.MorphEvents;
 import games.brennan.dungeontotems.morph.Morphs;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.core.BlockPos;
@@ -31,6 +32,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Vindicator;
+import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.monster.ZombieVillager;
 import net.minecraft.world.entity.npc.Villager;
@@ -39,7 +41,12 @@ import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.core.Holder;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
@@ -367,6 +374,48 @@ public final class ZombieGameTests {
         double share = through / (double) MUMBLE_SAMPLES;
         check(helper, Math.abs(share - 1.0 / ZombieGibberish.WORD_THROUGH_ODDS) < 0.02, "about 1 word in 3 comes through, got " + share);
         check(helper, ZombieGibberish.writeWord("hello ", 6, random, key -> "x").text().equals("hello "), "no word, no change");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void theWardenHuntsAZombie(GameTestHelper helper) {
+        ServerPlayer player = zombie(helper);
+        // Not warden.setTarget: a GameTest mock player always reports creative, which no warden targets.
+        Warden warden = helper.spawn(EntityType.WARDEN, 2, 1, 3);
+        check(helper, !MorphEvents.ignoresMorphed(warden, player), "sculk still goes for a zombie player");
+        Zombie zombie = helper.spawn(EntityType.ZOMBIE, 3, 1, 3);
+        check(helper, MorphEvents.ignoresMorphed(zombie, player), "a zombie still leaves one of its own alone");
+        warden.discard();
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void weaknessPotionsGiveThemselvesAway(GameTestHelper helper) {
+        Set<String> labels = new HashSet<>();
+        for (Holder<Potion> potion : List.of(Potions.WEAKNESS, Potions.LONG_WEAKNESS)) {
+            for (Item item : List.of(Items.POTION, Items.SPLASH_POTION, Items.LINGERING_POTION, Items.TIPPED_ARROW)) {
+                ItemStack stack = PotionContents.createItemStack(item, potion);
+                check(helper, ZombieGibberish.weakens(stack), stack + " should read as weakness");
+            }
+        }
+        check(helper, !ZombieGibberish.weakens(PotionContents.createItemStack(Items.POTION, Potions.HEALING)), "healing isn't weakness");
+        for (int seed = 0; seed < ZombieGibberish.WEAKNESS_LABELS * 4; seed++) labels.add(key(ZombieGibberish.weaknessLabel(seed)));
+        check(helper, labels.size() == ZombieGibberish.WEAKNESS_LABELS, "all six labels turn up, saw " + labels);
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void readingMumblesAboutOneWordInThree(GameTestHelper helper) {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < MUMBLE_SAMPLES / 10; i++) text.append("word").append(i).append(i % 7 == 0 ? "\n" : " ");
+        Component read = ZombieGibberish.read(text.toString(), 3);
+        check(helper, read.getString().equals(ZombieGibberish.read(text.toString(), 3).getString()), "the same text reads the same");
+        // Kept words are plain text; mumbles are lang keys (and some of them start with "word" too).
+        long kept = read.getSiblings().stream()
+            .filter(c -> !(c.getContents() instanceof TranslatableContents) && c.getString().startsWith("word")).count();
+        double share = kept / (double) (MUMBLE_SAMPLES / 10);
+        check(helper, Math.abs(share - (1.0 - 1.0 / ZombieGibberish.READ_MUMBLE_ODDS)) < 0.03, "about 2 words in 3 read, got " + share);
+        check(helper, read.getString().contains("\n"), "line breaks stay");
         helper.succeed();
     }
 

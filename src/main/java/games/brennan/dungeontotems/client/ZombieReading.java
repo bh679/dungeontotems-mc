@@ -5,6 +5,7 @@ import games.brennan.dungeontotems.curse.ZombieDiet;
 import games.brennan.dungeontotems.curse.ZombieGibberish;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -32,32 +33,44 @@ public final class ZombieReading {
     public static void onTooltip(ItemTooltipEvent event) {
         if (!cantRead(event.getEntity())) return;
         List<Component> lines = event.getToolTip();
-        int seed = ItemStack.hashItemAndComponents(event.getItemStack());
+        ItemStack stack = event.getItemStack();
+        int seed = ItemStack.hashItemAndComponents(stack);
         for (int i = 0; i < lines.size(); i++) {
             Component line = lines.get(i);
             if (line.getString().isBlank()) continue; // spacing between sections stays
-            lines.set(i, ZombieGibberish.line(seed, i).withStyle(line.getStyle()));
+            lines.set(i, (i == 0 ? nameLine(stack, seed) : ZombieGibberish.line(seed, i)).withStyle(line.getStyle()));
         }
     }
 
     /** The name shown over the hotbar when you switch items. */
     public static Component name(ItemStack stack, Component name) {
-        return ZombieGibberish.line(ItemStack.hashItemAndComponents(stack), 0).withStyle(name.getStyle());
+        return nameLine(stack, ItemStack.hashItemAndComponents(stack)).withStyle(name.getStyle());
     }
 
-    /** Chat reads as mumbles too. Action-bar lines stay, so a zombie's own "Yuck!" still reads. */
+    /** A potion of Weakness gives itself away, so a zombie can still find half the cure. */
+    private static MutableComponent nameLine(ItemStack stack, int seed) {
+        return ZombieGibberish.weakens(stack) ? ZombieGibberish.weaknessLabel(seed) : ZombieGibberish.line(seed, 0);
+    }
+
+    /** Chat reads as mumbles too, a player's words mostly readable. Action-bar lines stay, so a zombie's own "Yuck!" still reads. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onChat(ClientChatReceivedEvent event) {
         if (!cantRead(Minecraft.getInstance().player)) return;
         if (event instanceof ClientChatReceivedEvent.System system && system.isOverlay()) return;
         Component message = event.getMessage();
-        event.setMessage(ZombieGibberish.page(message.getString().hashCode(), words(message.getString())).withStyle(message.getStyle()));
+        String text = message.getString();
+        // A player's words: 1 in 3 turns to a mumble. The game's own messages are all mumbles.
+        MutableComponent read = event.isSystem()
+            ? ZombieGibberish.page(text.hashCode(), words(text))
+            : ZombieGibberish.read(text, text.hashCode());
+        event.setMessage(read.withStyle(message.getStyle()));
     }
 
-    /** A book page, mumbled to about its own length. */
+    /** A book page: 1 word in 3 turns to a mumble, the rest read. An empty page still mumbles. */
     public static FormattedText page(FormattedText page, int pageIndex) {
         String text = page.getString();
-        return ZombieGibberish.page(text.hashCode() * 31 + pageIndex, words(text));
+        int seed = text.hashCode() * 31 + pageIndex;
+        return text.isBlank() ? ZombieGibberish.page(seed, 0) : ZombieGibberish.read(text, seed);
     }
 
     private static int words(String text) {
