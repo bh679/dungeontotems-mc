@@ -3,6 +3,7 @@ package games.brennan.dungeontotems.client;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.Curses;
+import games.brennan.dungeontotems.curse.ZombieGibberish;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
@@ -12,6 +13,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
@@ -40,6 +42,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
@@ -79,10 +82,16 @@ public final class ZombieSelfTest {
     /** {@code InventoryMenu}: inventory slots 9..35 sit at the same menu index, the hotbar at 36..44. */
     private static final int MENU_HOTBAR = 36;
     private static final int CHEST_SLOTS = 27;
+    /** The hotbar name shows for 2 s and fades in its last half second. */
+    private static final int HOTBAR_NAME_LEAD = 15;
 
-    private record Step(String name, boolean inventoryOpen, int hover, Setup setup, Act act, Predicate<ServerPlayer> expected) {
+    private record Step(String name, boolean inventoryOpen, int hover, int actAt, Setup setup, Act act, Predicate<ServerPlayer> expected) {
         Step(String name, boolean inventoryOpen, Setup setup, Act act, Predicate<ServerPlayer> expected) {
             this(name, inventoryOpen, NO_HOVER, setup, act, expected);
+        }
+
+        Step(String name, boolean inventoryOpen, int hover, Setup setup, Act act, Predicate<ServerPlayer> expected) {
+            this(name, inventoryOpen, hover, ACT, setup, act, expected);
         }
     }
 
@@ -181,7 +190,15 @@ public final class ZombieSelfTest {
             },
             (minecraft, player) -> eat(minecraft), // holds use: a bone every few ticks
             player -> player.getInventory().getItem(0).getCount() == 16
-                && player.level().getEntitiesOfClass(Wolf.class, near(player)).stream().noneMatch(Wolf::isTame)));
+                && player.level().getEntitiesOfClass(Wolf.class, near(player)).stream().noneMatch(Wolf::isTame)),
+        new Step("an enchanted sword mumbles", true, MENU_HOTBAR + 1, player -> { packed(player); put(player, 1, enchantedSword(player)); },
+            (minecraft, player) -> {}, player -> player.getInventory().getItem(1).isEnchanted()),
+        new Step("a lucid item thinks", true, MENU_HOTBAR + 2, player -> { packed(player); put(player, 2, thoughtfulBlade()); },
+            (minecraft, player) -> {}, player -> ZombieGibberish.thought(ItemStack.hashItemAndComponents(player.getInventory().getItem(2))) != null),
+        new Step("the hotbar name mumbles", false, NO_HOVER, CHECK - HOTBAR_NAME_LEAD,
+            player -> { packed(player); put(player, 1, enchantedSword(player)); },
+            (minecraft, player) -> minecraft.player.getInventory().selected = 1, // client side: the name pops up over the hotbar
+            player -> player.getInventory().getItem(1).isEnchanted()));
 
     private static final List<String> REPORT = new ArrayList<>();
     private static int tick;
@@ -241,7 +258,7 @@ public final class ZombieSelfTest {
             });
         }
         if (at == ACT / 2 && step.inventoryOpen()) minecraft.setScreen(new InventoryScreen(minecraft.player));
-        if (at == ACT) step.act().run(minecraft, player);
+        if (at == step.actAt()) step.act().run(minecraft, player);
         if (at > ACT && step.hover() != NO_HOVER) hover(minecraft, step.hover());
         if (at == CHECK) {
             server.execute(() -> {
@@ -263,6 +280,25 @@ public final class ZombieSelfTest {
         put(player, 14, new ItemStack(Items.IRON_SWORD));
         put(player, 20, new ItemStack(Items.COOKED_BEEF, 12));
         Curses.apply(player, Curse.ZOMBIFIED, 0, MobEffectInstance.INFINITE_DURATION);
+    }
+
+    /** A diamond sword with Sharpness V, Unbreaking III and Looting III: a long tooltip in rare colour. */
+    private static ItemStack enchantedSword(ServerPlayer player) {
+        ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
+        var enchantments = player.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        sword.enchant(enchantments.getOrThrow(Enchantments.SHARPNESS), 5);
+        sword.enchant(enchantments.getOrThrow(Enchantments.UNBREAKING), 3);
+        sword.enchant(enchantments.getOrThrow(Enchantments.LOOTING), 3);
+        return sword;
+    }
+
+    /** A named blade that happens to be one of the 1 in 500 items that stir a thought. */
+    private static ItemStack thoughtfulBlade() {
+        for (int n = 0; ; n++) {
+            ItemStack blade = new ItemStack(Items.IRON_SWORD);
+            blade.set(DataComponents.CUSTOM_NAME, Component.literal("Old Blade " + n));
+            if (ZombieGibberish.thought(ItemStack.hashItemAndComponents(blade)) != null) return blade;
+        }
     }
 
     /** Holds the use key down, as a player eating does, until the next step starts. */

@@ -24,7 +24,7 @@ public final class ZombieGibberish {
     public static final List<String> RARE_MUMBLES = List.of(
         "me_read_goods", "me_reads", "words_good", "many_words", "read_read", "word_words", "read",
         "food_question", "food_bang", "friend_question", "zomb", "no", "yes", "eat", "eat_it",
-        "bite", "bite_it", "it", "this", "wow");
+        "bite", "bite_it", "it", "this", "wow", "shrimp");
     static final int COMMON_WEIGHT = 5;
     /** Lang keys {@code zombie.dungeontotems.thought.*}. */
     public static final List<String> THOUGHTS = List.of(
