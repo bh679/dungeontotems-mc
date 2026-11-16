@@ -19,7 +19,8 @@ public final class ZombieGibberish {
 
     static final List<String> MUMBLES = List.of(
         "brains_question", "brains_bang_question", "brains_trailing", "brains", "mmmmm_brains",
-        "huuurrr", "hur", "ahhhhurrrr", "ahur", "brai_ns", "hmmmmm", "ahh_trailing", "ah", "words", "wooooords");
+        "huuurrr", "hur", "ahhhhurrrr", "ahur", "brai_ns", "hmmmmm", "ahh_trailing", "ah", "words", "wooooords",
+        "mmmm", "mmm_trailing", "mmmmmmmm");
     /** The odd half-word that gets through, each {@link #COMMON_WEIGHT} times rarer than a mumble. */
     public static final List<String> RARE_MUMBLES = List.of(
         "me_read_goods", "me_reads", "words_good", "many_words", "read_read", "word_words", "read",
