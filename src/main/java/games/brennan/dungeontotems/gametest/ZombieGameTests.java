@@ -10,6 +10,7 @@ import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -62,6 +63,7 @@ public final class ZombieGameTests {
     private static final int CHEST_SLOTS = 27;
     /** A wolf takes a bone 1 time in 3; 40 tries leave a human untamed about once in ten million. */
     private static final int TAME_TRIES = 40;
+    private static final int SETTLE_TICKS = 10;
 
     private ZombieGameTests() {}
 
@@ -257,14 +259,22 @@ public final class ZombieGameTests {
     // ---- taming ----
 
     @GameTest(template = EMPTY)
-    public static void aWolfWontBeTamedByAZombie(GameTestHelper helper) {
+    public static void anAnimalAZombieFeedsRunsAway(GameTestHelper helper) {
         ServerPlayer zombie = zombie(helper);
         Wolf wolf = helper.spawn(EntityType.WOLF, 2, 1, 3);
-        for (int i = 0; i < TAME_TRIES && !wolf.isTame(); i++) {
-            zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE));
-            wolf.mobInteract(zombie, InteractionHand.MAIN_HAND);
-        }
-        check(helper, !wolf.isTame(), "a wolf should never take a zombie as its owner");
+        helper.runAfterDelay(SETTLE_TICKS, () -> feedAndCheck(helper, zombie, wolf)); // a wolf in the air can't plan a path
+    }
+
+    private static void feedAndCheck(GameTestHelper helper, ServerPlayer zombie, Wolf wolf) {
+        zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE, 4));
+        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, wolf)).isCanceled();
+        check(helper, refused, "the wolf shouldn't take a zombie's bone");
+        check(helper, zombie.getMainHandItem().getCount() == 4, "the bone isn't used");
+        check(helper, wolf.getNavigation().isInProgress(), "the wolf should run");
+        Cow cow = helper.spawn(EntityType.COW, 3, 1, 3);
+        zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WHEAT));
+        check(helper, NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, cow)).isCanceled(),
+            "a cow shouldn't take a zombie's wheat");
         ServerPlayer human = player(helper);
         for (int i = 0; i < TAME_TRIES && !wolf.isTame(); i++) {
             human.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE));

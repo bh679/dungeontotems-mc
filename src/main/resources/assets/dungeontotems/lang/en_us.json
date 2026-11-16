@@ -76,8 +76,7 @@
 
   "message.dungeontotems.zombified.lifted": "You are human again.",
   "message.dungeontotems.zombified.diet": "Zombies only eat raw meat.",
-  "message.dungeontotems.zombified.shulker": "Zombies can't handle shulker boxes.",
-  "message.dungeontotems.zombified.tame": "Animals won't trust a zombie.",
+  "message.dungeontotems.zombified.shulker": "Your zombie hands are too clumsy.",
   "tooltip.dungeontotems.zombified.pack": "Zombies can't reach their packs",
   "tooltip.dungeontotems.zombified.pack.stash": "You can put back what you carried before.",
   "message.dungeontotems.pacifism_totem.broken": "You broke your vow of peace. Your Totem of Pacifism took your life and gave it back.",

@@ -3,12 +3,19 @@ package games.brennan.dungeontotems.curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.ai.util.DefaultRandomPos;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.animal.Parrot;
+import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.TriState;
@@ -22,12 +29,17 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  * <ul>
  *   <li><b>Shulker boxes</b>: no opening one, placing one or mining one. A box carried in the hotbar
  *       stays an item until you are cured.</li>
- *   <li><b>Taming</b>: no animal takes a zombie as its owner: wolves, cats, ocelots, parrots, horses,
- *       donkeys, mules and llamas all refuse, as they do on a failed try. Animals tamed before stay yours.</li>
+ *   <li><b>Feeding and taming</b>: an animal offered its food or taming item (a bone, seeds) by a zombie
+ *       runs away instead of taking it, and the item isn't used. No animal takes a zombie as its owner,
+ *       including a horse, donkey, mule or llama ridden to tame it. Animals tamed before stay yours.</li>
  * </ul>
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID)
 public final class ZombieLimits {
+
+    private static final int FLEE_DISTANCE = 16;
+    private static final int FLEE_HEIGHT = 7;
+    private static final double FLEE_SPEED = 1.6;
 
     private ZombieLimits() {}
 
@@ -68,11 +80,38 @@ public final class ZombieLimits {
         tell(event.getPlayer(), "message.dungeontotems.zombified.shulker");
     }
 
+    /** Both sides, so the client never uses the item. The animal bolts, with nothing said. */
+    @SubscribeEvent
+    public static void onFeed(PlayerInteractEvent.EntityInteract event) {
+        if (!ZombieDiet.isZombie(event.getEntity()) || !(event.getTarget() instanceof Animal animal)) return;
+        if (!wouldTake(animal, event.getItemStack())) return;
+        event.setCancellationResult(InteractionResult.FAIL);
+        event.setCanceled(true);
+        if (!animal.level().isClientSide()) runFrom(animal, event.getEntity());
+    }
+
+    /** Its breeding food, or what tames it (a wolf's bone, a parrot's seeds). */
+    public static boolean wouldTake(Animal animal, ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (animal.isFood(stack)) return true;
+        return (animal instanceof Wolf && stack.is(Items.BONE)) || (animal instanceof Parrot && stack.is(ItemTags.PARROT_FOOD));
+    }
+
+    /** Off at a run to somewhere away from the zombie; straight away from them when no spot is found. */
+    static void runFrom(Animal animal, Player player) {
+        Vec3 away = DefaultRandomPos.getPosAway(animal, FLEE_DISTANCE, FLEE_HEIGHT, player.position());
+        if (away == null) {
+            Vec3 direction = animal.position().subtract(player.position()).multiply(1.0, 0.0, 1.0);
+            if (direction.lengthSqr() < 1.0E-4) direction = new Vec3(1.0, 0.0, 0.0);
+            away = animal.position().add(direction.normalize().scale(FLEE_DISTANCE / 2.0));
+        }
+        animal.getNavigation().moveTo(away.x, away.y, away.z, FLEE_SPEED);
+    }
+
+    /** Ridden taming (horses, donkeys, mules, llamas) and any other path: refused, silently. */
     @SubscribeEvent
     public static void onTame(AnimalTameEvent event) {
-        if (!ZombieDiet.isZombie(event.getTamer())) return;
-        event.setCanceled(true);
-        tell(event.getTamer(), "message.dungeontotems.zombified.tame");
+        if (ZombieDiet.isZombie(event.getTamer())) event.setCanceled(true);
     }
 
     private static void tell(Player player, String key) {

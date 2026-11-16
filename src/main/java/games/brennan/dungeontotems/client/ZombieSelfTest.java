@@ -171,17 +171,16 @@ public final class ZombieSelfTest {
             },
             (minecraft, player) -> minecraft.options.keyAttack.setDown(true),
             ZombieSelfTest::shulkerNear),
-        new Step("a wolf won't be tamed", false, player -> {
+        new Step("a wolf runs from a zombie's bone", false, player -> {
                 packed(player);
                 put(player, 0, new ItemStack(Items.BONE, 16));
                 Wolf wolf = EntityType.WOLF.create(player.serverLevel());
                 wolf.moveTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
-                wolf.setNoAi(true);
                 player.serverLevel().addFreshEntity(wolf);
                 player.lookAt(EntityAnchorArgument.Anchor.EYES, wolf.getEyePosition());
             },
             (minecraft, player) -> eat(minecraft), // holds use: a bone every few ticks
-            player -> player.getInventory().getItem(0).getCount() < 16
+            player -> player.getInventory().getItem(0).getCount() == 16
                 && player.level().getEntitiesOfClass(Wolf.class, near(player)).stream().noneMatch(Wolf::isTame)));
 
     private static final List<String> REPORT = new ArrayList<>();
