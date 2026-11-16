@@ -80,7 +80,7 @@ public final class ZombieGibberish {
 
     /**
      * Words someone else wrote, as a zombie reads them (a book page, another player's chat): each word
-     * a mumble, or one time in {@link #READ_THROUGH_ODDS} the word itself. Spacing and line breaks stay.
+     * reads, except one in {@link #READ_MUMBLE_ODDS}, which turns to a mumble. Spacing and line breaks stay.
      * The same text always reads the same.
      */
     public static MutableComponent read(String text, int seed) {
@@ -89,7 +89,7 @@ public final class ZombieGibberish {
         Matcher token = TOKEN.matcher(text);
         while (token.find()) {
             String part = token.group();
-            if (Character.isWhitespace(part.charAt(0)) || random.nextInt(READ_THROUGH_ODDS) == 0) {
+            if (Character.isWhitespace(part.charAt(0)) || random.nextInt(READ_MUMBLE_ODDS) != 0) {
                 read.append(part);
             } else {
                 read.append(Component.translatable("zombie.dungeontotems.mumble." + mumble(random)));
@@ -98,8 +98,8 @@ public final class ZombieGibberish {
         return read;
     }
 
-    /** One word in {@code READ_THROUGH_ODDS} a zombie reads in a book or a player's chat makes sense. */
-    public static final int READ_THROUGH_ODDS = 2;
+    /** One word in {@code READ_MUMBLE_ODDS} a zombie reads in a book or a player's chat turns to a mumble. */
+    public static final int READ_MUMBLE_ODDS = 3;
 
     /** A run of whitespace or a word. */
     private static final Pattern TOKEN = Pattern.compile("\\s+|\\S+");
