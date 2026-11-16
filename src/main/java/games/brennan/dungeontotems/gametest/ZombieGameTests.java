@@ -352,7 +352,7 @@ public final class ZombieGameTests {
     }
 
     @GameTest(template = EMPTY)
-    public static void aboutOneWordInSixComesThrough(GameTestHelper helper) {
+    public static void aboutOneWordInThreeComesThrough(GameTestHelper helper) {
         Random random = new Random(7);
         int through = 0;
         for (int i = 0; i < MUMBLE_SAMPLES; i++) {
@@ -365,7 +365,7 @@ public final class ZombieGameTests {
             }
         }
         double share = through / (double) MUMBLE_SAMPLES;
-        check(helper, Math.abs(share - 1.0 / ZombieGibberish.WORD_THROUGH_ODDS) < 0.02, "about 1 word in 6 comes through, got " + share);
+        check(helper, Math.abs(share - 1.0 / ZombieGibberish.WORD_THROUGH_ODDS) < 0.02, "about 1 word in 3 comes through, got " + share);
         check(helper, ZombieGibberish.writeWord("hello ", 6, random, key -> "x").text().equals("hello "), "no word, no change");
         helper.succeed();
     }

@@ -75,7 +75,7 @@ public final class ZombieGibberish {
     public record Edit(String text, int cursor) {}
 
     /** One word in {@code WORD_THROUGH_ODDS} a zombie writes comes through as typed. */
-    public static final int WORD_THROUGH_ODDS = 6;
+    public static final int WORD_THROUGH_ODDS = 3;
 
     /**
      * The word just before {@code cursor} as a zombie writes it: a mumble ({@code mumbleText} turns a
