@@ -93,10 +93,10 @@ public final class ZombieSelfTest {
     private interface Act { void run(Minecraft minecraft, ServerPlayer player); }
 
     private static final List<Step> STEPS = List.of(
-        new Step("pack is greyed out (sword hovered)", true, 14, ZombieSelfTest::packed, (minecraft, player) -> {},
+        new Step("pack is greyed out, the sword reads as gibberish", true, 14, ZombieSelfTest::packed, (minecraft, player) -> {},
             player -> player.getInventory().getItem(10).is(Items.DIRT)),
-        new Step("empty locked slot says why", true, 13, ZombieSelfTest::packed, (minecraft, player) -> {},
-            player -> player.getInventory().getItem(13).isEmpty()),
+        new Step("the hotbar arrows read as gibberish", true, MENU_HOTBAR, ZombieSelfTest::packed, (minecraft, player) -> {},
+            player -> player.getInventory().getItem(0).is(Items.ARROW)),
         new Step("can't take from the pack", true, ZombieSelfTest::packed,
             (minecraft, player) -> click(minecraft, 10, ClickType.PICKUP),
             player -> player.getInventory().getItem(10).getCount() == 8 && player.containerMenu.getCarried().isEmpty()),

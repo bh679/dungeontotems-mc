@@ -4,10 +4,13 @@ import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.Curses;
 import games.brennan.dungeontotems.curse.ZombieDiet;
+import games.brennan.dungeontotems.curse.ZombieGibberish;
 import games.brennan.dungeontotems.curse.ZombiePack;
 import games.brennan.dungeontotems.morph.Morphs;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.Cow;
@@ -64,6 +67,7 @@ public final class ZombieGameTests {
     /** A wolf takes a bone 1 time in 3; 40 tries leave a human untamed about once in ten million. */
     private static final int TAME_TRIES = 40;
     private static final int SETTLE_TICKS = 10;
+    private static final int GIBBERISH_LINES = 50;
 
     private ZombieGameTests() {}
 
@@ -300,6 +304,35 @@ public final class ZombieGameTests {
     private static PlayerInteractEvent.RightClickBlock rightClick(ServerPlayer player, BlockPos pos) {
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
         return NeoForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit));
+    }
+
+    // ---- reading ----
+
+    @GameTest(template = EMPTY)
+    public static void zombieGibberishIsStableAndMumbled(GameTestHelper helper) {
+        int seed = ItemStack.hashItemAndComponents(new ItemStack(Items.IRON_SWORD));
+        for (int line = 0; line < GIBBERISH_LINES; line++) {
+            String first = ZombieGibberish.line(seed, line).getString();
+            check(helper, first.equals(ZombieGibberish.line(seed, line).getString()), "a line must read the same every time");
+            check(helper, !first.isBlank(), "a line is never empty");
+        }
+        check(helper, !ZombieGibberish.line(seed, 0).getString().equals(
+            ZombieGibberish.line(ItemStack.hashItemAndComponents(new ItemStack(Items.BREAD)), 0).getString())
+            || !ZombieGibberish.line(seed, 1).getString().equals(
+            ZombieGibberish.line(ItemStack.hashItemAndComponents(new ItemStack(Items.BREAD)), 1).getString()),
+            "different items should mostly read differently");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void readingReturnsWhenCured(GameTestHelper helper) {
+        ServerPlayer player = zombie(helper);
+        ItemStack sword = new ItemStack(Items.IRON_SWORD);
+        Component name = sword.getHoverName();
+        player.removeEffect(TotemRegistries.ZOMBIFIED);
+        check(helper, sword.getHoverName().equals(name) && !sword.has(DataComponents.CUSTOM_NAME),
+            "the item itself never changes, so it reads again once cured");
+        helper.succeed();
     }
 
     // ---- helpers ----

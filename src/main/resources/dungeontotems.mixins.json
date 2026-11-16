@@ -17,6 +17,7 @@
   },
   "client": [
     "client.AdvancementWidgetMixin",
+    "client.GuiMixin",
     "client.ItemInHandRendererMixin",
     "client.ItemInHandRendererInvoker",
     "client.ModelPartAccessor"
