@@ -9,7 +9,8 @@
     "PlayerMixin",
     "MobInvoker",
     "InventoryMixin",
-    "AbstractContainerMenuMixin"
+    "AbstractContainerMenuMixin",
+    "SlotMixin"
   ],
   "injectors": {
     "defaultRequire": 1

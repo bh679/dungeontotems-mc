@@ -5,6 +5,7 @@ import games.brennan.dungeontotems.net.MorphSyncPayload;
 import games.brennan.dungeontotems.net.CurseTimerPayload;
 import games.brennan.dungeontotems.net.MorphActionPayload;
 import games.brennan.dungeontotems.net.TotemPopPayload;
+import games.brennan.dungeontotems.net.ZombieCarriedPayload;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -94,5 +95,11 @@ public final class ClientPayloads {
         CurseTimerPayload timer = TIMERS.get(curse.name());
         if (timer == null || timer.totalTicks() <= 0) return 1.0F;
         return Math.min(1.0F, timer.ticksLeft() / (float) timer.totalTicks());
+    }
+
+    /** What you carried when you turned, for the locked pack's checks on this side. */
+    public static void onZombieCarried(ZombieCarriedPayload payload) {
+        Player player = Minecraft.getInstance().player;
+        if (player != null) player.setData(TotemRegistries.ZOMBIE_CARRIED, java.util.List.copyOf(payload.carried()));
     }
 }

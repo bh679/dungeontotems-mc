@@ -17,6 +17,7 @@ import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
@@ -103,6 +104,13 @@ public final class TotemRegistries {
     /** Curses popped since you last died, still running (see {@code curse/CurseTrials}). */
     public static final Supplier<AttachmentType<List<String>>> CURSE_TRIALS = ATTACHMENTS.register("curse_trials",
         () -> AttachmentType.<List<String>>builder(() -> List.of()).serialize(Codec.STRING.listOf()).build());
+
+    /**
+     * What you had in your hotbar and offhand when you were Zombified, one of each; only those may go into
+     * your locked pack (see {@code curse/ZombiePack}). Not kept through death, which ends the curse.
+     */
+    public static final Supplier<AttachmentType<List<ItemStack>>> ZOMBIE_CARRIED = ATTACHMENTS.register("zombie_carried",
+        () -> AttachmentType.<List<ItemStack>>builder(() -> List.of()).serialize(ItemStack.CODEC.listOf()).build());
 
     public static final Map<Curse, DeferredItem<TotemItem>> TOTEMS = registerTotems();
 

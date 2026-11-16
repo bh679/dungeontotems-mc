@@ -59,7 +59,10 @@ public final class Curses {
      */
     public static int apply(ServerPlayer player, Curse curse, int amplifier, int duration) {
         if (curse.effect() == null) return duration;
-        if (!player.hasEffect(curse.effect())) CurseTimers.restart(player, curse);
+        if (!player.hasEffect(curse.effect())) {
+            CurseTimers.restart(player, curse);
+            if (curse == Curse.ZOMBIFIED) ZombiePack.remember(player);
+        }
         // force: replaces a running instance outright, so its level and timer are exactly these.
         player.forceAddEffect(timed(curse, duration, amplifier), null);
         if (curse == Curse.ZOMBIFIED) Morphs.setForm(player, EntityType.ZOMBIE);
