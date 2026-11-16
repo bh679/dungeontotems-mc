@@ -233,6 +233,34 @@ public final class ZombieGameTests {
         helper.succeed();
     }
 
+    /** A stand-in for a backpack mod's slots: only slots over this container are declared pack slots. */
+    private static final SimpleContainer HOST_BACKPACK = new SimpleContainer(2);
+    private static volatile ServerPlayer hostBackpackOwner;
+
+    static {
+        ZombiePack.addPackSlots(slot -> slot.container == HOST_BACKPACK ? hostBackpackOwner : null);
+    }
+
+    @GameTest(template = EMPTY)
+    public static void hostDeclaredSlotsLockWithThePack(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        hostBackpackOwner = player;
+        player.getInventory().setItem(0, new ItemStack(Items.ARROW, 16));
+        HOST_BACKPACK.setItem(0, new ItemStack(Items.DIRT, 8));
+        Slot full = new Slot(HOST_BACKPACK, 0, 0, 0);
+        Slot empty = new Slot(HOST_BACKPACK, 1, 0, 0);
+        check(helper, !ZombiePack.isLockedSlot(full), "an unzombified player's backpack is open");
+        zombify(player);
+        check(helper, ZombiePack.isLockedSlot(full), "a declared slot locks with the pack");
+        check(helper, !full.mayPickup(player), "nothing comes out of it");
+        check(helper, !empty.mayPlace(new ItemStack(Items.ARROW)), "nothing goes in, not even what you carried");
+        check(helper, !ZombiePack.isLockedSlot(new Slot(new SimpleContainer(1), 0, 0, 0)), "other containers are untouched");
+        player.removeEffect(TotemRegistries.ZOMBIFIED);
+        check(helper, full.mayPickup(player) && empty.mayPlace(new ItemStack(Items.BREAD)), "curing opens it again");
+        hostBackpackOwner = null;
+        helper.succeed();
+    }
+
     @GameTest(template = EMPTY)
     public static void curingUnlocksThePack(GameTestHelper helper) {
         ServerPlayer player = player(helper);

@@ -17,6 +17,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 
 /**
  * A Zombified player can't reach their pack: the 27 main inventory slots are locked, and only the hotbar,
@@ -33,6 +35,9 @@ public final class ZombiePack {
 
     private static final int OFFHAND_SLOT = Inventory.SLOT_OFFHAND;
 
+    /** Host-declared extra pack slots (e.g. a backpack mod's): each maps a slot to its owner, or null. */
+    private static final List<Function<Slot, Player>> EXTRA_PACK_SLOTS = new CopyOnWriteArrayList<>();
+
     private ZombiePack() {}
 
     /** Whether {@code player}'s pack is locked right now. */
@@ -46,9 +51,32 @@ public final class ZombiePack {
         return index >= Inventory.getSelectionSize() && index < Inventory.INVENTORY_SIZE;
     }
 
+    /**
+     * Declare more slots as part of a player's pack, locked with it while Zombified (greyed out, nothing in or
+     * out). {@code ownerOf} returns the player whose pack {@code slot} belongs to, or {@code null} for any other
+     * slot. Called once at boot by a host mod; Dungeon Train adds Edible Backpacks' slots this way. The host
+     * must also block its own item routes (its slots may override {@code mayPlace}, and pickups).
+     */
+    public static void addPackSlots(Function<Slot, Player> ownerOf) {
+        EXTRA_PACK_SLOTS.add(ownerOf);
+    }
+
     /** A menu slot showing one of {@code player}'s locked pack slots. */
     public static boolean isLockedSlot(Slot slot) {
-        return slot.container instanceof Inventory inventory && isPackSlot(slot.getContainerSlot()) && isLocked(inventory.player);
+        Player owner = packOwner(slot);
+        return owner != null && isLocked(owner);
+    }
+
+    /** The player whose pack {@code slot} is part of (main inventory or a host-declared slot), or null. */
+    private static Player packOwner(Slot slot) {
+        if (slot.container instanceof Inventory inventory) {
+            return isPackSlot(slot.getContainerSlot()) ? inventory.player : null;
+        }
+        for (Function<Slot, Player> ownerOf : EXTRA_PACK_SLOTS) {
+            Player owner = ownerOf.apply(slot);
+            if (owner != null) return owner;
+        }
+        return null;
     }
 
     /** Something you carried when you turned, so it may go into a locked slot. */
@@ -60,9 +88,13 @@ public final class ZombiePack {
         return false;
     }
 
-    /** {@code slot} would refuse {@code stack}: a locked slot and something new. */
+    /**
+     * {@code slot} would refuse {@code stack}: a locked slot and something new. A host-declared slot takes
+     * nothing at all while locked; only the main inventory takes back what you carried when you turned.
+     */
     public static boolean refuses(Slot slot, ItemStack stack) {
-        return isLockedSlot(slot) && !carriedBefore(((Inventory) slot.container).player, stack);
+        if (!isLockedSlot(slot)) return false;
+        return !(slot.container instanceof Inventory inventory) || !carriedBefore(inventory.player, stack);
     }
 
     /**
