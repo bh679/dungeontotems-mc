@@ -7,6 +7,16 @@ import games.brennan.dungeontotems.curse.ZombieDiet;
 import games.brennan.dungeontotems.curse.ZombiePack;
 import games.brennan.dungeontotems.morph.Morphs;
 import games.brennan.dungeontotems.registry.TotemRegistries;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.common.util.TriState;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
@@ -40,7 +50,7 @@ import java.util.List;
 /**
  * Life as a Zombified player: raw meat only ({@link ZombieDiet}), no trading
  * ({@link games.brennan.dungeontotems.curse.ZombieTrade}), illagers hunt you, and a locked pack
- * ({@link ZombiePack}).
+ * ({@link ZombiePack}), and no shulker boxes or taming ({@link games.brennan.dungeontotems.curse.ZombieLimits}).
  */
 @GameTestHolder(DungeonTotems.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -50,6 +60,8 @@ public final class ZombieGameTests {
     private static final int EAT_TICKS = 32;
     private static final int PACK_SLOT = 10;
     private static final int CHEST_SLOTS = 27;
+    /** A wolf takes a bone 1 time in 3; 40 tries leave a human untamed about once in ten million. */
+    private static final int TAME_TRIES = 40;
 
     private ZombieGameTests() {}
 
@@ -210,6 +222,74 @@ public final class ZombieGameTests {
         check(helper, player.getData(TotemRegistries.ZOMBIE_CARRIED).isEmpty(), "and forgotten once cured");
         check(helper, player.inventoryMenu.getSlot(PACK_SLOT).mayPlace(new ItemStack(Items.BREAD)), "the pack is open again");
         helper.succeed();
+    }
+
+    // ---- shulker boxes ----
+
+    @GameTest(template = EMPTY)
+    public static void aZombieCantOpenOrPlaceAShulkerBox(GameTestHelper helper) {
+        ServerPlayer player = zombie(helper);
+        BlockPos box = helper.absolutePos(new BlockPos(1, 1, 1));
+        helper.getLevel().setBlockAndUpdate(box, Blocks.SHULKER_BOX.defaultBlockState());
+        check(helper, rightClick(player, box).isCanceled(), "a zombie shouldn't open a shulker box");
+        BlockPos stone = helper.absolutePos(new BlockPos(3, 1, 1));
+        helper.getLevel().setBlockAndUpdate(stone, Blocks.STONE.defaultBlockState());
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.SHULKER_BOX));
+        check(helper, rightClick(player, stone).getUseItem() == TriState.FALSE, "a zombie shouldn't place a shulker box");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void aZombieCantMineAShulkerBox(GameTestHelper helper) {
+        ServerPlayer player = zombie(helper);
+        BlockPos box = helper.absolutePos(new BlockPos(1, 1, 1));
+        BlockState state = Blocks.RED_SHULKER_BOX.defaultBlockState();
+        helper.getLevel().setBlockAndUpdate(box, state);
+        check(helper, NeoForge.EVENT_BUS.post(new PlayerEvent.BreakSpeed(player, state, 1.0F, box)).isCanceled(),
+            "a zombie shouldn't crack a shulker box");
+        check(helper, NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player)).isCanceled(),
+            "a zombie shouldn't break a shulker box");
+        check(helper, !NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player(helper))).isCanceled(),
+            "a human still can");
+        helper.succeed();
+    }
+
+    // ---- taming ----
+
+    @GameTest(template = EMPTY)
+    public static void aWolfWontBeTamedByAZombie(GameTestHelper helper) {
+        ServerPlayer zombie = zombie(helper);
+        Wolf wolf = helper.spawn(EntityType.WOLF, 2, 1, 3);
+        for (int i = 0; i < TAME_TRIES && !wolf.isTame(); i++) {
+            zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE));
+            wolf.mobInteract(zombie, InteractionHand.MAIN_HAND);
+        }
+        check(helper, !wolf.isTame(), "a wolf should never take a zombie as its owner");
+        ServerPlayer human = player(helper);
+        for (int i = 0; i < TAME_TRIES && !wolf.isTame(); i++) {
+            human.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE));
+            wolf.mobInteract(human, InteractionHand.MAIN_HAND);
+        }
+        check(helper, wolf.isTame() && wolf.isOwnedBy(human), "a human still tames it");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void horsesAndCatsWontBeTamedByAZombie(GameTestHelper helper) {
+        ServerPlayer zombie = zombie(helper);
+        for (EntityType<? extends Animal> type : List.of(EntityType.HORSE, EntityType.LLAMA, EntityType.CAT, EntityType.PARROT)) {
+            Animal animal = helper.spawn(type, 2, 1, 3);
+            // onAnimalTame is true when the taming is blocked.
+            check(helper, EventHooks.onAnimalTame(animal, zombie), type.toShortString() + " should refuse a zombie");
+            check(helper, !EventHooks.onAnimalTame(animal, player(helper)), type.toShortString() + " should accept a human");
+            animal.discard();
+        }
+        helper.succeed();
+    }
+
+    private static PlayerInteractEvent.RightClickBlock rightClick(ServerPlayer player, BlockPos pos) {
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
+        return NeoForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit));
     }
 
     // ---- helpers ----

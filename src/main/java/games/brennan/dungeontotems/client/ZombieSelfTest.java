@@ -13,6 +13,10 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.core.BlockPos;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -152,7 +156,33 @@ public final class ZombieSelfTest {
             },
             (minecraft, player) -> {},
             player -> player.level().getEntitiesOfClass(Mob.class, near(player), m -> m.getType() == EntityType.PILLAGER)
-                .stream().anyMatch(m -> m.getTarget() == player)));
+                .stream().anyMatch(m -> m.getTarget() == player)),
+        new Step("a shulker box won't place", false, player -> {
+                packed(player);
+                put(player, 0, new ItemStack(Items.SHULKER_BOX));
+                lookAtGroundAhead(player);
+            },
+            (minecraft, player) -> eat(minecraft), // holds use
+            player -> player.getInventory().getItem(0).is(Items.SHULKER_BOX) && !shulkerNear(player)),
+        new Step("a shulker box won't break", false, player -> {
+                packed(player);
+                player.serverLevel().setBlockAndUpdate(ahead(player), Blocks.SHULKER_BOX.defaultBlockState());
+                player.lookAt(EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(ahead(player)));
+            },
+            (minecraft, player) -> minecraft.options.keyAttack.setDown(true),
+            ZombieSelfTest::shulkerNear),
+        new Step("a wolf won't be tamed", false, player -> {
+                packed(player);
+                put(player, 0, new ItemStack(Items.BONE, 16));
+                Wolf wolf = EntityType.WOLF.create(player.serverLevel());
+                wolf.moveTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
+                wolf.setNoAi(true);
+                player.serverLevel().addFreshEntity(wolf);
+                player.lookAt(EntityAnchorArgument.Anchor.EYES, wolf.getEyePosition());
+            },
+            (minecraft, player) -> eat(minecraft), // holds use: a bone every few ticks
+            player -> player.getInventory().getItem(0).getCount() < 16
+                && player.level().getEntitiesOfClass(Wolf.class, near(player)).stream().noneMatch(Wolf::isTame)));
 
     private static final List<String> REPORT = new ArrayList<>();
     private static int tick;
@@ -195,10 +225,12 @@ public final class ZombieSelfTest {
         int at = t % STEP_TICKS;
         if (at == 0) {
             minecraft.options.keyUse.setDown(false);
+            minecraft.options.keyAttack.setDown(false);
             if (minecraft.screen != null) minecraft.setScreen(null);
             server.execute(() -> {
                 player.closeContainer();
                 clearMobs(player);
+                player.serverLevel().setBlockAndUpdate(ahead(player), Blocks.AIR.defaultBlockState());
                 server.setDifficulty(Difficulty.NORMAL, true);
                 player.serverLevel().setDayTime(MIDNIGHT); // no sunburn
                 player.setGameMode(GameType.SURVIVAL);
@@ -237,6 +269,20 @@ public final class ZombieSelfTest {
     /** Holds the use key down, as a player eating does, until the next step starts. */
     private static void eat(Minecraft minecraft) {
         minecraft.options.keyUse.setDown(true);
+    }
+
+    /** The ground block two ahead of the player, on the +z side (the way the test faces things). */
+    private static BlockPos ahead(ServerPlayer player) {
+        return player.blockPosition().offset(0, 0, 2);
+    }
+
+    private static void lookAtGroundAhead(ServerPlayer player) {
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(ahead(player).below()).add(0.0, 0.5, 0.0));
+    }
+
+    private static boolean shulkerNear(ServerPlayer player) {
+        return BlockPos.betweenClosedStream(player.blockPosition().offset(-3, -2, -3), player.blockPosition().offset(3, 2, 3))
+            .anyMatch(pos -> player.level().getBlockState(pos).is(Blocks.SHULKER_BOX));
     }
 
     private static void hungry(ServerPlayer player) {
