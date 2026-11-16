@@ -3,14 +3,15 @@ package games.brennan.dungeontotems.curse;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Random;
 
 /**
  * Zombies can't read: what a Zombified player sees in place of an item's name and every tooltip line.
- * Each line is one to three mumbles (now and then a half-word gets through), and once in
- * {@link #RARE_ODDS} lines the zombie has a thought. The
- * same item always reads the same (seeded by the item), so a tooltip never flickers. Mumbles are lang
+ * Each line is one to three mumbles (now and then a half-word gets through). One item in
+ * {@link #THOUGHT_ODDS} gives the zombie a lucid moment: its name reads as one of the {@link #THOUGHTS}.
+ * The same item always reads the same (seeded by the item), so a tooltip never flickers. Mumbles are lang
  * keys ({@code zombie.dungeontotems.mumble.*}). Display only: it replaces text as it is drawn, never what
  * the item carries, so everything reads again the moment the curse ends.
  */
@@ -25,16 +26,24 @@ public final class ZombieGibberish {
         "food_question", "food_bang", "friend_question", "zomb", "no", "yes", "eat", "eat_it",
         "bite", "bite_it", "it", "this", "wow");
     static final int COMMON_WEIGHT = 5;
-    static final String RARE = "zombie.dungeontotems.mumble.enigma";
-    static final int RARE_ODDS = 2000;
+    /** Lang keys {@code zombie.dungeontotems.thought.*}. */
+    public static final List<String> THOUGHTS = List.of(
+        "enigma", "sorry_jest", "rotted_vessel", "cruel_fortune", "hunger_riddle", "mind_entombed",
+        "letters_swim", "piece_of_work", "ruin_philosopher", "to_read", "horror_by_candlelight");
+    public static final int THOUGHT_ODDS = 500;
+    /** The line index whose seed rolls the item's thought, apart from every real line's. */
+    private static final int THOUGHT_ROLL = -1;
     private static final int MAX_MUMBLES = 3;
 
     private ZombieGibberish() {}
 
     /** Line {@code index} of an item whose name and components hash to {@code itemSeed}. */
     public static MutableComponent line(int itemSeed, int index) {
+        if (index == 0) {
+            String thought = thought(itemSeed);
+            if (thought != null) return Component.translatable("zombie.dungeontotems.thought." + thought);
+        }
         Random random = new Random(itemSeed * 31L + index);
-        if (random.nextInt(RARE_ODDS) == 0) return Component.translatable(RARE);
         MutableComponent line = Component.empty();
         int count = 1 + random.nextInt(MAX_MUMBLES);
         for (int i = 0; i < count; i++) {
@@ -42,6 +51,13 @@ public final class ZombieGibberish {
             line.append(Component.translatable("zombie.dungeontotems.mumble." + mumble(random)));
         }
         return line;
+    }
+
+    /** The thought this item stirs, or null for the {@code THOUGHT_ODDS - 1} items in {@code THOUGHT_ODDS} that stir none. */
+    @Nullable
+    public static String thought(int itemSeed) {
+        Random random = new Random(itemSeed * 31L + THOUGHT_ROLL);
+        return random.nextInt(THOUGHT_ODDS) == 0 ? THOUGHTS.get(random.nextInt(THOUGHTS.size())) : null;
     }
 
     /** A mumble, the brains and hurrs {@link #COMMON_WEIGHT} times as likely as each rare one. */

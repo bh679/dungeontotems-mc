@@ -11,6 +11,7 @@ import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.Cow;
@@ -50,9 +51,11 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Life as a Zombified player: raw meat only ({@link ZombieDiet}), no trading
@@ -72,6 +75,7 @@ public final class ZombieGameTests {
     private static final int SETTLE_TICKS = 10;
     private static final int GIBBERISH_LINES = 50;
     private static final int MUMBLE_SAMPLES = 20000;
+    private static final int THOUGHT_SAMPLES = 200000;
 
     private ZombieGameTests() {}
 
@@ -329,6 +333,25 @@ public final class ZombieGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public static void aboutOneItemIn500StirsAThought(GameTestHelper helper) {
+        int thoughtful = 0;
+        Set<String> seen = new HashSet<>();
+        for (int seed = 0; seed < THOUGHT_SAMPLES; seed++) {
+            String thought = ZombieGibberish.thought(seed);
+            if (thought == null) continue;
+            thoughtful++;
+            seen.add(thought);
+            check(helper, key(ZombieGibberish.line(seed, 0)).equals("zombie.dungeontotems.thought." + thought), "a thoughtful item's name is its thought");
+            check(helper, !key(ZombieGibberish.line(seed, 1)).startsWith("zombie.dungeontotems.thought."), "only the name line thinks");
+        }
+        double share = thoughtful / (double) THOUGHT_SAMPLES;
+        check(helper, share > 0.5 / ZombieGibberish.THOUGHT_ODDS && share < 2.0 / ZombieGibberish.THOUGHT_ODDS,
+            "about 1 item in " + ZombieGibberish.THOUGHT_ODDS + " should think, got " + thoughtful + " of " + THOUGHT_SAMPLES);
+        check(helper, seen.size() == ZombieGibberish.THOUGHTS.size(), "every thought turns up, saw " + seen.size());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public static void halfWordsAreRarerThanBrains(GameTestHelper helper) {
         Random random = new Random(1);
         Map<String, Integer> counts = new HashMap<>();
@@ -352,6 +375,11 @@ public final class ZombieGameTests {
     }
 
     // ---- helpers ----
+
+    /** The lang key a line is, or "" for a line of several mumbles. */
+    private static String key(Component line) {
+        return line.getContents() instanceof TranslatableContents contents ? contents.getKey() : "";
+    }
 
     /** Whether starting to eat {@code food} was refused. */
     private static boolean startEating(ServerPlayer player, ItemStack food) {
