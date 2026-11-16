@@ -59,6 +59,7 @@ neoForge {
             systemProperty 'dungeontotems.selftest.forms', System.getProperty('forms', '')
             systemProperty 'dungeontotems.selftest.advancements', System.getProperty('advancements', '')
             systemProperty 'dungeontotems.selftest.stacking', System.getProperty('stacking', '')
+            systemProperty 'dungeontotems.selftest.zombie', System.getProperty('zombie', '')
             programArguments.addAll '--quickPlaySingleplayer', 'New World'
         }
 

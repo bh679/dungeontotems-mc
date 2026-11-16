@@ -48,7 +48,7 @@ import java.util.UUID;
 public final class FormSelfTest {
 
     private static final boolean ENABLED = System.getProperty("dungeontotems.selftest") != null && !AdvancementSelfTest.ENABLED
-        && !StackingSelfTest.ENABLED;
+        && !StackingSelfTest.ENABLED && !ZombieSelfTest.ENABLED;
     private static final int WARM_UP_TICKS = 100;
     private static final int TICKS_PER_FORM = 140;
     /** The test area: a grass platform, a water pool to its south and a lava pool to its north, high up. */
