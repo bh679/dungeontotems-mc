@@ -12,7 +12,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  */
 public final class TotemNetwork {
 
-    private static final String PROTOCOL_VERSION = "5";
+    private static final String PROTOCOL_VERSION = "6";
 
     private TotemNetwork() {}
 
@@ -49,6 +49,9 @@ public final class TotemNetwork {
         registrar.playToClient(MorphActionPayload.TYPE, MorphActionPayload.STREAM_CODEC,
             (payload, context) -> context.enqueueWork(
                 () -> games.brennan.dungeontotems.client.ClientPayloads.onMorphAction(payload)));
+        registrar.playToClient(ZombieCarriedPayload.TYPE, ZombieCarriedPayload.STREAM_CODEC,
+            (payload, context) -> context.enqueueWork(
+                () -> games.brennan.dungeontotems.client.ClientPayloads.onZombieCarried(payload)));
     }
 
     /**

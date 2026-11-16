@@ -9,13 +9,17 @@
     "PlayerMixin",
     "MobInvoker",
     "InventoryMixin",
-    "AbstractContainerMenuMixin"
+    "AbstractContainerMenuMixin",
+    "SlotMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
     "client.AdvancementWidgetMixin",
+    "client.BookEditScreenAccess",
+    "client.BookViewScreenMixin",
+    "client.GuiMixin",
     "client.ItemInHandRendererMixin",
     "client.ItemInHandRendererInvoker",
     "client.ModelPartAccessor"

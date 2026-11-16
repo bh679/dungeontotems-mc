@@ -12,6 +12,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.animal.SnowGolem;
+import net.minecraft.world.entity.monster.AbstractIllager;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -46,7 +47,10 @@ public final class MorphEvents {
         Morphs.formOf(player).ifPresent(type -> event.setNewSize(type.getDimensions()));
     }
 
-    /** Monsters leave a morphed player alone, unless the player hit them. */
+    /**
+     * Monsters leave a morphed player alone, unless the player hit them. Illagers (pillagers, vindicators,
+     * evokers) still hunt a Zombified player.
+     */
     @SubscribeEvent
     public static void onTarget(LivingChangeTargetEvent event) {
         if (!(event.getNewAboutToBeSetTarget() instanceof Player player)) return;
@@ -56,6 +60,7 @@ public final class MorphEvents {
     static boolean ignoresMorphed(LivingEntity attacker, Player player) {
         if (Morphs.formOf(player).isEmpty()) return false;
         if (!(attacker instanceof Enemy)) return false;
+        if (attacker instanceof AbstractIllager && player.hasEffect(TotemRegistries.ZOMBIFIED)) return false;
         return attacker.getLastHurtByMob() != player;
     }
 
