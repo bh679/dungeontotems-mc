@@ -27,16 +27,14 @@ import java.util.Optional;
 /**
  * Hover text for curses in the inventory's effect list: hearts Heartbreak takes, how to cure Zombified,
  * each rule, and how long Rage or Lonely give you. Vanilla only shows effect tooltips on the narrow (icon-only) list, so on the wide list,
- * which has no tooltip of its own, this draws one for the curse under the mouse.
+ * which has no tooltip of its own, this draws one for the curse under the mouse, hit-testing the rows where
+ * they were actually drawn ({@link DrawnEffectRows}).
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID, value = Dist.CLIENT)
 public final class CurseTooltips {
 
-    /** {@code EffectRenderingInventoryScreen#renderEffects} layout. */
+    /** Width of a wide (icon + name) effect row. */
     private static final int WIDE_PANEL = 120;
-    private static final int ROW_HEIGHT = 33;
-    private static final int ROWS_BEFORE_SQUEEZE = 5;
-    private static final int SQUEEZED_HEIGHT = 132;
 
     private CurseTooltips() {}
 
@@ -47,29 +45,28 @@ public final class CurseTooltips {
     }
 
     @SubscribeEvent
+    public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
+        DrawnEffectRows.clear();
+    }
+
+    @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (!(event.getScreen() instanceof EffectRenderingInventoryScreen<?> screen)) return;
         Player player = Minecraft.getInstance().player;
         if (player == null) return;
-        int left = screen.getGuiLeft() + screen.getXSize() + 2;
-        if (screen.width - left < WIDE_PANEL) return; // narrow list: vanilla's tooltip plus onEffectTooltip
-        int mouseX = event.getMouseX();
-        int mouseY = event.getMouseY();
-        if (mouseX < left || mouseX > left + WIDE_PANEL) return;
-
+        if (screen.getSlotUnderMouse() != null) return; // an item tooltip is showing; never stack a hint on it
+        // Hit-test the rows as they were really drawn this frame: a mod may have moved the list
+        // (Edible Backpacks lifts it above or beside its right panel), so vanilla's spot can hold slots.
+        List<DrawnEffectRows.Row> rows = DrawnEffectRows.rows();
+        if (rows.isEmpty() || rows.get(0).width() < WIDE_PANEL) return; // compact: vanilla's tooltip plus onEffectTooltip
         List<MobEffectInstance> effects = player.getActiveEffects().stream()
             .filter(ClientHooks::shouldRenderEffect).sorted().toList();
-        int rowHeight = effects.size() > ROWS_BEFORE_SQUEEZE ? SQUEEZED_HEIGHT / (effects.size() - 1) : ROW_HEIGHT;
-        int top = screen.getGuiTop();
-        MobEffectInstance hovered = null;
-        for (MobEffectInstance effect : effects) {
-            if (mouseY >= top && mouseY <= top + rowHeight) hovered = effect;
-            top += rowHeight;
-        }
-        if (hovered == null) return;
-        List<Component> lines = lines(hovered, player);
+        int index = DrawnEffectRows.hovered(rows, event.getMouseX(), event.getMouseY());
+        if (index < 0 || index >= effects.size()) return;
+        List<Component> lines = lines(effects.get(index), player);
         if (!lines.isEmpty()) {
-            event.getGuiGraphics().renderTooltip(Minecraft.getInstance().font, lines, Optional.empty(), mouseX, mouseY);
+            event.getGuiGraphics().renderTooltip(Minecraft.getInstance().font, lines, Optional.empty(),
+                event.getMouseX(), event.getMouseY());
         }
     }
 

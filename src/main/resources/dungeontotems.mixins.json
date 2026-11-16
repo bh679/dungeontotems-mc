@@ -19,6 +19,7 @@
     "client.AdvancementWidgetMixin",
     "client.BookEditScreenAccess",
     "client.BookViewScreenMixin",
+    "client.EffectRenderingInventoryScreenMixin",
     "client.GuiMixin",
     "client.ItemInHandRendererMixin",
     "client.ItemInHandRendererInvoker",
