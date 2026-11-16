@@ -49,7 +49,8 @@ public final class MorphEvents {
 
     /**
      * Monsters leave a morphed player alone, unless the player hit them. Illagers (pillagers, vindicators,
-     * evokers) still hunt a Zombified player.
+     * evokers) and sculk mobs ({@code #dungeontotems:hunts_zombie_players}: the warden, Deeper Darker's)
+     * still hunt a Zombified player.
      */
     @SubscribeEvent
     public static void onTarget(LivingChangeTargetEvent event) {
@@ -57,10 +58,11 @@ public final class MorphEvents {
         if (ignoresMorphed(event.getEntity(), player)) event.setCanceled(true);
     }
 
-    static boolean ignoresMorphed(LivingEntity attacker, Player player) {
+    public static boolean ignoresMorphed(LivingEntity attacker, Player player) {
         if (Morphs.formOf(player).isEmpty()) return false;
         if (!(attacker instanceof Enemy)) return false;
-        if (attacker instanceof AbstractIllager && player.hasEffect(TotemRegistries.ZOMBIFIED)) return false;
+        boolean hunter = attacker instanceof AbstractIllager || attacker.getType().is(TotemRegistries.HUNTS_ZOMBIE_PLAYERS);
+        if (hunter && player.hasEffect(TotemRegistries.ZOMBIFIED)) return false;
         return attacker.getLastHurtByMob() != player;
     }
 

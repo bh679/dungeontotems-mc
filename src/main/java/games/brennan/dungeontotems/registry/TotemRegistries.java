@@ -114,6 +114,10 @@ public final class TotemRegistries {
 
     public static final Map<Curse, DeferredItem<TotemItem>> TOTEMS = registerTotems();
 
+    /** Mobs that hunt a Zombified player as they would anyone (sculk: the warden, Deeper Darker's mobs). */
+    public static final TagKey<EntityType<?>> HUNTS_ZOMBIE_PLAYERS =
+        TagKey.create(Registries.ENTITY_TYPE, DungeonTotems.id("hunts_zombie_players"));
+
     /** Forms that fly: always airborne, no walking or jumping (see {@code morph/MorphFlight}). */
     public static final TagKey<EntityType<?>> FLYING_FORMS =
         TagKey.create(Registries.ENTITY_TYPE, DungeonTotems.id("flying_forms"));

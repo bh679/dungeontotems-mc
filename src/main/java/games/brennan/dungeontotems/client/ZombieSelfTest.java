@@ -49,6 +49,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -206,6 +208,11 @@ public final class ZombieSelfTest {
                 && player.level().getEntitiesOfClass(Wolf.class, near(player)).stream().noneMatch(Wolf::isTame)),
         new Step("an enchanted sword mumbles", true, MENU_HOTBAR + 1, player -> { packed(player); put(player, 1, enchantedSword(player)); },
             (minecraft, player) -> {}, player -> player.getInventory().getItem(1).isEnchanted()),
+        new Step("a weakness potion gives itself away", true, MENU_HOTBAR + 3, player -> {
+                packed(player);
+                put(player, 3, PotionContents.createItemStack(Items.SPLASH_POTION, Potions.WEAKNESS));
+            },
+            (minecraft, player) -> {}, player -> ZombieGibberish.weakens(player.getInventory().getItem(3))),
         new Step("a lucid item thinks", true, MENU_HOTBAR + 2, player -> { packed(player); put(player, 2, thoughtfulBlade()); },
             (minecraft, player) -> {}, player -> ZombieGibberish.thought(ItemStack.hashItemAndComponents(player.getInventory().getItem(2))) != null),
         new Step("the hotbar name mumbles", false, NO_HOVER, CHECK - HOTBAR_NAME_LEAD,

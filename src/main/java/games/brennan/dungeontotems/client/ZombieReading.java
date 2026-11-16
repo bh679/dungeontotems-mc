@@ -5,6 +5,7 @@ import games.brennan.dungeontotems.curse.ZombieDiet;
 import games.brennan.dungeontotems.curse.ZombieGibberish;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -32,17 +33,23 @@ public final class ZombieReading {
     public static void onTooltip(ItemTooltipEvent event) {
         if (!cantRead(event.getEntity())) return;
         List<Component> lines = event.getToolTip();
-        int seed = ItemStack.hashItemAndComponents(event.getItemStack());
+        ItemStack stack = event.getItemStack();
+        int seed = ItemStack.hashItemAndComponents(stack);
         for (int i = 0; i < lines.size(); i++) {
             Component line = lines.get(i);
             if (line.getString().isBlank()) continue; // spacing between sections stays
-            lines.set(i, ZombieGibberish.line(seed, i).withStyle(line.getStyle()));
+            lines.set(i, (i == 0 ? nameLine(stack, seed) : ZombieGibberish.line(seed, i)).withStyle(line.getStyle()));
         }
     }
 
     /** The name shown over the hotbar when you switch items. */
     public static Component name(ItemStack stack, Component name) {
-        return ZombieGibberish.line(ItemStack.hashItemAndComponents(stack), 0).withStyle(name.getStyle());
+        return nameLine(stack, ItemStack.hashItemAndComponents(stack)).withStyle(name.getStyle());
+    }
+
+    /** A potion of Weakness gives itself away, so a zombie can still find half the cure. */
+    private static MutableComponent nameLine(ItemStack stack, int seed) {
+        return ZombieGibberish.weakens(stack) ? ZombieGibberish.weaknessLabel(seed) : ZombieGibberish.line(seed, 0);
     }
 
     /** Chat reads as mumbles too. Action-bar lines stay, so a zombie's own "Yuck!" still reads. */

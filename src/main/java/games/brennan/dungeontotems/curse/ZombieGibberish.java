@@ -1,7 +1,12 @@
 package games.brennan.dungeontotems.curse;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -69,6 +74,26 @@ public final class ZombieGibberish {
             page.append(Component.translatable("zombie.dungeontotems.mumble." + mumble(random)));
         }
         return page;
+    }
+
+    /**
+     * What a zombie reads on a potion of Weakness, the cure's first half: still gibberish, but it gives the
+     * game away. Lang keys {@code zombie.dungeontotems.weakness.*}, one picked per potion.
+     */
+    public static final int WEAKNESS_LABELS = 6;
+
+    public static MutableComponent weaknessLabel(int itemSeed) {
+        return Component.translatable("zombie.dungeontotems.weakness." + (1 + Math.floorMod(itemSeed, WEAKNESS_LABELS)));
+    }
+
+    /** A potion, splash, lingering potion or tipped arrow with Weakness in it. */
+    public static boolean weakens(ItemStack stack) {
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        if (contents == null) return false;
+        for (MobEffectInstance effect : contents.getAllEffects()) {
+            if (effect.is(MobEffects.WEAKNESS)) return true;
+        }
+        return false;
     }
 
     /** Text after a zombie's edit, with where the cursor now sits. */
