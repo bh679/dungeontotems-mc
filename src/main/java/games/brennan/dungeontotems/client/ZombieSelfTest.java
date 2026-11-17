@@ -39,6 +39,7 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.ZombieVillager;
@@ -113,6 +114,9 @@ public final class ZombieSelfTest {
     private static final String TYPED = "hello there my good friend how are you today ";
     /** What a typing step left in its box, read on the client and checked on the server. */
     private static volatile String written = "";
+    /** First-person draw counts when a hand step was set up, to compare against once it has been seen. */
+    private static volatile int itemsAtSetup;
+    private static volatile int armsAtSetup;
 
     private interface Setup { void run(ServerPlayer player); }
 
@@ -253,6 +257,20 @@ public final class ZombieSelfTest {
                 written = ((BookEditScreenAccess) book).dungeontotems$pageText();
             },
             player -> !written.equals(TYPED) && !written.isBlank()),
+        new Step("a held sword and shield show in first person", false, player -> {
+                packed(player);
+                put(player, 1, new ItemStack(Items.IRON_SWORD));
+                player.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+                itemsAtSetup = FormHands.itemsDrawn();
+            },
+            (minecraft, player) -> {}, player -> FormHands.itemsDrawn() > itemsAtSetup),
+        new Step("an empty hand shows the zombie's arm", false, player -> {
+                packed(player);
+                put(player, 1, ItemStack.EMPTY);
+                player.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+                armsAtSetup = FormArms.drawn();
+            },
+            (minecraft, player) -> {}, player -> FormArms.drawn() > armsAtSetup),
         new Step("Jade mumbles about a chest (with -PwithJade)", false, player -> {
                 packed(player);
                 BlockPos at = ahead(player);
