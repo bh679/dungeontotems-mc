@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * After a totem has saved you, its curse can't kill you: for the curse's after-save time, its own damage
- * (a broken rule, a missed Rage or Lonely timer, Breathless drowning) stops at half a heart. Each time it
+ * (a broken rule, a missed Rage or Lonely timer) stops at half a heart. Each time it
  * does, the curse starts over at its full after-save time.
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID)
@@ -31,8 +31,7 @@ public final class SavedCurseShield {
         TotemRegistries.BROKEN_DIET, Curse.MELON_DIET,
         TotemRegistries.BROKEN_RESTRAINT, Curse.RESTRAINT,
         TotemRegistries.RAGE_FAILED, Curse.RAGE,
-        TotemRegistries.LONELINESS, Curse.LONELINESS,
-        TotemRegistries.SUFFOCATION, Curse.BREATHLESSNESS);
+        TotemRegistries.LONELINESS, Curse.LONELINESS);
 
     private SavedCurseShield() {}
 

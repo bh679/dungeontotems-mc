@@ -26,11 +26,15 @@ public final class Curses {
     /**
      * A stack of {@code count} totems of {@code curse} just saved you: its after-save curse for its full
      * time, at the after-save level that stack gives or any higher level already on you, and protection
-     * from dying of it for that time. A curse with no timer (Zombified) can't kill you and is never saved,
+     * from dying of it for that time. A curse with no after-save time (Breathlessness) ends with the save. A curse with no timer (Zombified) can't kill you and is never saved,
      * so it doesn't follow you through death.
      */
     public static void pop(ServerPlayer player, Curse curse, int count) {
         if (curse.effect() == null) return;
+        if (curse.afterSaveTicks() == 0) { // held only: the save ends it
+            player.removeEffect(curse.effect());
+            return;
+        }
         MobEffectInstance current = player.getEffect(curse.effect());
         int amplifier = Math.max(curse.afterSaveAmplifier(count), current == null ? 0 : current.getAmplifier());
         int ticks = apply(player, curse, amplifier, curse.afterSaveTicks());

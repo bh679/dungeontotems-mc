@@ -15,9 +15,10 @@ class CurseTest {
     void afterSaveTimesMatchTheDesign() {
         int fourMinutes = 4 * 60 * 20;
         for (Curse curse : new Curse[] {Curse.WEAKNESS, Curse.FATIGUE, Curse.HEARTBREAK, Curse.HUNGER, Curse.SLOWNESS,
-                Curse.PACIFISM, Curse.RESTRAINT, Curse.BREATHLESSNESS, Curse.INSOMNIA}) {
+                Curse.PACIFISM, Curse.RESTRAINT, Curse.INSOMNIA}) {
             assertEquals(fourMinutes, curse.afterSaveTicks(), curse.name());
         }
+        assertEquals(0, Curse.BREATHLESSNESS.afterSaveTicks()); // held only: on land it can't be waited out
         assertEquals(10 * 60 * 20, Curse.MELON_DIET.afterSaveTicks());
         assertEquals(5 * 60 * 20, Curse.RAGE.afterSaveTicks());
         assertEquals(5 * 60 * 20, Curse.LONELINESS.afterSaveTicks());

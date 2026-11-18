@@ -51,12 +51,6 @@
         "curse": "slowness"
       }
     },
-    "breathlessness": {
-      "trigger": "dungeontotems:curse_survived",
-      "conditions": {
-        "curse": "breathlessness"
-      }
-    },
     "insomnia": {
       "trigger": "dungeontotems:curse_survived",
       "conditions": {
@@ -91,9 +85,6 @@
     ],
     [
       "slowness"
-    ],
-    [
-      "breathlessness"
     ],
     [
       "insomnia"
