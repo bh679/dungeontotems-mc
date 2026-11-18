@@ -133,7 +133,7 @@ public final class DungeonTotemsGameTests {
     @GameTest(template = EMPTY)
     public static void everyCurseTotemAppliesItsAfterSaveCurse(GameTestHelper helper) {
         for (Curse curse : Curse.values()) {
-            if (curse.effect() == null) continue;
+            if (curse.effect() == null || curse.afterSaveTicks() == 0) continue; // none: breathlessEndsWhenItSavesYou
             ServerPlayer player = holding(helper, curse);
             player.hurt(player.damageSources().generic(), LETHAL);
             check(helper, player.isAlive(), curse + ": player should survive");
@@ -157,9 +157,10 @@ public final class DungeonTotemsGameTests {
         check(helper, Curse.RAGE.afterSaveTicks() == 5 * 60 * 20 && Curse.RAGE.afterSaveAmplifier() == 1, "rage II for 5 minutes");
         check(helper, Curse.LONELINESS.letGoTicks() == 60 * 20, "lonely I for 1 minute after letting go");
         for (Curse curse : List.of(Curse.WEAKNESS, Curse.FATIGUE, Curse.HEARTBREAK, Curse.HUNGER, Curse.SLOWNESS,
-                Curse.PACIFISM, Curse.RESTRAINT, Curse.BREATHLESSNESS, Curse.INSOMNIA)) {
+                Curse.PACIFISM, Curse.RESTRAINT, Curse.INSOMNIA)) {
             check(helper, curse.afterSaveTicks() == 4 * 60 * 20, curse + " lasts 4 minutes after a save");
         }
+        check(helper, Curse.BREATHLESSNESS.afterSaveTicks() == 0, "breathlessness ends with the save");
         helper.succeed();
     }
 
@@ -497,6 +498,26 @@ public final class DungeonTotemsGameTests {
         player.setAirSupply(-19);
         tick(player, 1);
         check(helper, player.getHealth() == 18.0F, "drowning on land should hurt 2, health " + player.getHealth());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void breathlessEndsWhenItSavesYou(GameTestHelper helper) {
+        ServerPlayer player = holding(helper, Curse.BREATHLESSNESS);
+        HeldCurses.update(player);
+        check(helper, player.hasEffect(TotemRegistries.BREATHLESS), "breathless while held");
+        player.setAirSupply(-19);
+        player.hurt(player.damageSources().generic(), LETHAL);
+        check(helper, player.isAlive(), "player should survive");
+        check(helper, player.getMainHandItem().isEmpty(), "totem should be used up");
+        check(helper, !player.hasEffect(TotemRegistries.BREATHLESS), "breathless should end with the save");
+        check(helper, !Curses.isSaved(player, Curse.BREATHLESSNESS), "nothing left to shield");
+        HeldCurses.update(player);
+        float health = player.getHealth();
+        tick(player, 40);
+        check(helper, !player.hasEffect(TotemRegistries.BREATHLESS), "it doesn't come back");
+        check(helper, player.getAirSupply() > 0, "air should refill on land, was " + player.getAirSupply());
+        check(helper, player.getHealth() >= health, "no more drowning on land");
         helper.succeed();
     }
 

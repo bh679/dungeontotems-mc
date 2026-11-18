@@ -16,7 +16,7 @@ import java.util.function.Supplier;
  * What each totem does to you. Amplifiers are levels (0 is level I); times are in ticks.
  * <ul>
  *   <li>{@link Kind#HELD}: the curse is on you while you hold the totem, and for {@code afterSaveTicks}
- *       once it has saved you. Rage and Lonely also stay {@code letGoTicks} after you let go. Some stack
+ *       once it has saved you (none for Breathlessness: it ends with the save). Rage and Lonely also stay {@code letGoTicks} after you let go. Some stack
  *       (see {@link #maxStack()}): each totem in the stack adds a level.</li>
  *   <li>{@link Kind#AFTER}: nothing while held; the curse starts when it saves you. Zombified's has no
  *       timer ({@link MobEffectInstance#INFINITE_DURATION}): it lasts until cured, or until you die.</li>
@@ -42,8 +42,11 @@ public enum Curse {
     MELON_DIET("melon_diet_totem", Kind.HELD, () -> TotemRegistries.MELON_DIET, 0, 0, Ticks.MINUTE * 10),
     /** Open a chest, barrel or ender chest and the held totem pops; after a save, you drop to half a heart. */
     RESTRAINT("restraint_totem", Kind.HELD, () -> TotemRegistries.RESTRAINED, 0, 0, Ticks.MINUTE * 4),
-    /** You lose air even out of water (see {@code curse/Breathless}). */
-    BREATHLESSNESS("breathlessness_totem", Kind.HELD, () -> TotemRegistries.BREATHLESS, 0, 0, Ticks.MINUTE * 4),
+    /**
+     * You lose air even out of water (see {@code curse/Breathless}), only while held: it ends when the totem
+     * saves you. On land its drowning can't be waited out, so an after-save curse would never end.
+     */
+    BREATHLESSNESS("breathlessness_totem", Kind.HELD, () -> TotemRegistries.BREATHLESS, 0, 0, 0),
     /** Phantoms come for you, by day as well (see {@code curse/InsomniaPhantoms}). */
     INSOMNIA("insomnia_totem", Kind.HELD, () -> TotemRegistries.INSOMNIA, 0, 0, Ticks.MINUTE * 4),
     /** Saves you only from falling out of the world. */

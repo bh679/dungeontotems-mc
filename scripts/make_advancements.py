@@ -20,7 +20,7 @@ FORMS = RES / "data/dungeontotems/data_maps/entity_type/morph_forms.json"
 ROOT = "terms_and_conditions"
 
 # Curse keys (Curse.key()): live through each one's after-save time, or cure Zombified.
-TIMED = ["weakness", "fatigue", "heartbreak", "hunger", "slowness", "breathlessness", "insomnia", "blindness", "morphing"]
+TIMED = ["weakness", "fatigue", "heartbreak", "hunger", "slowness", "insomnia", "blindness", "morphing"]
 DEADLINES_AND_VOWS = ["zombified", "rage", "loneliness", "pacifism", "melon_diet", "restraint"]
 LIFESAVERS = ["void", "feather", "boom", "fire"]
 
@@ -50,7 +50,7 @@ ADVANCEMENTS = {
                         "Become a zombie and be cured", "Die. Un-die. Un-un-die.",
                         single("dungeontotems:curse_survived", {"curse": "zombified"})),
     "waiting_it_out": (ROOT, "minecraft:clock", "goal", "Waiting It Out",
-                       "Live through Weakness, Fatigue, Heartbreak, Hunger, Slowness, Breathlessness, Insomnia, Blindness and Morphing after a save", None,
+                       "Live through Weakness, Fatigue, Heartbreak, Hunger, Slowness, Insomnia, Blindness and Morphing after a save", None,
                        per_key("curse_survived", "curse", TIMED)),
     "promises_kept": (ROOT, "minecraft:writable_book", "challenge", "Promises Kept",
                       "Cure Zombification, and live through Rage, Generosity, Pacifism, Melon Diet and Restraint after a save", None,
