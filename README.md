@@ -10,7 +10,7 @@ Totems of Undying that still save your life, but curse you for carrying them. Ne
 | Totem of Hunger | Hunger | Hunger, 4 min |
 | Totem of Slowness | Slowness | Slowness, 4 min |
 | Totem of Rage | Rage: hit something every 60 s | Rage II (every 40 s), 5 min |
-| Totem of Generosity | Generous: give a gift every 60 s | Generous II (every 40 s), 5 min |
+| Totem of Generosity | Generous: give a gift every 90 s | Generous II (every 50 s), 5 min |
 | Totem of Pacifism | Hurt anything and it pops | Vow of Peace, 4 min |
 | Totem of Melon Diet | Eat anything but melon and it pops | Melon Diet, 10 min |
 | Totem of Restraint | Open a chest, barrel or ender chest and it pops | Restrained, 4 min |
