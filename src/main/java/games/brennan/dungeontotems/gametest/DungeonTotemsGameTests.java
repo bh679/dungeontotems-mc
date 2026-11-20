@@ -381,8 +381,10 @@ public final class DungeonTotemsGameTests {
 
     @GameTest(template = EMPTY)
     public static void timersShortenWithLevel(GameTestHelper helper) {
-        check(helper, CurseTimers.seconds(0) == 60 && CurseTimers.seconds(1) == 40 && CurseTimers.seconds(2) == 30,
-            "60, 40 and 30 seconds");
+        check(helper, CurseTimers.seconds(Curse.RAGE, 0) == 60 && CurseTimers.seconds(Curse.RAGE, 1) == 40
+            && CurseTimers.seconds(Curse.RAGE, 2) == 30, "rage: 60, 40 and 30 seconds");
+        check(helper, CurseTimers.seconds(Curse.LONELINESS, 0) == 90 && CurseTimers.seconds(Curse.LONELINESS, 1) == 50
+            && CurseTimers.seconds(Curse.LONELINESS, 2) == 30, "lonely: 90, 50 and 30 seconds");
         helper.succeed();
     }
 
@@ -467,6 +469,21 @@ public final class DungeonTotemsGameTests {
         overdue(player, TotemRegistries.LAST_GIFT, 0);
         tick(player, 1);
         check(helper, player.getHealth() < 20.0F, "lonely should hurt once the timer runs out");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void lonelyHurtsHalfAsOftenAsRage(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        Curses.apply(player, Curse.LONELINESS, 0, 400);
+        long timer = CurseTimers.seconds(Curse.LONELINESS, 0) * 20L;
+        player.setData(TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 25);
+        tick(player, 1);
+        check(helper, player.getHealth() == 20.0F, "lonely should not hurt at Poison's rate, health " + player.getHealth());
+        player.setData(TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 50);
+        player.invulnerableTime = 0;
+        tick(player, 1);
+        check(helper, player.getHealth() < 20.0F, "lonely should hurt every 50 ticks once overdue");
         helper.succeed();
     }
 
@@ -1770,7 +1787,8 @@ public final class DungeonTotemsGameTests {
 
     /** Puts the last hit or gift {@code ticksPast} ticks beyond the timer, so it has run out. */
     private static void overdue(ServerPlayer player, java.util.function.Supplier<net.neoforged.neoforge.attachment.AttachmentType<Long>> last, int amplifier) {
-        player.setData(last, player.level().getGameTime() - CurseTimers.seconds(amplifier) * 20L);
+        Curse curse = last == TotemRegistries.LAST_HIT ? Curse.RAGE : Curse.LONELINESS;
+        player.setData(last, player.level().getGameTime() - CurseTimers.seconds(curse, amplifier) * 20L);
     }
 
     private static void eatGoldenApple(ServerPlayer player) {

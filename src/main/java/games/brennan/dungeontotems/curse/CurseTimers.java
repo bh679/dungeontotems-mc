@@ -23,17 +23,22 @@ import java.util.function.Supplier;
 
 /**
  * Rage and Lonely are timers. Rage: hit something before it runs out. Lonely: give a Player Mob or a
- * villager a gift ({@link LonelyGifts}). Miss it and you take true damage at Poison's rate until you do.
+ * villager a gift ({@link LonelyGifts}). Miss it and you take true damage until you do: Rage at Poison's
+ * rate, Lonely half as often (gifts are harder to find than something to hit, so it is more forgiving).
  * The higher the level, the shorter the timer. The time left goes to your client for the countdown
  * border and the hover text.
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID)
 public final class CurseTimers {
 
-    /** Seconds you get at level I, II and III (and above). */
-    private static final int[] SECONDS_BY_LEVEL = {60, 40, 30};
-    /** Ticks between hits once the timer has run out: Poison's rate. */
-    public static final int DAMAGE_INTERVAL_TICKS = 25;
+    /** Seconds Rage gives at level I, II and III (and above). */
+    private static final int[] RAGE_SECONDS = {60, 40, 30};
+    /** Seconds Lonely gives at level I, II and III (and above). */
+    private static final int[] LONELY_SECONDS = {90, 50, 30};
+    /** Ticks between Rage's hits once its timer has run out: Poison's rate. */
+    private static final int RAGE_DAMAGE_INTERVAL_TICKS = 25;
+    /** Ticks between Lonely's hits once its timer has run out: half Poison's rate. */
+    private static final int LONELY_DAMAGE_INTERVAL_TICKS = 50;
     public static final float DAMAGE = 1.0F;
     /** How often the timer goes to your client, often enough for the countdown border to drain smoothly. */
     private static final int SYNC_TICKS = 5;
@@ -42,9 +47,15 @@ public final class CurseTimers {
 
     private CurseTimers() {}
 
-    /** Seconds the timer gives at {@code amplifier}. */
-    public static int seconds(int amplifier) {
-        return SECONDS_BY_LEVEL[Math.min(amplifier, SECONDS_BY_LEVEL.length - 1)];
+    /** Seconds {@code curse}'s timer gives at {@code amplifier}. */
+    public static int seconds(Curse curse, int amplifier) {
+        int[] table = curse == Curse.RAGE ? RAGE_SECONDS : LONELY_SECONDS;
+        return table[Math.min(Math.max(amplifier, 0), table.length - 1)];
+    }
+
+    /** Ticks between hits once {@code curse}'s timer has run out. */
+    public static int damageInterval(Curse curse) {
+        return curse == Curse.RAGE ? RAGE_DAMAGE_INTERVAL_TICKS : LONELY_DAMAGE_INTERVAL_TICKS;
     }
 
     /** A fresh Rage or Lonely curse: its timer starts full. */
@@ -75,12 +86,12 @@ public final class CurseTimers {
     private static void tick(ServerPlayer player, Curse curse) {
         MobEffectInstance instance = player.getEffect(curse.effect());
         if (instance == null) return;
-        long overdue = player.level().getGameTime() - player.getData(last(curse)) - seconds(instance.getAmplifier()) * 20L;
-        if (overdue >= 0 && overdue % DAMAGE_INTERVAL_TICKS == 0) {
+        int total = seconds(curse, instance.getAmplifier()) * 20;
+        long overdue = player.level().getGameTime() - player.getData(last(curse)) - total;
+        if (overdue >= 0 && overdue % damageInterval(curse) == 0) {
             player.hurt(damage(player, curse), DAMAGE);
         }
         if (player.tickCount % SYNC_TICKS == 0) {
-            int total = seconds(instance.getAmplifier()) * 20;
             TotemNetwork.sendTo(player, new CurseTimerPayload(curse.name(), (int) Math.max(0, -overdue), total));
         }
     }

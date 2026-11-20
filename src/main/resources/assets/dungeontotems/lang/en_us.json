@@ -26,7 +26,7 @@
   "item.dungeontotems.rage_totem.held": "While held: Rage, hit something every 60s",
   "item.dungeontotems.rage_totem.saved": "After it saves you: Rage, a level up, 5m",
   "item.dungeontotems.loneliness_totem": "Totem of Generosity",
-  "item.dungeontotems.loneliness_totem.held": "While held: Generous, give a gift every 60s",
+  "item.dungeontotems.loneliness_totem.held": "While held: Generous, give a gift every 90s",
   "item.dungeontotems.loneliness_totem.saved": "After it saves you: Generous, a level up, 5m",
   "item.dungeontotems.pacifism_totem": "Totem of Pacifism",
   "item.dungeontotems.pacifism_totem.held": "While held: hurt anything and it breaks",
