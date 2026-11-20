@@ -18,6 +18,7 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -43,7 +44,7 @@ public final class CurseTimers {
     /** How often the timer goes to your client, often enough for the countdown border to drain smoothly. */
     private static final int SYNC_TICKS = 5;
 
-    private static final List<Curse> TIMED = List.of(Curse.RAGE, Curse.LONELINESS);
+    private static final List<Curse> TIMED = Arrays.stream(Curse.values()).filter(Curse::isTimed).toList();
 
     private CurseTimers() {}
 
@@ -60,7 +61,7 @@ public final class CurseTimers {
 
     /** A fresh Rage or Lonely curse: its timer starts full. */
     public static void restart(ServerPlayer player, Curse curse) {
-        if (TIMED.contains(curse)) player.setData(last(curse), player.level().getGameTime());
+        if (curse.isTimed()) player.setData(last(curse), player.level().getGameTime());
     }
 
     /** You gave a gift: Lonely's timer starts again. */

@@ -153,6 +153,11 @@ public enum Curse {
         return kind == Kind.NARROW;
     }
 
+    /** Rage and Lonely: a timer to beat ({@code curse/CurseTimers}), its length set by the level. */
+    public boolean isTimed() {
+        return this == RAGE || this == LONELINESS;
+    }
+
     /** Its id in advancements: {@code weakness}, {@code melon_diet}, {@code void}... */
     public String key() {
         return name().toLowerCase(java.util.Locale.ROOT);

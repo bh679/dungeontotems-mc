@@ -1,7 +1,9 @@
 package games.brennan.dungeontotems;
 
+import games.brennan.dungeontotems.curse.CurseTimers;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -24,7 +26,8 @@ public class TotemItem extends Item {
 
     /**
      * "While held" (held totems) then "After it saves you", or what a narrow totem saves you from. A
-     * stackable totem adds the levels this stack gives and how far it stacks.
+     * stackable totem adds the levels this stack gives and how far it stacks. Rage and Generous name
+     * their levels and the held timer in those lines, for this stack.
      */
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
@@ -33,14 +36,32 @@ public class TotemItem extends Item {
             tooltip.add(Component.translatable(key + ".curse").withStyle(ChatFormatting.DARK_AQUA));
             return;
         }
-        if (curse.isHeld()) tooltip.add(Component.translatable(key + ".held").withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable(key + ".saved").withStyle(ChatFormatting.GOLD));
+        if (curse.isTimed()) {
+            tooltip.add(heldLine(curse, stack.getCount()).withStyle(ChatFormatting.RED));
+            tooltip.add(savedLine(curse, stack.getCount()).withStyle(ChatFormatting.GOLD));
+        } else {
+            if (curse.isHeld()) tooltip.add(Component.translatable(key + ".held").withStyle(ChatFormatting.RED));
+            tooltip.add(Component.translatable(key + ".saved").withStyle(ChatFormatting.GOLD));
+        }
         if (curse.isStackable()) {
             tooltip.add(Component.translatable("item.dungeontotems.stack_level",
                 level(curse.heldAmplifier(stack.getCount())), level(curse.afterSaveAmplifier(stack.getCount())))
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
             tooltip.add(Component.translatable("item.dungeontotems.stacks", curse.maxStack()).withStyle(ChatFormatting.GRAY));
         }
+    }
+
+    /** A timer curse's "While held" line for a stack of {@code count}: its level and how long you get. */
+    public static MutableComponent heldLine(Curse curse, int count) {
+        int amplifier = curse.heldAmplifier(count);
+        return Component.translatable("item.dungeontotems." + curse.itemName() + ".held",
+            level(amplifier), CurseTimers.seconds(curse, amplifier));
+    }
+
+    /** A timer curse's "After it saves you" line for a stack of {@code count}: the level it leaves. */
+    public static MutableComponent savedLine(Curse curse, int count) {
+        return Component.translatable("item.dungeontotems." + curse.itemName() + ".saved",
+            level(curse.afterSaveAmplifier(count)));
     }
 
     /** "I", "II", "III": vanilla's level numerals. */

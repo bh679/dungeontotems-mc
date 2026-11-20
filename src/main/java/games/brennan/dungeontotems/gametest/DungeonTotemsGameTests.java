@@ -12,6 +12,7 @@ import games.brennan.dungeontotems.curse.CurseTrials;
 import games.brennan.dungeontotems.advancement.TabComplete;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.Curse;
+import games.brennan.dungeontotems.TotemItem;
 import games.brennan.dungeontotems.api.DungeonTotemsApi;
 import games.brennan.dungeontotems.curse.CurseMemory;
 import games.brennan.dungeontotems.compat.PlayerMobGifts;
@@ -378,6 +379,26 @@ public final class DungeonTotemsGameTests {
     }
 
     // ---- rage and lonely timers ----
+
+    @GameTest(template = EMPTY)
+    public static void timerTooltipsNameTheStacksLevels(GameTestHelper helper) {
+        checkLine(helper, TotemItem.heldLine(Curse.LONELINESS, 1), "enchantment.level.1", 90);
+        checkLine(helper, TotemItem.savedLine(Curse.LONELINESS, 1), "enchantment.level.2");
+        checkLine(helper, TotemItem.heldLine(Curse.LONELINESS, 2), "enchantment.level.2", 50);
+        checkLine(helper, TotemItem.savedLine(Curse.LONELINESS, 3), "enchantment.level.3");
+        checkLine(helper, TotemItem.heldLine(Curse.RAGE, 3), "enchantment.level.3", 30);
+        checkLine(helper, TotemItem.savedLine(Curse.RAGE, 1), "enchantment.level.2");
+        helper.succeed();
+    }
+
+    /** A tooltip line's first argument is {@code levelKey}, and its second (if given) is {@code seconds}. */
+    private static void checkLine(GameTestHelper helper, net.minecraft.network.chat.Component line, String levelKey, int... seconds) {
+        var contents = (net.minecraft.network.chat.contents.TranslatableContents) line.getContents();
+        Object[] args = contents.getArgs();
+        var level = (net.minecraft.network.chat.contents.TranslatableContents) ((net.minecraft.network.chat.Component) args[0]).getContents();
+        check(helper, level.getKey().equals(levelKey), contents.getKey() + " should show " + levelKey + ", shows " + level.getKey());
+        if (seconds.length > 0) check(helper, Integer.valueOf(seconds[0]).equals(args[1]), contents.getKey() + " should say " + seconds[0] + "s, says " + args[1]);
+    }
 
     @GameTest(template = EMPTY)
     public static void timersShortenWithLevel(GameTestHelper helper) {
