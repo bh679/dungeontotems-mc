@@ -193,7 +193,14 @@ public final class ZombieSelfTest {
                 lookAtGroundAhead(player);
             },
             (minecraft, player) -> eat(minecraft), // holds use
-            player -> player.getInventory().getItem(0).is(Items.SHULKER_BOX) && !shulkerNear(player)),
+            player -> player.getInventory().getItem(0).is(Items.SHULKER_BOX) && !shulkerNear(player) && noScreen(player)),
+        new Step("a held shulker box won't open (Advanced Shulkerboxes)", false, player -> {
+                packed(player);
+                put(player, 0, new ItemStack(Items.SHULKER_BOX));
+                player.lookAt(EntityAnchorArgument.Anchor.EYES, player.getEyePosition().add(0.0, 10.0, 4.0)); // the sky: the item is used
+            },
+            (minecraft, player) -> eat(minecraft), // holds use
+            player -> player.getInventory().getItem(0).is(Items.SHULKER_BOX) && noScreen(player)),
         new Step("a shulker box won't break", false, player -> {
                 packed(player);
                 player.serverLevel().setBlockAndUpdate(ahead(player), Blocks.SHULKER_BOX.defaultBlockState());
@@ -366,6 +373,11 @@ public final class ZombieSelfTest {
     }
 
     /** Zombified while carrying 16 arrows in the hotbar, with dirt and a sword already in the pack. */
+    /** No container screen open on the server: a shulker box (Advanced Shulkerboxes' too) never got to open. */
+    private static boolean noScreen(ServerPlayer player) {
+        return player.containerMenu == player.inventoryMenu;
+    }
+
     private static void packed(ServerPlayer player) {
         put(player, 0, new ItemStack(Items.ARROW, 16));
         put(player, 10, new ItemStack(Items.DIRT, 8));
