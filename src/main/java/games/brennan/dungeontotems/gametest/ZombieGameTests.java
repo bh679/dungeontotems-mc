@@ -40,6 +40,8 @@ import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.ShulkerBoxMenu;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.core.Holder;
 import net.minecraft.world.item.Item;
@@ -50,6 +52,7 @@ import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
@@ -286,6 +289,58 @@ public final class ZombieGameTests {
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.SHULKER_BOX));
         check(helper, rightClick(player, stone).getUseItem() == TriState.FALSE, "a zombie shouldn't place a shulker box");
         helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void aZombieCantOpenAShulkerBoxFromTheirHand(GameTestHelper helper) {
+        ServerPlayer zombie = zombie(helper);
+        zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BLUE_SHULKER_BOX));
+        check(helper, NeoForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(zombie, InteractionHand.MAIN_HAND)).isCanceled(),
+            "a zombie shouldn't use a shulker box in hand");
+        ServerPlayer human = player(helper);
+        human.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BLUE_SHULKER_BOX));
+        check(helper, !NeoForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(human, InteractionHand.MAIN_HAND)).isCanceled(),
+            "a human still can");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void aShulkerBoxScreenShutsOnAZombie(GameTestHelper helper) {
+        ServerPlayer zombie = zombie(helper);
+        zombie.openMenu(shulkerScreen());
+        check(helper, zombie.containerMenu == zombie.inventoryMenu, "a shulker box screen shouldn't stay open on a zombie");
+        ServerPlayer human = player(helper);
+        human.openMenu(shulkerScreen());
+        check(helper, human.containerMenu instanceof ShulkerBoxMenu, "a human's stays open");
+        helper.succeed();
+    }
+
+    /**
+     * The real server path for a held item (what Advanced Shulkerboxes hooks to open a box from the hand).
+     * With that mod loaded, a human's box opens and a zombie's doesn't; without it nothing opens either way.
+     */
+    @GameTest(template = EMPTY)
+    public static void aZombieUsingAHeldShulkerBoxOpensNothing(GameTestHelper helper) {
+        ServerPlayer zombie = zombie(helper);
+        useHeldShulkerBox(helper, zombie);
+        check(helper, zombie.containerMenu == zombie.inventoryMenu, "a zombie's held shulker box shouldn't open");
+        if (ModList.get().isLoaded("shulkerbox")) {
+            ServerPlayer human = player(helper);
+            useHeldShulkerBox(helper, human);
+            check(helper, human.containerMenu instanceof ShulkerBoxMenu, "Advanced Shulkerboxes should open a human's");
+        }
+        helper.succeed();
+    }
+
+    private static void useHeldShulkerBox(GameTestHelper helper, ServerPlayer player) {
+        ItemStack box = new ItemStack(Items.SHULKER_BOX);
+        player.setItemInHand(InteractionHand.MAIN_HAND, box);
+        player.gameMode.useItem(player, helper.getLevel(), box, InteractionHand.MAIN_HAND);
+    }
+
+    private static SimpleMenuProvider shulkerScreen() {
+        return new SimpleMenuProvider((id, inventory, p) -> new ShulkerBoxMenu(id, inventory, new SimpleContainer(CHEST_SLOTS)),
+            Component.literal("box"));
     }
 
     @GameTest(template = EMPTY)

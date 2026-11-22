@@ -12,6 +12,7 @@ import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -20,6 +21,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.living.AnimalTameEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -27,7 +29,8 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 /**
  * Two more things a Zombified player can't do:
  * <ul>
- *   <li><b>Shulker boxes</b>: no opening one, placing one or mining one. A box carried in the hotbar
+ *   <li><b>Shulker boxes</b>: no opening one, placing one or mining one, and no opening one from your
+ *       hand (mods such as Advanced Shulkerboxes open a held box on use). A box carried in the hotbar
  *       stays an item until you are cured.</li>
  *   <li><b>Feeding and taming</b>: an animal offered its food or taming item (a bone, seeds) by a zombie
  *       runs away instead of taking it, and the item isn't used. No animal takes a zombie as its owner,
@@ -64,6 +67,27 @@ public final class ZombieLimits {
             event.setUseItem(TriState.FALSE);
             tell(player, "message.dungeontotems.zombified.shulker");
         }
+    }
+
+    /**
+     * Both sides: a held box is never used. Right-clicking a block with one only stops the placing above,
+     * and the game then uses the item in hand, which is where a mod like Advanced Shulkerboxes opens it.
+     */
+    @SubscribeEvent
+    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (!ZombieDiet.isZombie(event.getEntity()) || !isShulkerBox(event.getItemStack())) return;
+        event.setCancellationResult(InteractionResult.FAIL);
+        event.setCanceled(true);
+        tell(event.getEntity(), "message.dungeontotems.zombified.shulker");
+    }
+
+    /** Backstop for any other way a shulker box's screen opens (another mod, a command): it shuts again. */
+    @SubscribeEvent
+    public static void onContainerOpen(PlayerContainerEvent.Open event) {
+        Player player = event.getEntity();
+        if (!ZombieDiet.isZombie(player) || !(event.getContainer() instanceof ShulkerBoxMenu)) return;
+        player.closeContainer();
+        tell(player, "message.dungeontotems.zombified.shulker");
     }
 
     /** No cracks: the box never starts to break. */
