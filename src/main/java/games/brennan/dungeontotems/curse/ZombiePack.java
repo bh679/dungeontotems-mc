@@ -23,7 +23,8 @@ import java.util.function.Function;
 /**
  * A Zombified player can't reach their pack: the 27 main inventory slots are locked, and only the hotbar,
  * armour and offhand work. Nothing comes out of a locked slot, and nothing new goes in; what you carried
- * in your hotbar and offhand when you turned (the {@code zombie_carried} snapshot) can still be put away.
+ * in your hotbar and offhand when you turned (the {@code zombie_carried} snapshot) can still be put away in your
+ * own inventory screen, never while a container is open.
  * Pickups only fill the hotbar and offhand. Creative and spectator players are not locked.
  *
  * <p>The checks run on both sides through {@code mixin/SlotMixin}, {@code mixin/InventoryMixin} and
@@ -90,11 +91,19 @@ public final class ZombiePack {
 
     /**
      * {@code slot} would refuse {@code stack}: a locked slot and something new. A host-declared slot takes
-     * nothing at all while locked; only the main inventory takes back what you carried when you turned.
+     * nothing at all while locked; only the main inventory takes back what you carried when you turned, and only
+     * in your own inventory screen. With a chest or any other menu open the pack takes nothing, so what you
+     * take out of a container goes to the hotbar or stays in the container.
      */
     public static boolean refuses(Slot slot, ItemStack stack) {
         if (!isLockedSlot(slot)) return false;
-        return !(slot.container instanceof Inventory inventory) || !carriedBefore(inventory.player, stack);
+        if (!(slot.container instanceof Inventory inventory)) return true;
+        return !inOwnInventory(inventory.player) || !carriedBefore(inventory.player, stack);
+    }
+
+    /** {@code player}'s own inventory screen is the open menu (no chest, barrel or other container). */
+    private static boolean inOwnInventory(Player player) {
+        return player.containerMenu == player.inventoryMenu;
     }
 
     /**
