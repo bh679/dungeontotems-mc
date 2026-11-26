@@ -158,6 +158,17 @@ public final class ZombieSelfTest {
             },
             (minecraft, player) -> click(minecraft, 0, ClickType.QUICK_MOVE),
             player -> player.getInventory().getItem(10).getCount() == 8 && hotbarHas(player, Items.DIRT)),
+        new Step("carried arrows from a chest skip the pack's arrows", false, player -> {
+                packed(player);
+                put(player, 0, new ItemStack(Items.ARROW, 64));
+                put(player, 11, new ItemStack(Items.ARROW, 8));
+                SimpleContainer chest = new SimpleContainer(CHEST_SLOTS);
+                chest.setItem(0, new ItemStack(Items.ARROW, 20));
+                player.openMenu(new SimpleMenuProvider((id, inventory, p) -> ChestMenu.threeRows(id, inventory, chest),
+                    Component.literal("Chest")));
+            },
+            (minecraft, player) -> click(minecraft, 0, ClickType.QUICK_MOVE),
+            player -> player.getInventory().getItem(11).getCount() == 8 && player.getInventory().countItem(Items.ARROW) == 92),
         new Step("bread is refused", false, player -> { packed(player); hungry(player); put(player, 0, new ItemStack(Items.BREAD)); },
             (minecraft, player) -> eat(minecraft),
             player -> !player.isUsingItem() && player.getInventory().getItem(0).getCount() == 1),

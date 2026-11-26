@@ -40,6 +40,7 @@ import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.Slot;
@@ -226,7 +227,7 @@ public final class ZombieGameTests {
         zombify(player);
         SimpleContainer chest = new SimpleContainer(CHEST_SLOTS);
         chest.setItem(0, new ItemStack(Items.DIRT, 8));
-        ChestMenu menu = ChestMenu.threeRows(0, player.getInventory(), chest);
+        ChestMenu menu = openChest(player, chest);
         menu.quickMoveStack(player, 0);
         check(helper, player.getInventory().getItem(PACK_SLOT).getCount() == 8, "the pack's dirt should not grow, has "
             + player.getInventory().getItem(PACK_SLOT).getCount());
@@ -234,6 +235,54 @@ public final class ZombieGameTests {
         for (int i = 0; i < Inventory.getSelectionSize(); i++) inHotbar |= player.getInventory().getItem(i).is(Items.DIRT);
         check(helper, inHotbar, "the dirt should land in the hotbar");
         helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void shiftClickingWhatYouCarriedFillsOnlyTheHotbar(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        Inventory inventory = player.getInventory();
+        inventory.setItem(0, new ItemStack(Items.MOSS_BLOCK, 32));
+        for (int i = 1; i < Inventory.getSelectionSize(); i++) inventory.setItem(i, new ItemStack(Items.STONE));
+        inventory.setItem(PACK_SLOT, new ItemStack(Items.MOSS_BLOCK, 20));
+        zombify(player);
+        SimpleContainer barrel = new SimpleContainer(CHEST_SLOTS);
+        barrel.setItem(0, new ItemStack(Items.MOSS_BLOCK, 40));
+        ChestMenu menu = openChest(player, barrel);
+        menu.clicked(0, 0, ClickType.QUICK_MOVE, player);
+        check(helper, inventory.getItem(0).getCount() == 64, "the hotbar moss should fill to 64, has " + inventory.getItem(0).getCount());
+        check(helper, inventory.getItem(PACK_SLOT).getCount() == 20, "the pack's moss should not grow, has "
+            + inventory.getItem(PACK_SLOT).getCount());
+        check(helper, barrel.getItem(0).getCount() == 8, "the rest should stay in the barrel, has " + barrel.getItem(0).getCount());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void shiftClickingWhatYouCarriedUsesAFreeHotbarSlot(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        Inventory inventory = player.getInventory();
+        inventory.setItem(0, new ItemStack(Items.MOSS_BLOCK, 60));
+        inventory.setItem(PACK_SLOT, new ItemStack(Items.MOSS_BLOCK, 20));
+        zombify(player);
+        SimpleContainer barrel = new SimpleContainer(CHEST_SLOTS);
+        barrel.setItem(0, new ItemStack(Items.MOSS_BLOCK, 40));
+        ChestMenu menu = openChest(player, barrel);
+        menu.clicked(0, 0, ClickType.QUICK_MOVE, player);
+        int inHotbar = 0;
+        for (int i = 0; i < Inventory.getSelectionSize(); i++) {
+            if (inventory.getItem(i).is(Items.MOSS_BLOCK)) inHotbar += inventory.getItem(i).getCount();
+        }
+        check(helper, inHotbar == 100, "all 40 moss should land in the hotbar, it holds " + inHotbar);
+        check(helper, inventory.getItem(PACK_SLOT).getCount() == 20, "the pack's moss should not grow, has "
+            + inventory.getItem(PACK_SLOT).getCount());
+        check(helper, barrel.getItem(0).isEmpty(), "the barrel should be empty");
+        helper.succeed();
+    }
+
+    /** A chest menu over {@code container}, open as {@code player}'s current menu, as a real chest screen is. */
+    private static ChestMenu openChest(ServerPlayer player, SimpleContainer container) {
+        ChestMenu menu = ChestMenu.threeRows(0, player.getInventory(), container);
+        player.containerMenu = menu;
+        return menu;
     }
 
     /** A stand-in for a backpack mod's slots: only slots over this container are declared pack slots. */
