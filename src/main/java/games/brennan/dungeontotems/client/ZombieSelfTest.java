@@ -133,6 +133,17 @@ public final class ZombieSelfTest {
         new Step("can't shift-click out of the pack", true, ZombieSelfTest::packed,
             (minecraft, player) -> click(minecraft, 10, ClickType.QUICK_MOVE),
             player -> player.getInventory().getItem(10).getCount() == 8),
+        new Step("Weakness potions and totem stay clear in the pack", true, 15, ZombieSelfTest::weaknessPacked, (minecraft, player) -> {},
+            player -> player.getInventory().getItem(15).is(Items.POTION)),
+        new Step("a Weakness potion comes out of the pack", true, ZombieSelfTest::weaknessPacked,
+            (minecraft, player) -> { click(minecraft, 15, ClickType.PICKUP); click(minecraft, MENU_HOTBAR + 2, ClickType.PICKUP); },
+            player -> player.getInventory().getItem(15).isEmpty() && ZombieGibberish.weakens(player.getInventory().getItem(2))),
+        new Step("a Totem of Weakness shift-clicks out of the pack", true, ZombieSelfTest::weaknessPacked,
+            (minecraft, player) -> click(minecraft, 17, ClickType.QUICK_MOVE),
+            player -> player.getInventory().getItem(17).isEmpty() && hotbarHas(player, TotemRegistries.TOTEMS.get(Curse.WEAKNESS).get())),
+        new Step("a healing potion stays in the pack", true, ZombieSelfTest::weaknessPacked,
+            (minecraft, player) -> click(minecraft, 18, ClickType.QUICK_MOVE),
+            player -> player.getInventory().getItem(18).is(Items.POTION)),
         new Step("carried arrows go into the pack", true, ZombieSelfTest::packed,
             (minecraft, player) -> { click(minecraft, MENU_HOTBAR, ClickType.PICKUP); click(minecraft, 11, ClickType.PICKUP); },
             player -> player.getInventory().getItem(11).is(Items.ARROW) && player.getInventory().getItem(0).isEmpty()),
@@ -395,6 +406,15 @@ public final class ZombieSelfTest {
         put(player, 14, new ItemStack(Items.IRON_SWORD));
         put(player, 20, new ItemStack(Items.COOKED_BEEF, 12));
         Curses.apply(player, Curse.ZOMBIFIED, 0, MobEffectInstance.INFINITE_DURATION);
+    }
+
+    /** {@link #packed}, plus the cure's Weakness in the pack (15..17) and a healing potion beside it (18). */
+    private static void weaknessPacked(ServerPlayer player) {
+        packed(player);
+        put(player, 15, PotionContents.createItemStack(Items.POTION, Potions.WEAKNESS));
+        put(player, 16, PotionContents.createItemStack(Items.SPLASH_POTION, Potions.WEAKNESS));
+        put(player, 17, new ItemStack(TotemRegistries.TOTEMS.get(Curse.WEAKNESS).get()));
+        put(player, 18, PotionContents.createItemStack(Items.POTION, Potions.HEALING));
     }
 
     /** A diamond sword with Sharpness V, Unbreaking III and Looting III: a long tooltip in rare colour. */
