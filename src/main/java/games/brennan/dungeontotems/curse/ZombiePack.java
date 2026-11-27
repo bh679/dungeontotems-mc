@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.curse;
 
+import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.net.TotemNetwork;
 import games.brennan.dungeontotems.net.ZombieCarriedPayload;
@@ -10,6 +11,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
@@ -26,6 +28,8 @@ import java.util.function.Function;
  * in your hotbar and offhand when you turned (the {@code zombie_carried} snapshot) can still be put away in your
  * own inventory screen, never while a container is open.
  * Pickups only fill the hotbar and offhand. Creative and spectator players are not locked.
+ * The one way out: a potion of Weakness or a Totem of Weakness ({@link #reachable}) can still be taken out
+ * of a locked slot, so a zombie is never locked away from half of their cure. Nothing new goes back in.
  *
  * <p>The checks run on both sides through {@code mixin/SlotMixin}, {@code mixin/InventoryMixin} and
  * {@code mixin/AbstractContainerMenuMixin}, so the client's snapshot is synced with
@@ -66,6 +70,25 @@ public final class ZombiePack {
     public static boolean isLockedSlot(Slot slot) {
         Player owner = packOwner(slot);
         return owner != null && isLocked(owner);
+    }
+
+    /**
+     * {@code slot} is locked and what it holds stays there: the lock on taking things out. A locked slot holding
+     * something {@link #reachable} gives it up.
+     */
+    public static boolean keepsItem(Slot slot) {
+        return isLockedSlot(slot) && !reachable(slot.getItem());
+    }
+
+    /**
+     * What a zombie can still take out of a locked pack: a potion of Weakness (drunk, splash or lingering;
+     * not a tipped arrow) or a Totem of Weakness. The same answer on both sides, from the stack alone.
+     */
+    public static boolean reachable(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (stack.is(TotemRegistries.TOTEMS.get(Curse.WEAKNESS).get())) return true;
+        boolean potion = stack.is(Items.POTION) || stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION);
+        return potion && ZombieGibberish.weakens(stack);
     }
 
     /** The player whose pack {@code slot} is part of (main inventory or a host-declared slot), or null. */

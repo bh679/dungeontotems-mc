@@ -205,6 +205,40 @@ public final class ZombieGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public static void weaknessComesOutOfThePack(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        hostBackpackOwner = player;
+        ItemStack totem = new ItemStack(TotemRegistries.TOTEMS.get(Curse.WEAKNESS).get());
+        List<ItemStack> reachable = List.of(PotionContents.createItemStack(Items.POTION, Potions.WEAKNESS),
+            PotionContents.createItemStack(Items.SPLASH_POTION, Potions.LONG_WEAKNESS),
+            PotionContents.createItemStack(Items.LINGERING_POTION, Potions.WEAKNESS), totem);
+        List<ItemStack> kept = List.of(PotionContents.createItemStack(Items.POTION, Potions.HEALING),
+            PotionContents.createItemStack(Items.TIPPED_ARROW, Potions.WEAKNESS),
+            new ItemStack(TotemRegistries.TOTEMS.get(Curse.FATIGUE).get()), new ItemStack(Items.TOTEM_OF_UNDYING));
+        zombify(player);
+        Slot pack = player.inventoryMenu.getSlot(PACK_SLOT);
+        Slot backpack = new Slot(HOST_BACKPACK, 0, 0, 0);
+        for (ItemStack stack : reachable) {
+            pack.set(stack.copy());
+            backpack.set(stack.copy());
+            check(helper, pack.mayPickup(player), stack + " should come out of the pack");
+            check(helper, backpack.mayPickup(player), stack + " should come out of a declared backpack slot");
+            check(helper, !ZombiePack.keepsItem(pack), stack + " should not be greyed");
+        }
+        for (ItemStack stack : kept) {
+            pack.set(stack.copy());
+            backpack.set(stack.copy());
+            check(helper, !pack.mayPickup(player), stack + " should stay in the pack");
+            check(helper, !backpack.mayPickup(player), stack + " should stay in the backpack");
+        }
+        pack.set(ItemStack.EMPTY);
+        check(helper, !pack.mayPlace(totem.copy()), "a weakness totem you didn't carry still can't go back in");
+        HOST_BACKPACK.clearContent();
+        hostBackpackOwner = null;
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public static void pickupsSkipThePack(GameTestHelper helper) {
         ServerPlayer player = zombie(helper);
         Inventory inventory = player.getInventory();

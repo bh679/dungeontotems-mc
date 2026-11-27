@@ -13,7 +13,8 @@ import java.util.List;
 
 /**
  * A Zombified player's locked pack slots are greyed out, items and all, in every screen that shows the
- * inventory. See {@link ZombiePack}.
+ * inventory. A locked slot holding something a zombie can still take out ({@link ZombiePack#reachable}) stays
+ * clear, so they can see it. See {@link ZombiePack}.
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID, value = Dist.CLIENT)
 public final class ZombiePackOverlay {
@@ -29,7 +30,7 @@ public final class ZombiePackOverlay {
     @SubscribeEvent
     public static void onForeground(ContainerScreenEvent.Render.Foreground event) {
         GuiGraphics graphics = event.getGuiGraphics();
-        List<Slot> locked = event.getContainerScreen().getMenu().slots.stream().filter(ZombiePack::isLockedSlot).toList();
+        List<Slot> locked = event.getContainerScreen().getMenu().slots.stream().filter(ZombiePack::keepsItem).toList();
         if (locked.isEmpty()) return;
         graphics.pose().pushPose();
         graphics.pose().translate(0.0F, 0.0F, OVER_ITEMS_Z);
