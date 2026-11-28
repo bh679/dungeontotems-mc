@@ -2,8 +2,8 @@ package games.brennan.dungeontotems.advancement;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.advancements.critereon.ContextAwarePredicate;
-import net.minecraft.advancements.predicates.entity.EntityPredicate;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.advancements.triggers.SimpleCriterionTrigger;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -20,7 +20,7 @@ public final class KeyTrigger extends SimpleCriterionTrigger<KeyTrigger.Instance
 
     public KeyTrigger(String field) {
         this.codec = RecordCodecBuilder.create(in -> in.group(
-            EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+            LootItemCondition.CODEC.optionalFieldOf("player").forGetter(Instance::player),
             Codec.STRING.optionalFieldOf(field).forGetter(Instance::key)
         ).apply(in, Instance::new));
     }
@@ -34,7 +34,7 @@ public final class KeyTrigger extends SimpleCriterionTrigger<KeyTrigger.Instance
         trigger(player, instance -> instance.matches(key));
     }
 
-    public record Instance(Optional<ContextAwarePredicate> player, Optional<String> key) implements SimpleCriterionTrigger.SimpleInstance {
+    public record Instance(Optional<Holder<LootItemCondition>> player, Optional<String> key) implements SimpleCriterionTrigger.SimpleInstance {
         boolean matches(String fired) {
             return key.map(fired::equals).orElse(true);
         }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.curse;
 
+import net.minecraft.core.component.DataComponents;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.TotemPop;
@@ -73,7 +74,7 @@ public final class RuleCurses {
 
     static boolean breaksMelonDiet(ItemStack stack, ServerPlayer player) {
         if (stack.is(Items.MELON_SLICE) || stack.getUseAnimation() != ItemUseAnimation.EAT) return false;
-        return stack.getFoodProperties(player) != null;
+        return stack.has(DataComponents.FOOD);
     }
 
     @SubscribeEvent

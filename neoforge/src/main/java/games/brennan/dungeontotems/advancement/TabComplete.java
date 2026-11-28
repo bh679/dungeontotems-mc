@@ -29,7 +29,7 @@ public final class TabComplete {
     @SubscribeEvent
     public static void onEarned(AdvancementEvent.AdvancementEarnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !TAB.contains(event.getAdvancement().id())) return;
-        ServerAdvancementManager advancements = player.server.getAdvancements();
+        ServerAdvancementManager advancements = player.level().getServer().getAdvancements();
         AdvancementHolder fulfilled = advancements.get(FULFILLED);
         if (fulfilled == null) return;
         for (Identifier id : TAB) {

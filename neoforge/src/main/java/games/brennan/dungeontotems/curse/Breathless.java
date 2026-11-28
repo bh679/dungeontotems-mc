@@ -46,7 +46,7 @@ public final class Breathless {
         if (air <= DROWN_AT) {
             air = 0;
             DamageSource source = new DamageSource(player.level().registryAccess()
-                .registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(TotemRegistries.SUFFOCATION));
+                .lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(TotemRegistries.SUFFOCATION));
             player.hurt(source, DROWN_DAMAGE);
         }
         player.setAirSupply(air);

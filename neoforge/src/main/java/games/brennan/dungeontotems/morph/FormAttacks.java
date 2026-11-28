@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.morph;
 
+import net.minecraft.world.entity.monster.cubemob.AbstractCubeMob;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.DeadlineCurses;
 import games.brennan.dungeontotems.net.TotemNetwork;
@@ -142,7 +143,7 @@ public final class FormAttacks {
      */
     private static boolean tongue(ServerPlayer player, Entity target) {
         show(player, FormAction.TONGUE);
-        if (!(target instanceof Slime slime) || slime.getSize() != 1) return false;
+        if (!(target instanceof AbstractCubeMob slime) || slime.getSize() != 1) return false;
         player.level().playSound(null, player.blockPosition(), SoundEvents.FROG_EAT, SoundSource.PLAYERS, 2.0F, 1.0F);
         if (slime instanceof MagmaCube) {
             player.level().addFreshEntity(new ItemEntity(player.level(), slime.getX(), slime.getY(), slime.getZ(), new ItemStack(froglight(player))));
@@ -173,7 +174,8 @@ public final class FormAttacks {
             player.connection.send(new ClientboundSetEntityMotionPacket(player)); // the client moves the player
         }
         if (target instanceof LivingEntity living) {
-            living.knockback(RAM_KNOCKBACK, player.getX() - target.getX(), player.getZ() - target.getZ());
+            living.knockback(RAM_KNOCKBACK, player.getX() - target.getX(), player.getZ() - target.getZ(),
+                player.damageSources().playerAttack(player), 0.0F);
         }
         player.level().playSound(null, player.blockPosition(), SoundEvents.GOAT_RAM_IMPACT, SoundSource.PLAYERS, 1.0F, 1.0F);
         show(player, FormAction.RAM);

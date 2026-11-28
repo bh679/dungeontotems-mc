@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.morph;
 
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import games.brennan.dungeontotems.DungeonTotems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -75,7 +76,7 @@ public final class FormTraits {
         if (!(event.getEntity() instanceof Player player)) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == null) return;
-        if (form.is(EntityTypeTags.FALL_DAMAGE_IMMUNE)) event.setCanceled(true);
+        if (form.builtInRegistryHolder().is(EntityTypeTags.FALL_DAMAGE_IMMUNE)) event.setCanceled(true);
         else if (form == EntityTypes.FROG) event.setDistance(Math.max(0.0F, event.getDistance() - FROG_SAFE_FALL));
         else if (form == EntityTypes.GOAT) event.setDistance(Math.max(0.0F, event.getDistance() - GOAT_SAFE_FALL));
         else if (HORSES.contains(form)) event.setDistance(event.getDistance() * 0.5F); // AbstractHorse halves it
@@ -172,15 +173,17 @@ public final class FormTraits {
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         run(player, form);
         chill(player, form);
-        if (form != null && WATER_SENSITIVE.contains(form) && player.isInWaterRainOrBubble()) player.hurt(player.damageSources().drown(), 1.0F);
+        if (form != null && WATER_SENSITIVE.contains(form) && player.isInWaterOrRain()) player.hurt(player.damageSources().drown(), 1.0F);
         if (form == EntityTypes.SNOW_GOLEM) beSnowGolem(player);
     }
 
     /** {@code SnowGolem#aiStep}: melt where it's warm, and leave snow underfoot. */
     private static void beSnowGolem(ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
-        if (level.getBiome(player.blockPosition()).is(BiomeTags.SNOW_GOLEM_MELTS)) player.hurt(player.damageSources().onFire(), 1.0F);
-        if (!level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) return;
+        ServerLevel level = player.level();
+        if (level.environmentAttributes().getValue(EnvironmentAttributes.SNOW_GOLEM_MELTS, player.position())) {
+            player.hurt(player.damageSources().onFire(), 1.0F);
+        }
+        if (!level.getGameRules().get(GameRules.MOB_GRIEFING)) return;
         BlockState snow = Blocks.SNOW.defaultBlockState();
         for (int i = 0; i < 4; i++) {
             int x = Mth.floor(player.getX() + (i % 2 * 2 - 1) * 0.25F);

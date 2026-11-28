@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.morph;
 
+import net.minecraft.world.entity.EntitySpawnReason;
 import games.brennan.dungeontotems.mixin.MobInvoker;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -30,7 +31,7 @@ public final class FormSounds {
     public static void speak(ServerPlayer player) {
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == null || !FormTimers.ready(player, "speak", COOLDOWN)) return;
-        if (!(form.create(player.level()) instanceof Mob mob)) return;
+        if (!(form.create(player.level(), EntitySpawnReason.LOAD) instanceof Mob mob)) return;
         SoundEvent sound = soundOf(form, mob);
         if (sound == null) return;
         player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 1.0F, mob.getVoicePitch());

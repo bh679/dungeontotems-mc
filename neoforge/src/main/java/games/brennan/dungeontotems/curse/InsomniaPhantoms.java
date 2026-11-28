@@ -68,8 +68,8 @@ public final class InsomniaPhantoms {
 
     /** One vanilla-style try at spawning phantoms over {@code player}; returns how many spawned. */
     public static int trySpawn(ServerPlayer player, RandomSource random) {
-        ServerLevel level = player.serverLevel();
-        if (level.getDifficulty() == Difficulty.PEACEFUL || !level.getGameRules().getBoolean(GameRules.RULE_DOINSOMNIA)) return 0;
+        ServerLevel level = player.level();
+        if (level.getDifficulty() == Difficulty.PEACEFUL || !level.getGameRules().get(GameRules.SPAWN_PHANTOMS)) return 0;
         if (player.isSpectator() || player.isCreative()) return 0;
         return trySpawnAt(level, player.blockPosition(), random);
     }
@@ -95,9 +95,9 @@ public final class InsomniaPhantoms {
         int count = 1 + random.nextInt(difficulty.getDifficulty().getId() + 1);
         int spawned = 0;
         for (int i = 0; i < count; i++) {
-            Phantom phantom = EntityTypes.PHANTOM.create(level);
+            Phantom phantom = EntityTypes.PHANTOM.create(level, EntitySpawnReason.NATURAL);
             if (phantom == null) continue;
-            phantom.moveTo(at, 0.0F, 0.0F);
+            phantom.snapTo(at, 0.0F, 0.0F);
             group = phantom.finalizeSpawn(level, difficulty, EntitySpawnReason.NATURAL, group);
             if (day) phantom.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
             level.addFreshEntityWithPassengers(phantom);

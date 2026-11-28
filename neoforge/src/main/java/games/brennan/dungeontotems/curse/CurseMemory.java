@@ -31,7 +31,7 @@ public final class CurseMemory {
         if (!event.isWasDeath()) return;
         Map<Curse, Integer> curses = new EnumMap<>(Curse.class);
         for (MobEffectInstance instance : event.getOriginal().getActiveEffects()) {
-            Curse curse = Curses.curseOf(instance);
+            Curse curse = Curses.curseOf(event.getOriginal(), instance);
             if (curse != null && event.getOriginal() instanceof ServerPlayer dead && Curses.isSaved(dead, curse)) {
                 curses.put(curse, instance.getAmplifier());
             }

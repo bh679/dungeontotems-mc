@@ -23,7 +23,7 @@ public final class MorphFlight {
     private MorphFlight() {}
 
     public static boolean flies(@Nullable EntityType<?> form) {
-        return form != null && form.is(TotemRegistries.FLYING_FORMS);
+        return form != null && form.builtInRegistryHolder().is(TotemRegistries.FLYING_FORMS);
     }
 
     /** From {@link Morphs#setForm}: start or stop flight for the new form. */

@@ -92,7 +92,7 @@ public final class WaterMoves {
         if (!FormTimers.ready(player, "ink", INK_COOLDOWN)) return;
         boolean glow = Morphs.formOf(player).orElse(null) == EntityTypes.GLOW_SQUID;
         Vec3 at = player.position().add(0.0, player.getBbHeight() / 2.0, 0.0);
-        player.serverLevel().sendParticles(glow ? ParticleTypes.GLOW_SQUID_INK : ParticleTypes.SQUID_INK,
+        player.level().sendParticles(glow ? ParticleTypes.GLOW_SQUID_INK : ParticleTypes.SQUID_INK,
             at.x, at.y, at.z, 30, 0.4, 0.4, 0.4, 0.1);
         player.level().playSound(null, player.blockPosition(),
             glow ? SoundEvents.GLOW_SQUID_SQUIRT : SoundEvents.SQUID_SQUIRT, SoundSource.PLAYERS, 1.0F, 1.0F);

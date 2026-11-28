@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.morph;
 
+import net.minecraft.world.entity.EntityReference;
 import games.brennan.dungeontotems.DungeonTotems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -91,7 +92,7 @@ public final class FormAllies {
         AABB area = player.getBoundingBox().inflate(PACK_RADIUS);
         for (ZombifiedPiglin piglin : player.level().getEntitiesOfClass(ZombifiedPiglin.class, area, p -> p != attacker)) {
             piglin.setTarget(attacker);
-            piglin.setPersistentAngerTarget(attacker.getUUID());
+            piglin.setPersistentAngerTarget(EntityReference.of(attacker));
             piglin.startPersistentAngerTimer();
         }
     }
@@ -106,7 +107,7 @@ public final class FormAllies {
             milker.setItemInHand(event.getHand(), ItemUtils.createFilledResult(held, milker, new ItemStack(Items.MUSHROOM_STEW), false));
             milker.level().playSound(null, event.getTarget().blockPosition(), SoundEvents.MOOSHROOM_MILK, SoundSource.PLAYERS, 1.0F, 1.0F);
         }
-        event.setCancellationResult(InteractionResult.sidedSuccess(milker.level().isClientSide()));
+        event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
     }
 
@@ -126,7 +127,7 @@ public final class FormAllies {
         if (!player.isInLava() || player.isShiftKeyDown()) return;
         CollisionContext context = CollisionContext.of(player);
         BlockPos at = player.blockPosition();
-        if (context.isAbove(LiquidBlock.STABLE_SHAPE, at, true) && !player.level().getFluidState(at.above()).is(FluidTags.LAVA)) {
+        if (context.isAbove(player.getLiquidCollisionShape(), at, true) && !player.level().getFluidState(at.above()).is(FluidTags.LAVA)) {
             player.setOnGround(true);
         } else { // under the surface: rise until it can stand on it (gravity would outpull vanilla's 0.05)
             Vec3 motion = player.getDeltaMovement().scale(0.5).add(0.0, 0.05, 0.0);

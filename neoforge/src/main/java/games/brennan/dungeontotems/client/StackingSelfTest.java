@@ -118,8 +118,8 @@ public final class StackingSelfTest {
                 player.containerMenu.broadcastChanges();
             });
         }
-        if (at == ACT / 2 && !(minecraft.screen != null && minecraft.player.containerMenu != minecraft.player.inventoryMenu)) {
-            minecraft.setScreen(new InventoryScreen(minecraft.player));
+        if (at == ACT / 2 && !(minecraft.gui.screen() != null && minecraft.player.containerMenu != minecraft.player.inventoryMenu)) {
+            minecraft.gui.setScreen(new InventoryScreen(minecraft.player));
         }
         if (at == ACT) step.act().run(minecraft, player);
         if (at == CHECK) {
@@ -154,7 +154,7 @@ public final class StackingSelfTest {
 
     /** Drops a stack at the player's feet, ready to pick up, as a mob drop or a thrown item lands. */
     private static void drop(ServerPlayer player, ItemStack stack) {
-        player.server.execute(() -> {
+        player.level().getServer().execute(() -> {
             ItemEntity item = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), stack);
             item.setNoPickUpDelay();
             player.level().addFreshEntity(item);

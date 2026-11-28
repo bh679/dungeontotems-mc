@@ -1,5 +1,8 @@
 package games.brennan.dungeontotems.voidtotem;
 
+import net.minecraft.tags.BlockTags;
+import java.util.Set;
+import net.minecraft.world.level.storage.LevelData;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.api.DungeonTotemsApi;
 import net.minecraft.core.BlockPos;
@@ -45,27 +48,29 @@ public final class VoidRescue {
 
     public static void rescue(ServerPlayer player) {
         Vec3 from = player.position();
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         ServerLevel toLevel = level;
         Vec3 to = DungeonTotemsApi.rescueTarget(player).orElse(null);
         boolean hop = to == null;
 
         if (hop) {
             SafeSpot spot = LAST_SAFE.get(player.getUUID());
-            ServerLevel spotLevel = spot == null ? null : player.server.getLevel(spot.dimension());
+            ServerLevel spotLevel = spot == null ? null : player.level().getServer().getLevel(spot.dimension());
             if (spotLevel != null) {
                 toLevel = spotLevel;
                 to = spot.pos();
             } else {
-                BlockPos spawn = level.getSharedSpawnPos();
-                BlockPos top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, spawn);
+                LevelData.RespawnData respawn = level.getRespawnData();
+                ServerLevel spawnLevel = level.getServer().getLevel(respawn.dimension());
+                if (spawnLevel != null) toLevel = spawnLevel;
+                BlockPos top = toLevel.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, respawn.pos());
                 to = Vec3.atBottomCenterOf(top);
             }
         }
 
         level.playSound(null, from.x, from.y, from.z, SoundEvents.CHORUS_FRUIT_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
         player.stopRiding();
-        player.teleportTo(toLevel, to.x, to.y, to.z, player.getYRot(), player.getXRot());
+        player.teleportTo(toLevel, to.x, to.y, to.z, Set.of(), player.getYRot(), player.getXRot(), true);
         if (hop) hopNearby(player, toLevel);
         player.setDeltaMovement(Vec3.ZERO);
         player.resetFallDistance();
@@ -75,13 +80,13 @@ public final class VoidRescue {
 
     /** A chorus fruit's random hop from where the player now stands; stays put if no try lands. */
     private static void hopNearby(ServerPlayer player, ServerLevel level) {
-        int floor = level.getMinBuildHeight();
+        int floor = level.getMinY();
         int ceiling = floor + level.getLogicalHeight() - 1;
         for (int i = 0; i < HOP_TRIES; i++) {
             double x = player.getX() + (player.getRandom().nextDouble() - 0.5) * HOP_RANGE;
             double y = Mth.clamp(player.getY() + (player.getRandom().nextInt(HOP_HEIGHT) - HOP_HEIGHT / 2), floor, ceiling);
             double z = player.getZ() + (player.getRandom().nextDouble() - 0.5) * HOP_RANGE;
-            if (player.randomTeleport(x, y, z, false)) return;
+            if (player.randomTeleport(x, y, z, false, BlockTags.CONSUMABLE_DOES_NOT_TELEPORT_TO)) return;
         }
     }
 

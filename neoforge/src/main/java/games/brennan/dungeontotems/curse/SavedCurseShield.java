@@ -47,8 +47,8 @@ public final class SavedCurseShield {
         int amplifier = current == null ? curse.afterSaveAmplifier() : current.getAmplifier();
         Curses.markSaved(player, curse, Curses.apply(player, curse, amplifier, curse.afterSaveTicks()));
         if (curse.isRule()) {
-            player.displayClientMessage(Component.translatable("message.dungeontotems.spared",
-                curse.effect().value().getDisplayName()), false);
+            player.sendSystemMessage(Component.translatable("message.dungeontotems.spared",
+                curse.effect().value().getDisplayName()));
         }
     }
 }

@@ -64,7 +64,7 @@ final class AdvancementPlayTest {
         }),
         new Step("void", player -> {
             hold(player, Curse.VOID);
-            player.teleportTo(player.getX(), player.level().getMinBuildHeight() - 70, player.getZ());
+            player.teleportTo(player.getX(), player.level().getMinY() - 70, player.getZ());
         }),
         new Step("feather", player -> {
             hold(player, Curse.FEATHER);
@@ -79,7 +79,7 @@ final class AdvancementPlayTest {
             player.level().addFreshEntity(tnt);
         }),
         new Step("fire", player -> {
-            floor(player.server); // the TNT blew a hole in it, and dropped you through
+            floor(player.level().getServer()); // the TNT blew a hole in it, and dropped you through
             player.resetFallDistance();
             hold(player, Curse.FIRE);
             player.removeEffect(MobEffects.FIRE_RESISTANCE);
@@ -89,7 +89,7 @@ final class AdvancementPlayTest {
             player.level().setBlockAndUpdate(player.blockPosition(), Blocks.LAVA.defaultBlockState());
         }),
         new Step("morphing, five real morphs", player -> {
-            floor(player.server); // out of the lava
+            floor(player.level().getServer()); // out of the lava
 
             for (int i = 0; i < 5; i++) popByDying(player, Curse.MORPHING);
         }),

@@ -103,7 +103,7 @@ public final class AdvancementSelfTest {
 
     private static void open(Minecraft minecraft) {
         ClientAdvancements advancements = minecraft.player.connection.getAdvancements();
-        minecraft.setScreen(new AdvancementsScreen(advancements));
+        minecraft.gui.setScreen(new AdvancementsScreen(advancements));
         AdvancementNode root = advancements.getTree().get(DungeonTotems.id("terms_and_conditions"));
         if (root != null) advancements.setSelectedTab(root.holder(), true);
     }

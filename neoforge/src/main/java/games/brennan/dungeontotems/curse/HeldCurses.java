@@ -42,7 +42,7 @@ public final class HeldCurses {
 
     private static void update(ServerPlayer player, Curse curse, @Nullable ItemStack totem) {
         MobEffectInstance current = player.getEffect(curse.effect());
-        boolean ours = current != null && Curses.curseOf(current) == curse;
+        boolean ours = current != null && Curses.curseOf(player, current) == curse;
         boolean fromHolding = ours && current.isInfiniteDuration();
         if (totem != null) {
             // A stack's level follows its size, so picking one up or popping one off changes it.

@@ -134,7 +134,7 @@ public final class ZombiePack {
      * Mirrors {@code Inventory#getSlotWithRemainingSpace} over the unlocked slots only.
      */
     public static int slotWithRemainingSpace(Inventory inventory, ItemStack stack) {
-        if (hasRemainingSpaceFor(inventory.getItem(inventory.selected), stack)) return inventory.selected;
+        if (hasRemainingSpaceFor(inventory.getItem(inventory.getSelectedSlot()), stack)) return inventory.getSelectedSlot();
         if (hasRemainingSpaceFor(inventory.getItem(OFFHAND_SLOT), stack)) return OFFHAND_SLOT;
         for (int i = 0; i < Inventory.getSelectionSize(); i++) {
             if (hasRemainingSpaceFor(inventory.getItem(i), stack)) return i;

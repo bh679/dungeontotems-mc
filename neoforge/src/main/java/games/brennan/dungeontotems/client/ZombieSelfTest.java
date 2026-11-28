@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.client;
 
+import net.minecraft.world.entity.EntitySpawnReason;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.Curses;
@@ -189,11 +190,11 @@ public final class ZombieSelfTest {
             player -> player.getInventory().getItem(0).isEmpty() && !player.hasEffect(MobEffects.HUNGER)),
         new Step("a villager turns", false, player -> {
                 packed(player);
-                Villager villager = EntityTypes.VILLAGER.create(player.serverLevel());
+                Villager villager = EntityTypes.VILLAGER.create(player.level(), EntitySpawnReason.LOAD);
                 villager.setVillagerData(villager.getVillagerData().setProfession(VillagerProfession.FARMER));
-                villager.moveTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
+                villager.snapTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
                 villager.setNoAi(true);
-                player.serverLevel().addFreshEntity(villager);
+                player.level().addFreshEntity(villager);
                 player.lookAt(EntityAnchorArgument.Anchor.EYES, villager.getEyePosition());
             },
             (minecraft, player) -> {
@@ -203,9 +204,9 @@ public final class ZombieSelfTest {
             player -> !player.level().getEntitiesOfClass(ZombieVillager.class, player.getBoundingBox().inflate(4)).isEmpty()),
         new Step("a pillager comes for you", false, player -> {
                 packed(player);
-                Mob pillager = EntityTypes.PILLAGER.create(player.serverLevel());
-                pillager.moveTo(player.getX() + 3, player.getY(), player.getZ() + 3, 0.0F, 0.0F);
-                player.serverLevel().addFreshEntity(pillager);
+                Mob pillager = EntityTypes.PILLAGER.create(player.level(), EntitySpawnReason.LOAD);
+                pillager.snapTo(player.getX() + 3, player.getY(), player.getZ() + 3, 0.0F, 0.0F);
+                player.level().addFreshEntity(pillager);
             },
             (minecraft, player) -> {},
             player -> player.level().getEntitiesOfClass(Mob.class, near(player), m -> m.getType() == EntityTypes.PILLAGER)
@@ -226,7 +227,7 @@ public final class ZombieSelfTest {
             player -> player.getInventory().getItem(0).is(Items.SHULKER_BOX) && noScreen(player)),
         new Step("a shulker box won't break", false, player -> {
                 packed(player);
-                player.serverLevel().setBlockAndUpdate(ahead(player), Blocks.SHULKER_BOX.defaultBlockState());
+                player.level().setBlockAndUpdate(ahead(player), Blocks.SHULKER_BOX.defaultBlockState());
                 player.lookAt(EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(ahead(player)));
             },
             (minecraft, player) -> minecraft.options.keyAttack.setDown(true),
@@ -234,9 +235,9 @@ public final class ZombieSelfTest {
         new Step("a wolf runs from a zombie's bone", false, player -> {
                 packed(player);
                 put(player, 0, new ItemStack(Items.BONE, 16));
-                Wolf wolf = EntityTypes.WOLF.create(player.serverLevel());
-                wolf.moveTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
-                player.serverLevel().addFreshEntity(wolf);
+                Wolf wolf = EntityTypes.WOLF.create(player.level(), EntitySpawnReason.LOAD);
+                wolf.snapTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
+                player.level().addFreshEntity(wolf);
                 player.lookAt(EntityAnchorArgument.Anchor.EYES, wolf.getEyePosition());
             },
             (minecraft, player) -> eat(minecraft), // holds use: a bone every few ticks
@@ -258,23 +259,23 @@ public final class ZombieSelfTest {
         new Step("a book reads as gibberish", false, NO_HOVER, ACT, ZombieSelfTest::packed,
             (minecraft, player) -> {
                 BookViewScreen.BookAccess book = BookViewScreen.BookAccess.fromItem(storyBook());
-                if (book != null) minecraft.setScreen(new BookViewScreen(book));
+                if (book != null) minecraft.gui.setScreen(new BookViewScreen(book));
             },
             player -> true),
         new Step("chat reads as gibberish", false, NO_HOVER, ACT, player -> {
                 packed(player);
                 player.sendSystemMessage(Component.literal("The train leaves at dawn. Do not be late, and bring bread."));
                 // A player's own chat line: 1 word in 3 of it reads.
-                player.server.getPlayerList().broadcastChatMessage(
+                player.level().getServer().getPlayerList().broadcastChatMessage(
                     PlayerChatMessage.unsigned(player.getUUID(), "Has anyone seen my lost cat near the third carriage? She is grey and very fluffy."),
                     player, ChatType.bind(ChatType.CHAT, player));
             },
-            (minecraft, player) -> minecraft.setScreen(new ChatScreen("")),
+            (minecraft, player) -> minecraft.gui.setScreen(new ChatScreen("")),
             player -> true),
         new Step("typing in chat mumbles", false, NO_HOVER, ACT, ZombieSelfTest::packed,
             (minecraft, player) -> {
                 ChatScreen chat = new ChatScreen("");
-                minecraft.setScreen(chat);
+                minecraft.gui.setScreen(chat);
                 type(chat, TYPED);
                 written = chat.getFocused() instanceof EditBox input ? input.getValue() : "";
             },
@@ -282,7 +283,7 @@ public final class ZombieSelfTest {
         new Step("writing in a book mumbles", false, NO_HOVER, ACT, ZombieSelfTest::packed,
             (minecraft, player) -> {
                 BookEditScreen book = new BookEditScreen(minecraft.player, new ItemStack(Items.WRITABLE_BOOK), InteractionHand.MAIN_HAND);
-                minecraft.setScreen(book);
+                minecraft.gui.setScreen(book);
                 type(book, TYPED);
                 written = ((BookEditScreenAccess) book).dungeontotems$pageText();
             },
@@ -304,8 +305,8 @@ public final class ZombieSelfTest {
         new Step("Jade mumbles about a chest (with -PwithJade)", false, player -> {
                 packed(player);
                 BlockPos at = ahead(player);
-                player.serverLevel().setBlockAndUpdate(at, Blocks.CHEST.defaultBlockState());
-                if (player.serverLevel().getBlockEntity(at) instanceof ChestBlockEntity chest) {
+                player.level().setBlockAndUpdate(at, Blocks.CHEST.defaultBlockState());
+                if (player.level().getBlockEntity(at) instanceof ChestBlockEntity chest) {
                     chest.setItem(0, new ItemStack(Items.DIAMOND, 5));
                     chest.setItem(1, new ItemStack(Items.ROTTEN_FLESH, 12));
                 }
@@ -314,10 +315,10 @@ public final class ZombieSelfTest {
             (minecraft, player) -> {}, player -> player.level().getBlockState(ahead(player)).is(Blocks.CHEST)),
         new Step("Jade mumbles about a cow (with -PwithJade)", false, player -> {
                 packed(player);
-                Mob cow = EntityTypes.COW.create(player.serverLevel());
-                cow.moveTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
+                Mob cow = EntityTypes.COW.create(player.level(), EntitySpawnReason.LOAD);
+                cow.snapTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
                 cow.setNoAi(true);
-                player.serverLevel().addFreshEntity(cow);
+                player.level().addFreshEntity(cow);
                 player.lookAt(EntityAnchorArgument.Anchor.EYES, cow.getEyePosition());
             },
             (minecraft, player) -> {}, player -> true));
@@ -331,12 +332,12 @@ public final class ZombieSelfTest {
 
     /** A fresh flat world, so the test needs no saved one ({@code --quickPlaySingleplayer} only opens an existing world). */
     private static void createWorld(Minecraft minecraft) {
-        if (!(minecraft.screen instanceof TitleScreen || minecraft.screen instanceof CreateWorldScreen)) return;
+        if (!(minecraft.gui.screen() instanceof TitleScreen || minecraft.gui.screen() instanceof CreateWorldScreen)) return;
         worldRequested = true;
         LevelSettings settings = new LevelSettings("Zombie Self Test " + System.currentTimeMillis(), GameType.SURVIVAL, false,
             Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
         minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, WorldOptions.defaultWithRandomSeed(),
-            registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
+            registries -> registries.lookupOrThrow(Registries.WORLD_PRESET).getOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
             new TitleScreen());
     }
 
@@ -348,7 +349,7 @@ public final class ZombieSelfTest {
         if (minecraft.player == null && server == null && !worldRequested) createWorld(minecraft);
         if (minecraft.player == null || server == null) return;
         minecraft.options.pauseOnLostFocus = false; // an unfocused window would pause the server for good
-        if (minecraft.screen instanceof PauseScreen) minecraft.setScreen(null);
+        if (minecraft.gui.screen() instanceof PauseScreen) minecraft.gui.setScreen(null);
         tick++;
         if (tick < WARM_UP_TICKS && minecraft.player.isDeadOrDying()) minecraft.player.respawn();
         ServerPlayer player = server.getPlayerList().getPlayer(minecraft.player.getUUID());
@@ -364,13 +365,13 @@ public final class ZombieSelfTest {
         if (at == 0) {
             minecraft.options.keyUse.setDown(false);
             minecraft.options.keyAttack.setDown(false);
-            if (minecraft.screen != null) minecraft.setScreen(null);
+            if (minecraft.gui.screen() != null) minecraft.gui.setScreen(null);
             server.execute(() -> {
                 player.closeContainer();
                 clearMobs(player);
-                player.serverLevel().setBlockAndUpdate(ahead(player), Blocks.AIR.defaultBlockState());
+                player.level().setBlockAndUpdate(ahead(player), Blocks.AIR.defaultBlockState());
                 server.setDifficulty(Difficulty.NORMAL, true);
-                player.serverLevel().setDayTime(MIDNIGHT); // no sunburn
+                player.level().setDayTime(MIDNIGHT); // no sunburn
                 player.setGameMode(GameType.SURVIVAL);
                 player.removeEffect(TotemRegistries.ZOMBIFIED);
                 player.getInventory().clearContent();
@@ -379,7 +380,7 @@ public final class ZombieSelfTest {
                 player.containerMenu.broadcastChanges();
             });
         }
-        if (at == ACT / 2 && step.inventoryOpen()) minecraft.setScreen(new InventoryScreen(minecraft.player));
+        if (at == ACT / 2 && step.inventoryOpen()) minecraft.gui.setScreen(new InventoryScreen(minecraft.player));
         if (at == step.actAt()) step.act().run(minecraft, player);
         if (at > ACT && step.hover() != NO_HOVER) hover(minecraft, step.hover());
         if (at == CHECK) {
@@ -499,7 +500,7 @@ public final class ZombieSelfTest {
 
     /** Drops a stack at the player's feet, ready to pick up. */
     private static void drop(ServerPlayer player, ItemStack stack) {
-        player.server.execute(() -> {
+        player.level().getServer().execute(() -> {
             ItemEntity item = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), stack);
             item.setNoPickUpDelay();
             player.level().addFreshEntity(item);
@@ -508,7 +509,7 @@ public final class ZombieSelfTest {
 
     /** Puts the mouse over a slot of the open menu, so its tooltip shows (dev mappings: {@code MouseHandler} fields). */
     private static void hover(Minecraft minecraft, int slotIndex) {
-        if (!(minecraft.screen instanceof AbstractContainerScreen<?> screen)) return;
+        if (!(minecraft.gui.screen() instanceof AbstractContainerScreen<?> screen)) return;
         Slot slot = screen.getMenu().getSlot(slotIndex);
         double scale = (double) minecraft.getWindow().getScreenWidth() / minecraft.getWindow().getGuiScaledWidth();
         try {

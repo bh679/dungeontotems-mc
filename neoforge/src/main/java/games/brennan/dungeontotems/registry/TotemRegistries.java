@@ -86,31 +86,35 @@ public final class TotemRegistries {
 
     /** The entity type a player is shown and played as, by id; empty for their own body. */
     public static final Supplier<AttachmentType<String>> FORM = ATTACHMENTS.register("form",
-        () -> AttachmentType.builder(() -> "").serialize(Codec.STRING).build());
+        () -> AttachmentType.builder(() -> "").serialize(Codec.STRING.fieldOf("value")).build());
 
     /** Game time each curse's after-save protection ends (by Curse name); see {@code curse/SavedCurseShield}. */
     public static final Supplier<AttachmentType<Map<String, Long>>> SAVED_UNTIL = ATTACHMENTS.register("saved_until",
         () -> AttachmentType.<Map<String, Long>>builder(() -> Map.of())
-            .serialize(Codec.unboundedMap(Codec.STRING, Codec.LONG)).build());
+            .serialize(Codec.unboundedMap(Codec.STRING, Codec.LONG).fieldOf("value")).build());
+
+    /** Vanilla effects (Weakness, Mining Fatigue, ...) on you that are curses, by Curse name (see {@code curse/CurseGuard}). */
+    public static final Supplier<AttachmentType<List<String>>> CURSE_MARKS = ATTACHMENTS.register("curse_marks",
+        () -> AttachmentType.<List<String>>builder(() -> List.of()).serialize(Codec.STRING.listOf().fieldOf("value")).build());
 
     /** Game time of your last hit, for Rage. */
     public static final Supplier<AttachmentType<Long>> LAST_HIT = ATTACHMENTS.register("last_hit",
-        () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG).build());
+        () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG.fieldOf("value")).build());
 
     /** Game time of your last gift, for Lonely. */
     public static final Supplier<AttachmentType<Long>> LAST_GIFT = ATTACHMENTS.register("last_gift",
-        () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG).build());
+        () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG.fieldOf("value")).build());
 
     /** Curses popped since you last died, still running (see {@code curse/CurseTrials}). */
     public static final Supplier<AttachmentType<List<String>>> CURSE_TRIALS = ATTACHMENTS.register("curse_trials",
-        () -> AttachmentType.<List<String>>builder(() -> List.of()).serialize(Codec.STRING.listOf()).build());
+        () -> AttachmentType.<List<String>>builder(() -> List.of()).serialize(Codec.STRING.listOf().fieldOf("value")).build());
 
     /**
      * What you had in your hotbar and offhand when you were Zombified, one of each; only those may go into
      * your locked pack (see {@code curse/ZombiePack}). Not kept through death, which ends the curse.
      */
     public static final Supplier<AttachmentType<List<ItemStack>>> ZOMBIE_CARRIED = ATTACHMENTS.register("zombie_carried",
-        () -> AttachmentType.<List<ItemStack>>builder(() -> List.of()).serialize(ItemStack.CODEC.listOf()).build());
+        () -> AttachmentType.<List<ItemStack>>builder(() -> List.of()).serialize(ItemStack.CODEC.listOf().fieldOf("value")).build());
 
     public static final Map<Curse, DeferredItem<TotemItem>> TOTEMS = registerTotems();
 

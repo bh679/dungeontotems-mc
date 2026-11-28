@@ -49,7 +49,7 @@ public final class DeadlineCurses {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ResourceKey<DamageType> cause = PENDING_DEATHS.remove(player.getUUID());
         if (cause == null || !player.isAlive()) return;
-        Holder<DamageType> type = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(cause);
+        Holder<DamageType> type = player.level().registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(cause);
         player.hurt(new DamageSource(type), Float.MAX_VALUE);
     }
 
@@ -73,7 +73,7 @@ public final class DeadlineCurses {
         player.removeEffect(curse);
         Curse lifted = Curse.forEffect(curse);
         if (lifted != null) CurseTrials.onLifted(player, lifted);
-        player.displayClientMessage(Component.translatable("message.dungeontotems." + name + ".lifted"), false);
+        player.sendSystemMessage(Component.translatable("message.dungeontotems." + name + ".lifted"));
         player.level().playSound(null, player.blockPosition(), SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 }

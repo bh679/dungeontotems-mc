@@ -90,7 +90,7 @@ public final class Morphs {
         List<EntityType<?>> fitting = new ArrayList<>();
         BuiltInRegistries.ENTITY_TYPE.getDataMap(MorphForm.DATA_MAP).forEach((key, form) -> {
             if (form.pool() != pool || form.weight() <= 0) return;
-            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(key);
+            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(key);
             if (type != null && DefaultAttributes.hasSupplier(type) && fits(player, type)) fitting.add(type);
         });
         return fitting;

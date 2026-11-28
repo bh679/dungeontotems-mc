@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.curse;
 
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import games.brennan.dungeontotems.DungeonTotems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -98,7 +99,7 @@ public final class ZombieLimits {
 
     /** Backstop for an instant break (creative, or another mod's tool). */
     @SubscribeEvent
-    public static void onBreak(BlockEvent.BreakEvent event) {
+    public static void onBreak(BreakBlockEvent event) {
         if (!ZombieDiet.isZombie(event.getPlayer()) || !isShulkerBox(event.getState())) return;
         event.setCanceled(true);
         tell(event.getPlayer(), "message.dungeontotems.zombified.shulker");
@@ -139,6 +140,6 @@ public final class ZombieLimits {
     }
 
     private static void tell(Player player, String key) {
-        if (player instanceof ServerPlayer server) server.displayClientMessage(Component.translatable(key), true);
+        if (player instanceof ServerPlayer server) server.sendOverlayMessage(Component.translatable(key));
     }
 }

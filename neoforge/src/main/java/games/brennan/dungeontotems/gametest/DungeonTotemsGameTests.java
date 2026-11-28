@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.gametest;
 
+import net.minecraft.world.entity.EntitySpawnReason;
 import com.google.gson.JsonParser;
 import net.minecraft.server.packs.resources.Resource;
 import games.brennan.dungeontotems.advancement.TotemAdvancements;
@@ -227,11 +228,11 @@ public final class DungeonTotemsGameTests {
     public static void aBiggerStackIsAStrongerCurse(GameTestHelper helper) {
         ServerPlayer player = holding(helper, Curse.SLOWNESS, 3);
         tick(player, HeldCurses.CHECK_TICKS);
-        MobEffectInstance three = player.getEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        MobEffectInstance three = player.getEffect(MobEffects.SLOWNESS);
         check(helper, three != null && three.isInfiniteDuration() && three.getAmplifier() == 2, "a stack of 3 should be Slowness III, was " + three);
         player.getMainHandItem().shrink(1);
         tick(player, HeldCurses.CHECK_TICKS);
-        MobEffectInstance two = player.getEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        MobEffectInstance two = player.getEffect(MobEffects.SLOWNESS);
         check(helper, two != null && two.isInfiniteDuration() && two.getAmplifier() == 1, "one fewer should be Slowness II, was " + two);
         helper.succeed();
     }
@@ -266,7 +267,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(TotemRegistries.TOTEMS.get(Curse.SLOWNESS).get()));
         tick(player, HeldCurses.CHECK_TICKS);
-        check(helper, player.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "an off-hand totem curses too");
+        check(helper, player.hasEffect(MobEffects.SLOWNESS), "an off-hand totem curses too");
         helper.succeed();
     }
 
@@ -274,7 +275,7 @@ public final class DungeonTotemsGameTests {
     public static void fatigueIsMiningFatigueOne(GameTestHelper helper) {
         ServerPlayer player = holding(helper, Curse.FATIGUE);
         tick(player, HeldCurses.CHECK_TICKS);
-        MobEffectInstance fatigue = player.getEffect(MobEffects.DIG_SLOWDOWN);
+        MobEffectInstance fatigue = player.getEffect(MobEffects.MINING_FATIGUE);
         check(helper, fatigue != null && fatigue.getAmplifier() == 0, "fatigue should be Mining Fatigue I, was " + fatigue);
         helper.succeed();
     }
@@ -588,7 +589,7 @@ public final class DungeonTotemsGameTests {
     public static void nightTryAlwaysSpawnsPhantoms(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         var level = helper.getLevel();
-        long time = level.getDayTime();
+        long time = level.getOverworldClockTime();
         level.setDayTime(18000);
         level.updateSkyBrightness();
         try {
@@ -633,7 +634,7 @@ public final class DungeonTotemsGameTests {
         DungeonTotemsApi.setRescueTarget(p -> Optional.of(target));
         try {
             ServerPlayer player = holding(helper, Curse.VOID);
-            player.teleportTo(player.getX(), player.level().getMinBuildHeight() - 70, player.getZ());
+            player.teleportTo(player.getX(), player.level().getMinY() - 70, player.getZ());
             player.hurt(player.damageSources().fellOutOfWorld(), LETHAL);
             check(helper, player.isAlive(), "player should survive the void");
             check(helper, player.position().distanceTo(target) < 0.01, "player should be at the target, was " + player.position());
@@ -648,13 +649,13 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = holding(helper, Curse.VOID);
         Vec3 safe = player.position();
         VoidRescue.rememberSafeSpot(player, safe);
-        player.teleportTo(player.getX(), player.level().getMinBuildHeight() - 70, player.getZ());
+        player.teleportTo(player.getX(), player.level().getMinY() - 70, player.getZ());
         player.hurt(player.damageSources().fellOutOfWorld(), LETHAL);
         check(helper, player.isAlive(), "player should survive the void");
         double dx = player.getX() - safe.x;
         double dz = player.getZ() - safe.z;
         check(helper, Math.abs(dx) <= 8.5 && Math.abs(dz) <= 8.5, "hop should land near safe ground, was " + player.position());
-        check(helper, player.getY() > player.level().getMinBuildHeight(), "hop should land in the world");
+        check(helper, player.getY() > player.level().getMinY(), "hop should land in the world");
         helper.succeed();
     }
 
@@ -674,7 +675,7 @@ public final class DungeonTotemsGameTests {
         player.hurt(player.damageSources().fall(), LETHAL);
         check(helper, player.isAlive(), "player should survive the fall");
         check(helper, player.getMainHandItem().isEmpty(), "totem should be used up");
-        check(helper, player.getActiveEffects().stream().noneMatch(e -> Curses.curseOf(e) != null), "no curse from a feather");
+        check(helper, player.getActiveEffects().stream().noneMatch(e -> Curses.curseOf(player, e) != null), "no curse from a feather");
         helper.succeed();
     }
 
@@ -1050,9 +1051,9 @@ public final class DungeonTotemsGameTests {
                     }
                 }
                 for (int i = 0; i < current.size(); i++) {
-                    Mob mob = (Mob) current.get(i).form().create(helper.getLevel());
+                    Mob mob = (Mob) current.get(i).form().create(helper.getLevel(), EntitySpawnReason.LOAD);
                     Vec3 at = helper.absoluteVec(new Vec3(i * LANE_SPACING + 1.5, 60, 0.5));
-                    mob.moveTo(at.x, at.y, at.z, 0.0F, 0.0F);
+                    mob.snapTo(at.x, at.y, at.z, 0.0F, 0.0F);
                     mob.goalSelector.removeAllGoals(goal -> true);
                     mob.targetSelector.removeAllGoals(goal -> true);
                     mob.setPersistenceRequired();
@@ -1075,7 +1076,7 @@ public final class DungeonTotemsGameTests {
                 if (mob.getBrain().checkMemory(MemoryModuleType.WALK_TARGET, MemoryStatus.REGISTERED)) {
                     mob.getBrain().setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(target, modifier, 0));
                 } else {
-                    mob.getNavigation().moveTo(target.x, target.y, target.z, modifier);
+                    mob.getNavigation().snapTo(target.x, target.y, target.z, modifier);
                 }
                 if (t >= STROLL_WARM_UP && last.get(i) != null) steps.get(i).add(mob.position().subtract(last.get(i)).horizontalDistance());
                 last.set(i, mob.position());
@@ -1513,12 +1514,20 @@ public final class DungeonTotemsGameTests {
 
     // ---- stacking and death ----
 
+    /** Drinks a milk bucket the way a player does (26.x has no effect cures to call directly). */
+    private static void drinkMilk(ServerPlayer player) {
+        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.MILK_BUCKET));
+        player.startUsingItem(InteractionHand.OFF_HAND);
+        player.getUseItem().finishUsingItem(player.level(), player);
+        player.stopUsingItem();
+    }
+
     @DtGameTest
     public static void milkLeavesTheCurses(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         player.addEffect(new MobEffectInstance(TotemRegistries.RAGE, 400, 0));
         player.addEffect(new MobEffectInstance(TotemRegistries.HEARTBREAK, 400, 0));
-        player.removeEffectsCuredBy(net.neoforged.neoforge.common.EffectCures.MILK);
+        drinkMilk(player);
         check(helper, player.hasEffect(TotemRegistries.RAGE), "milk should not lift rage");
         check(helper, !player.hasEffect(TotemRegistries.HEARTBREAK), "milk does lift heartbreak");
         helper.succeed();
@@ -1528,7 +1537,7 @@ public final class DungeonTotemsGameTests {
     public static void laterPopsKeepEarlierCurses(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         for (Curse curse : List.of(Curse.FATIGUE, Curse.HEARTBREAK, Curse.WEAKNESS)) pop(player, curse);
-        check(helper, player.hasEffect(MobEffects.DIG_SLOWDOWN), "fatigue cleared by a later pop");
+        check(helper, player.hasEffect(MobEffects.MINING_FATIGUE), "fatigue cleared by a later pop");
         check(helper, player.hasEffect(TotemRegistries.HEARTBREAK), "heartbreak cleared by a later pop");
         check(helper, player.hasEffect(MobEffects.WEAKNESS), "weakness missing");
         helper.succeed();
@@ -1569,7 +1578,7 @@ public final class DungeonTotemsGameTests {
         check(helper, rage != null && rage.getAmplifier() == 1, "rage II should come back, was " + rage);
         expectEffect(helper, respawned, TotemRegistries.RAGE, Curse.RAGE.afterSaveTicks());
         check(helper, respawned.hasEffect(TotemRegistries.HEARTBREAK), "heartbreak should come back");
-        check(helper, !respawned.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "a held curse should not come back");
+        check(helper, !respawned.hasEffect(MobEffects.SLOWNESS), "a held curse should not come back");
         check(helper, !respawned.hasEffect(MobEffects.BLINDNESS), "a plain effect should not come back");
         helper.succeed();
     }
@@ -1837,7 +1846,7 @@ public final class DungeonTotemsGameTests {
     }
 
     private static AdvancementProgress progress(ServerPlayer player, String id) {
-        return player.getAdvancements().getOrStartProgress(player.server.getAdvancements().get(DungeonTotems.id(id)));
+        return player.getAdvancements().getOrStartProgress(player.level().getServer().getAdvancements().get(DungeonTotems.id(id)));
     }
 
     private static boolean criterionDone(ServerPlayer player, String id, String criterion) {

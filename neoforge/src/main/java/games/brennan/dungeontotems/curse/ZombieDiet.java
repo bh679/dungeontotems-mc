@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.curse;
 
+import net.minecraft.core.component.DataComponents;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.core.registries.Registries;
@@ -47,7 +48,7 @@ public final class ZombieDiet {
     /** Food a zombie won't eat. Drinks and non-food items are never refused. */
     public static boolean refuses(Player player, ItemStack stack) {
         if (!isZombie(player) || stack.is(ZOMBIE_FOOD) || stack.getUseAnimation() != ItemUseAnimation.EAT) return false;
-        return stack.getFoodProperties(player) != null;
+        return stack.has(DataComponents.FOOD);
     }
 
     /** Both sides, so the client never starts the eating animation. */
@@ -97,7 +98,7 @@ public final class ZombieDiet {
 
     private static void tell(Player player) {
         if (player instanceof ServerPlayer server) {
-            server.displayClientMessage(Component.translatable("message.dungeontotems.zombified.diet"), true);
+            server.sendOverlayMessage(Component.translatable("message.dungeontotems.zombified.diet"));
         }
     }
 }

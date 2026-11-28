@@ -43,7 +43,7 @@ public final class MorphCommand {
 
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("morph")
-            .requires(source -> source.hasPermission(OP_LEVEL))
+            .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
             .then(Commands.literal("next").executes(context -> step(context, 1)))
             .then(Commands.literal("prev").executes(context -> step(context, -1)))
             .then(Commands.literal("off").executes(context -> become(context.getSource().getPlayerOrException(), null, context)))

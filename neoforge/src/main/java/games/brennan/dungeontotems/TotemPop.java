@@ -12,7 +12,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.neoforged.neoforge.common.EffectCures;
+import games.brennan.dungeontotems.curse.CurseGuard;
 import games.brennan.dungeontotems.net.TotemNetwork;
 
 /**
@@ -35,7 +35,7 @@ public final class TotemPop {
         player.gameEvent(GameEvent.ITEM_INTERACT_FINISH);
 
         player.setHealth(1.0F);
-        player.removeEffectsCuredBy(EffectCures.PROTECTED_BY_TOTEM);
+        CurseGuard.clearForTotem(player);
         player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 900, 1));
         player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 1));
         // A single-purpose totem (void, fall, explosion) gives no Fire Resistance; the Fire Totem does.
@@ -52,8 +52,8 @@ public final class TotemPop {
      */
     public static void popFromRule(ServerPlayer player, ItemStack held, Curse curse) {
         pop(player, held, curse);
-        player.displayClientMessage(Component.translatable("message.dungeontotems." + curse.itemName() + ".broken")
-            .withStyle(ChatFormatting.RED), false);
+        player.sendSystemMessage(Component.translatable("message.dungeontotems." + curse.itemName() + ".broken")
+            .withStyle(ChatFormatting.RED));
     }
 
     /** Earlier curses survive the clear above (curses carry no totem cure), so this one stacks on them. */

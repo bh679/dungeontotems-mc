@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems;
 
+import java.util.function.Consumer;
+import net.minecraft.world.item.component.TooltipDisplay;
 import games.brennan.dungeontotems.curse.CurseTimers;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -30,24 +32,24 @@ public class TotemItem extends Item {
      * their levels and the held timer in those lines, for this stack.
      */
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag) {
         String key = "item.dungeontotems." + curse.itemName();
         if (curse.isNarrow()) {
-            tooltip.add(Component.translatable(key + ".curse").withStyle(ChatFormatting.DARK_AQUA));
+            tooltip.accept(Component.translatable(key + ".curse").withStyle(ChatFormatting.DARK_AQUA));
             return;
         }
         if (curse.isTimed()) {
-            tooltip.add(heldLine(curse, stack.getCount()).withStyle(ChatFormatting.RED));
-            tooltip.add(savedLine(curse, stack.getCount()).withStyle(ChatFormatting.GOLD));
+            tooltip.accept(heldLine(curse, stack.getCount()).withStyle(ChatFormatting.RED));
+            tooltip.accept(savedLine(curse, stack.getCount()).withStyle(ChatFormatting.GOLD));
         } else {
-            if (curse.isHeld()) tooltip.add(Component.translatable(key + ".held").withStyle(ChatFormatting.RED));
-            tooltip.add(Component.translatable(key + ".saved").withStyle(ChatFormatting.GOLD));
+            if (curse.isHeld()) tooltip.accept(Component.translatable(key + ".held").withStyle(ChatFormatting.RED));
+            tooltip.accept(Component.translatable(key + ".saved").withStyle(ChatFormatting.GOLD));
         }
         if (curse.isStackable()) {
-            tooltip.add(Component.translatable("item.dungeontotems.stack_level",
+            tooltip.accept(Component.translatable("item.dungeontotems.stack_level",
                 level(curse.heldAmplifier(stack.getCount())), level(curse.afterSaveAmplifier(stack.getCount())))
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
-            tooltip.add(Component.translatable("item.dungeontotems.stacks", curse.maxStack()).withStyle(ChatFormatting.GRAY));
+            tooltip.accept(Component.translatable("item.dungeontotems.stacks", curse.maxStack()).withStyle(ChatFormatting.GRAY));
         }
     }
 

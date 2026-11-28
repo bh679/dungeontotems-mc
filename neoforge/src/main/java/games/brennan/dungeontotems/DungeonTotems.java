@@ -33,7 +33,7 @@ public final class DungeonTotems {
         games.brennan.dungeontotems.gametest.DtGameTestRegistry.register(modBus);
         modBus.addListener(TotemNetwork::register);
         modBus.addListener(MorphForm::register);
-        if (FMLEnvironment.dist == Dist.CLIENT) modBus.addListener(TimerCurseIcons::onRegister);
+        if (FMLEnvironment.getDist() == Dist.CLIENT) modBus.addListener(TimerCurseIcons::onRegister);
         LOGGER.info("Dungeon Totems loaded");
     }
 

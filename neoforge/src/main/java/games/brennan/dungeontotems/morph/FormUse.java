@@ -145,7 +145,7 @@ public final class FormUse {
     /** Hurt, an armadillo rolls up for a moment and a squid inks, as the mobs do. */
     @SubscribeEvent
     public static void onHurtAfter(LivingDamageEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || event.getNewDamage() <= 0.0F || !player.isAlive()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.getHealthDamage() <= 0.0F || !player.isAlive()) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == EntityTypes.ARMADILLO && !ROLLED.contains(player.getUUID())) {
             setRolled(player, true);

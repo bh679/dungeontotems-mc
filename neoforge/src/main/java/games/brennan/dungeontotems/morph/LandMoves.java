@@ -75,7 +75,7 @@ final class LandMoves {
     }
 
     private static void dropSeed(ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         LootTable table = level.getServer().reloadableRegistries().getLootTable(BuiltInLootTables.SNIFFER_DIGGING);
         LootParams params = new LootParams.Builder(level)
             .withParameter(LootContextParams.ORIGIN, player.position())
@@ -92,8 +92,7 @@ final class LandMoves {
     /** {@code SnowGolem#performRangedAttack}, aimed where you look. */
     static void throwSnowball(ServerPlayer player) {
         if (!FormTimers.ready(player, "snowball", SNOWBALL_COOLDOWN)) return;
-        Snowball snowball = new Snowball(player.level(), player);
-        snowball.setItem(new ItemStack(Items.SNOWBALL));
+        Snowball snowball = new Snowball(player.level(), player, new ItemStack(Items.SNOWBALL));
         snowball.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 1.6F, 1.0F);
         player.level().addFreshEntity(snowball);
         player.level().playSound(null, player.blockPosition(), SoundEvents.SNOW_GOLEM_SHOOT, SoundSource.PLAYERS, 1.0F, 0.4F);

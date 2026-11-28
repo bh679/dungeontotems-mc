@@ -82,7 +82,7 @@ public final class WaterLife {
     /** Whether the form's mob never runs out of air under water (land forms; water forms breathe here). */
     public static boolean breathesUnderWater(@Nullable EntityType<?> form) {
         if (form == null || FormTraits.isWaterForm(form)) return false;
-        return form == EntityTypes.IRON_GOLEM || form.is(EntityTypeTags.CAN_BREATHE_UNDER_WATER);
+        return form == EntityTypes.IRON_GOLEM || form.builtInRegistryHolder().is(EntityTypeTags.CAN_BREATHE_UNDER_WATER);
     }
 
     @SubscribeEvent
@@ -105,7 +105,7 @@ public final class WaterLife {
     /** {@code WaterAnimal}/{@code Axolotl#handleAirSupply}: full in water, running down out of it. */
     private static void breatheWater(ServerPlayer player, boolean axolotl) {
         int max = axolotl ? AXOLOTL_AIR : FISH_AIR;
-        boolean wet = axolotl ? player.isInWaterRainOrBubble() : player.isInWaterOrBubble();
+        boolean wet = axolotl ? player.isInWaterOrRain() : player.isInWater();
         int air = wet ? max : AIR.getOrDefault(player.getUUID(), max) - 1;
         if (air <= -GASP) {
             air = 0;
@@ -125,7 +125,7 @@ public final class WaterLife {
             player.hurt(player.damageSources().drown(), GASP_DAMAGE);
         }
         AIR.put(id, air);
-        int moisture = player.isInWaterRainOrBubble() ? DOLPHIN_MOISTURE : MOISTURE.getOrDefault(id, DOLPHIN_MOISTURE) - 1;
+        int moisture = player.isInWaterOrRain() ? DOLPHIN_MOISTURE : MOISTURE.getOrDefault(id, DOLPHIN_MOISTURE) - 1;
         if (moisture <= 0) {
             moisture = 0;
             player.hurt(player.damageSources().dryOut(), DRY_DOLPHIN_DAMAGE);

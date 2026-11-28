@@ -62,7 +62,7 @@ public final class MorphEvents {
     public static boolean ignoresMorphed(LivingEntity attacker, Player player) {
         if (Morphs.formOf(player).isEmpty()) return false;
         if (!(attacker instanceof Enemy)) return false;
-        boolean hunter = attacker instanceof AbstractIllager || attacker.getType().is(TotemRegistries.HUNTS_ZOMBIE_PLAYERS);
+        boolean hunter = attacker instanceof AbstractIllager || attacker.getType().builtInRegistryHolder().is(TotemRegistries.HUNTS_ZOMBIE_PLAYERS);
         if (hunter && player.hasEffect(TotemRegistries.ZOMBIFIED)) return false;
         return attacker.getLastHurtByMob() != player;
     }
@@ -127,9 +127,9 @@ public final class MorphEvents {
 
     /** Vanilla {@code Mob#isSunBurnTick}, minus the random roll (we check once a second). */
     private static boolean burnsInSun(Player player) {
-        if (!player.level().isDay() || player.isCreative() || player.isSpectator()) return false;
+        if (!player.level().isBrightOutside() || player.isCreative() || player.isSpectator()) return false;
         if (!player.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) return false;
-        if (player.isInWaterRainOrBubble() || player.isInPowderSnow || player.wasInPowderSnow) return false;
+        if (player.isInWaterOrRain() || player.isInPowderSnow || player.wasInPowderSnow) return false;
         if (player.getLightLevelDependentMagicValue() <= 0.5F) return false;
         BlockPos eyes = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
         return player.level().canSeeSky(eyes);

@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.curse;
 
+import net.minecraft.world.entity.ConversionParams;
 import games.brennan.dungeontotems.DungeonTotems;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerLevel;
@@ -57,7 +58,7 @@ public final class ZombieTrade {
     }
 
     private static void refuse(PlayerInteractEvent.EntityInteract event) {
-        event.setCancellationResult(InteractionResult.sidedSuccess(event.getLevel().isClientSide()));
+        event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
     }
 
@@ -65,15 +66,18 @@ public final class ZombieTrade {
     @Nullable
     static ZombieVillager infect(ServerLevel level, Villager villager) {
         if (!EventHooks.canLivingConvert(villager, EntityTypes.ZOMBIE_VILLAGER, ticks -> {})) return null;
-        ZombieVillager zombie = villager.convertTo(EntityTypes.ZOMBIE_VILLAGER, false);
+        ZombieVillager zombie = villager.convertTo(EntityTypes.ZOMBIE_VILLAGER, ConversionParams.single(villager, true, true),
+            converted -> {
+                converted.setVillagerDataFinalized(villager.getVillagerDataFinalized());
+                converted.finalizeSpawn(level, level.getCurrentDifficultyAt(converted.blockPosition()), EntitySpawnReason.CONVERSION,
+                    new Zombie.ZombieGroupData(false, true));
+                converted.setVillagerData(villager.getVillagerData());
+                converted.setGossips(villager.getGossips().copy());
+                converted.setTradeOffers(villager.getOffers().copy());
+                converted.setVillagerXp(villager.getVillagerXp());
+                EventHooks.onLivingConvert(villager, converted);
+            });
         if (zombie == null) return null;
-        zombie.finalizeSpawn(level, level.getCurrentDifficultyAt(zombie.blockPosition()), EntitySpawnReason.CONVERSION,
-            new Zombie.ZombieGroupData(false, true));
-        zombie.setVillagerData(villager.getVillagerData());
-        zombie.setGossips(villager.getGossips().store(NbtOps.INSTANCE));
-        zombie.setTradeOffers(villager.getOffers().copy());
-        zombie.setVillagerXp(villager.getVillagerXp());
-        EventHooks.onLivingConvert(villager, zombie);
         if (!villager.isSilent()) level.levelEvent(null, ZOMBIE_INFECTED_EVENT, villager.blockPosition(), 0);
         return zombie;
     }

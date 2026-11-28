@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.client;
 
+import net.minecraft.world.entity.EntitySpawnReason;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.morph.FormAction;
 import games.brennan.dungeontotems.morph.FormUse;
@@ -85,7 +86,7 @@ public final class FormSelfTest {
         Minecraft minecraft = Minecraft.getInstance();
         MinecraftServer server = minecraft.getSingleplayerServer();
         if (minecraft.player == null || server == null) return;
-        if (minecraft.screen != null) minecraft.setScreen(null);
+        if (minecraft.gui.screen() != null) minecraft.gui.setScreen(null);
         tick++;
         if (tick == WARM_UP_TICKS) setUp(server);
         if (tick == WARM_UP_TICKS + 10) build(server); // once the area's chunks are loaded
@@ -256,7 +257,7 @@ public final class FormSelfTest {
         ServerPlayer player = server.getPlayerList().getPlayer(id);
         if (player == null) return;
         BlockPos start = start(form);
-        player.teleportTo(player.serverLevel(), start.getX() + 0.5, start.getY(), start.getZ() + 0.5, 0.0F, 15.0F);
+        player.teleportTo(player.level(), start.getX() + 0.5, start.getY(), start.getZ() + 0.5, 0.0F, 15.0F);
     }
 
     /** Water forms start in the pool, the strider on the lava, the rest on the grass. */
@@ -269,11 +270,11 @@ public final class FormSelfTest {
     /** A fresh, still pig 2.5 blocks south of the form's start, to attack. */
     private static void spawnPig(MinecraftServer server, EntityType<?> form) {
         ServerLevel level = server.overworld();
-        Mob pig = EntityTypes.PIG.create(level);
+        Mob pig = EntityTypes.PIG.create(level, EntitySpawnReason.LOAD);
         if (pig == null) return;
         pig.setNoAi(true);
         BlockPos start = start(form);
-        pig.moveTo(start.getX() + 0.5, start.getY(), start.getZ() + 3.0, 180.0F, 0.0F);
+        pig.snapTo(start.getX() + 0.5, start.getY(), start.getZ() + 3.0, 180.0F, 0.0F);
         level.addFreshEntity(pig);
         pigId = pig.getId();
     }
@@ -281,9 +282,9 @@ public final class FormSelfTest {
     /** A real armadillo walking west beside the form, for the walk-cycle comparison. */
     private static void spawnRealArmadillo(MinecraftServer server) {
         ServerLevel level = server.overworld();
-        Armadillo armadillo = EntityTypes.ARMADILLO.create(level);
+        Armadillo armadillo = EntityTypes.ARMADILLO.create(level, EntitySpawnReason.LOAD);
         if (armadillo == null) return;
-        armadillo.moveTo(FAR.getX() + 8.5, FAR.getY(), FAR.getZ() + 0.5, 90.0F, 0.0F);
+        armadillo.snapTo(FAR.getX() + 8.5, FAR.getY(), FAR.getZ() + 0.5, 90.0F, 0.0F);
         level.addFreshEntity(armadillo);
         realArmadilloId = armadillo.getId();
         steerRealArmadillo(server);
@@ -331,7 +332,7 @@ public final class FormSelfTest {
         if (!realRates.isEmpty()) line.append(", real armadillo ").append(stats(realRates));
         line.append(String.format(", walks %.2f b/s, sprints %.2f b/s, leaves the ground %d times", perSecond(walkSteps), perSecond(sprintSteps), hops));
         MobGaits.Gait gait = MobGaits.of(form);
-        if (gait != null && form.create(Minecraft.getInstance().level) instanceof LivingEntity mob) {
+        if (gait != null && form.create(Minecraft.getInstance().level, EntitySpawnReason.LOAD) instanceof LivingEntity mob) {
             double mobSpeed = mob.getAttributeBaseValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
             line.append(String.format(" (its mob: %.2f, %.2f)", MobGaits.toBlocksPerSecond(MobGaits.walkSpeed(gait, mobSpeed)),
                 MobGaits.toBlocksPerSecond(MobGaits.runSpeed(gait, mobSpeed))));

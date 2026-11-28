@@ -14,7 +14,7 @@ public record ZombieCarriedPayload(List<ItemStack> carried) implements CustomPac
     public static final Type<ZombieCarriedPayload> TYPE = new Type<>(DungeonTotems.id("zombie_carried"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ZombieCarriedPayload> STREAM_CODEC = StreamCodec.composite(
-        ItemStack.LIST_STREAM_CODEC, ZombieCarriedPayload::carried,
+        ItemStack.OPTIONAL_LIST_STREAM_CODEC, ZombieCarriedPayload::carried,
         ZombieCarriedPayload::new);
 
     @Override

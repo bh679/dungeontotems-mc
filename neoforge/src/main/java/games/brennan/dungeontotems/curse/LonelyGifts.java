@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.curse;
 
+import net.minecraft.core.component.DataComponents;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.server.level.ServerPlayer;
@@ -37,7 +38,7 @@ public final class LonelyGifts {
     public static void onItemGone(EntityLeaveLevelEvent event) {
         if (!(event.getEntity() instanceof ItemEntity item) || item.getRemovalReason() != Entity.RemovalReason.DISCARDED) return;
         if (!(item.getOwner() instanceof ServerPlayer player) || !player.hasEffect(TotemRegistries.LONELY)) return;
-        if (!Villager.FOOD_POINTS.containsKey(item.getItem().getItem())) return;
+        if (!item.getItem().has(DataComponents.VILLAGER_FOOD)) return;
         if (!event.getLevel().getEntitiesOfClass(Player.class, item.getBoundingBox().inflate(PICKUP_REACH)).isEmpty()) return;
         if (!event.getLevel().getEntitiesOfClass(Villager.class, item.getBoundingBox().inflate(PICKUP_REACH)).isEmpty()) {
             CurseTimers.gift(player);

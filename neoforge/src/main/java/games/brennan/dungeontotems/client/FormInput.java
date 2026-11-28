@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.client;
 
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.morph.FormUse;
 import games.brennan.dungeontotems.morph.Morphs;
@@ -54,7 +55,7 @@ public final class FormInput {
         if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && FormUse.isUsable(player.level(), block.getBlockPos())) return;
         event.setCanceled(true);
         event.setSwingHand(false);
-        PacketDistributor.sendToServer(FormUsePayload.INSTANCE);
+        ClientClientPacketDistributor.sendToServer(FormUsePayload.INSTANCE);
     }
 
     @SubscribeEvent
@@ -66,7 +67,7 @@ public final class FormInput {
         if (!air) return; // mobs and blocks go the usual way
         event.setCanceled(true);
         event.setSwingHand(false);
-        PacketDistributor.sendToServer(FormAttackPayload.INSTANCE);
+        ClientClientPacketDistributor.sendToServer(FormAttackPayload.INSTANCE);
     }
 
     @SubscribeEvent
@@ -75,14 +76,14 @@ public final class FormInput {
         LocalPlayer player = minecraft.player;
         EntityType<?> form = player == null ? null : Morphs.formOf(player).orElse(null);
         boolean jumpDown = minecraft.options.keyJump.isDown();
-        if (form != null && FormUse.OWN_JUMP.contains(form) && jumpDown && !jumpWasDown && minecraft.screen == null) {
-            PacketDistributor.sendToServer(FormJumpPayload.INSTANCE);
+        if (form != null && FormUse.OWN_JUMP.contains(form) && jumpDown && !jumpWasDown && minecraft.gui.screen() == null) {
+            ClientClientPacketDistributor.sendToServer(FormJumpPayload.INSTANCE);
         }
         jumpWasDown = jumpDown;
 
         if (unrollWait > 0) unrollWait--;
         if (form == EntityTypes.ARMADILLO && unrollWait == 0 && FormAnimator.isCurled(player.getUUID()) && player.input.getMoveVector().lengthSquared() > 0.0F) {
-            PacketDistributor.sendToServer(FormUsePayload.INSTANCE); // "use" toggles the roll: out it comes
+            ClientClientPacketDistributor.sendToServer(FormUsePayload.INSTANCE); // "use" toggles the roll: out it comes
             unrollWait = UNROLL_RETRY_TICKS;
         }
     }

@@ -25,10 +25,10 @@ import java.util.function.Supplier;
  */
 public enum Curse {
     WEAKNESS("weakness_totem", Kind.HELD, () -> MobEffects.WEAKNESS, 0, 0, Ticks.MINUTE * 4),
-    FATIGUE("fatigue_totem", Kind.HELD, () -> MobEffects.DIG_SLOWDOWN, 0, 0, Ticks.MINUTE * 4),
+    FATIGUE("fatigue_totem", Kind.HELD, () -> MobEffects.MINING_FATIGUE, 0, 0, Ticks.MINUTE * 4),
     HEARTBREAK("heartbreak_totem", Kind.HELD, () -> TotemRegistries.HEARTBREAK, 0, 0, Ticks.MINUTE * 4),
     HUNGER("hunger_totem", Kind.HELD, () -> MobEffects.HUNGER, 0, 0, Ticks.MINUTE * 4),
-    SLOWNESS("slowness_totem", Kind.HELD, () -> MobEffects.MOVEMENT_SLOWDOWN, 0, 0, Ticks.MINUTE * 4),
+    SLOWNESS("slowness_totem", Kind.HELD, () -> MobEffects.SLOWNESS, 0, 0, Ticks.MINUTE * 4),
     BLINDNESS("blindness_totem", Kind.AFTER, () -> MobEffects.BLINDNESS, 0, 0, Ticks.SECOND * 30),
     MORPHING("morphing_totem", Kind.AFTER, () -> TotemRegistries.MORPHED, 0, 0, Ticks.SECOND * 30),
     ZOMBIFIED("zombification_totem", Kind.AFTER, () -> TotemRegistries.ZOMBIFIED, 0, 0, MobEffectInstance.INFINITE_DURATION),

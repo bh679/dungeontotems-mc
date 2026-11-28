@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.curse;
 
+import net.minecraft.world.entity.LivingEntity;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.morph.MorphForm;
 import games.brennan.dungeontotems.morph.Morphs;
@@ -8,7 +9,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
-import net.neoforged.neoforge.common.EffectCures;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -69,6 +69,7 @@ public final class Curses {
             if (curse == Curse.ZOMBIFIED) ZombiePack.remember(player);
         }
         // force: replaces a running instance outright, so its level and timer are exactly these.
+        CurseGuard.mark(player, curse);
         player.forceAddEffect(timed(curse, duration, amplifier), null);
         if (curse == Curse.ZOMBIFIED) Morphs.setForm(player, EntityTypes.ZOMBIE);
         if (curse != Curse.MORPHING) return duration;
@@ -82,14 +83,12 @@ public final class Curses {
     private static MobEffectInstance timed(Curse curse, int duration, int amplifier) {
         // showIcon true, visible particles off: a curse is a status, not a potion cloud.
         MobEffectInstance instance = new MobEffectInstance(curse.effect(), duration, amplifier, false, false, true);
-        instance.getCures().remove(EffectCures.PROTECTED_BY_TOTEM);
         return instance;
     }
 
-    /** The curse this effect instance is, or null when it is not one (no curse, or a totem would clear it). */
+    /** The curse this effect instance on {@code entity} is, or null when it is not one (see {@link CurseGuard}). */
     @Nullable
-    public static Curse curseOf(MobEffectInstance instance) {
-        if (instance.getCures().contains(EffectCures.PROTECTED_BY_TOTEM)) return null;
-        return Curse.forEffect(instance.getEffect());
+    public static Curse curseOf(LivingEntity entity, MobEffectInstance instance) {
+        return CurseGuard.curseOf(entity, instance.getEffect());
     }
 }

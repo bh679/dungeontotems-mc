@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.client;
 
+import net.minecraft.world.entity.EntitySpawnReason;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.morph.FormAction;
 import games.brennan.dungeontotems.morph.Morphs;
@@ -154,7 +155,7 @@ public final class MorphRenderer {
         }
         LivingEntity existing = DUMMIES.get(player.getUUID());
         if (existing != null && existing.getType() == form) return existing;
-        if (!(form.create(player.level()) instanceof LivingEntity created)) return null;
+        if (!(form.create(player.level(), EntitySpawnReason.LOAD) instanceof LivingEntity created)) return null;
         if (created instanceof Bat bat) bat.setResting(false); // a new bat hangs upside down
         created.setSilent(true); // its own tick runs for animations; the player makes the sounds
         created.setPos(player.getX(), player.getY(), player.getZ());

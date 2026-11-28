@@ -72,7 +72,7 @@ public final class CurseTimers {
     /** You hurt something other than yourself: Rage's timer starts again. */
     @SubscribeEvent
     public static void onHit(LivingDamageEvent.Post event) {
-        if (event.getNewDamage() <= 0.0F) return;
+        if (event.getHealthDamage() <= 0.0F) return;
         if (event.getSource().getEntity() instanceof ServerPlayer attacker && attacker != event.getEntity()) {
             attacker.setData(TotemRegistries.LAST_HIT, attacker.level().getGameTime());
         }
@@ -99,7 +99,7 @@ public final class CurseTimers {
 
     private static DamageSource damage(ServerPlayer player, Curse curse) {
         ResourceKey<DamageType> key = curse == Curse.RAGE ? TotemRegistries.RAGE_FAILED : TotemRegistries.LONELINESS;
-        Holder<DamageType> type = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(key);
+        Holder<DamageType> type = player.level().registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(key);
         return new DamageSource(type);
     }
 
