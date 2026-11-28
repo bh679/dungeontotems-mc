@@ -14,7 +14,7 @@ The MultiLoader shape of the 1.20.1 line (`dev/port-1-20-1-forge`), so a Fabric 
 
 | Where | What |
 |---|---|
-| `common/` | Vanilla-only code (no loader imports), compiled on its own against plain Minecraft (NeoForm) and also compiled into the loader jar. |
+| `common/` | Vanilla-only code (no loader imports), compiled on its own against plain Minecraft (NeoForm) and also compiled into the loader jar: `curse/ZombieGibberish`, `morph/MobGaits`, `morph/MorphStats` (+ its test), `morph/FormAction`, `effect/CurseEffect`, `advancement/KeyTrigger`. The rest still needs NeoForge (events, registries, attachments); the Fabric port moves code here behind seams as it needs to. |
 | `neoforge/` | Everything else: the mod, its events, registries, client, mixins, GameTests, resources. |
 
 `mod_version` is the main version this line was ported from (0.26.0).
@@ -48,6 +48,8 @@ The MultiLoader shape of the 1.20.1 line (`dev/port-1-20-1-forge`), so a Fabric 
 | Rabbit gait 0.68 / 5.55 b/s | 26.3 rabbits hop slower: 0.42 / 3.64 b/s (re-measured by `mobsWalkAtTheirOwnPace`) |
 
 Everything else matches main 0.26.0, the armadillo included.
+
+**Added on this line:** `client/PopSelfTest` (`./gradlew :neoforge:runSelfTest -Dpop=true`): a real client pops one totem after another and screenshots each.
 
 ## Releasing
 

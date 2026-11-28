@@ -110,7 +110,8 @@ to `dev/<feature-slug>`.
 
 Push, open a PR with a conventional title, CI green (`build.yml`), squash-merge on explicit approval,
 delete the branch, then the MINOR bump: commit `version: bump to X.Y.0 after Gate 3 merge (#PR)`
-directly to main.
+directly to main. **Not on this line:** `mod_version` here is the main version it was ported from; it moves
+only when a later main version is brought across (see `PORTING.md`).
 
 ### Releasing
 
@@ -128,4 +129,4 @@ JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-25-aarch64-os_x.2/jdk-25.0.3+9/Content
 ## Versioning
 
 SemVer in `gradle.properties` `mod_version`: PATCH per dev commit, MINOR after a Gate 3 merge,
-MAJOR for an API break.
+MAJOR for an API break. On the `mc26.3` line it tracks the main version ported from instead.
