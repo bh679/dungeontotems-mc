@@ -8,7 +8,6 @@ import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.Curses;
 import games.brennan.dungeontotems.curse.ZombieGibberish;
-import games.brennan.dungeontotems.mixin.client.BookEditScreenAccess;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
@@ -288,7 +287,7 @@ public final class ZombieSelfTest {
                 BookEditScreen book = new BookEditScreen(minecraft.player, new ItemStack(Items.WRITABLE_BOOK), InteractionHand.MAIN_HAND, WritableBookContent.EMPTY);
                 minecraft.gui.setScreen(book);
                 type(book, TYPED);
-                written = ((BookEditScreenAccess) book).dungeontotems$pageText();
+                written = book.getFocused() instanceof net.minecraft.client.gui.components.MultiLineEditBox page ? page.getValue() : "";
             },
             player -> !written.equals(TYPED) && !written.isBlank()),
         new Step("a held sword and shield show in first person", false, player -> {

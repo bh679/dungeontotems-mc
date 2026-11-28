@@ -2,10 +2,12 @@ package games.brennan.dungeontotems.client;
 
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.ZombieGibberish;
-import games.brennan.dungeontotems.mixin.client.BookEditScreenAccess;
+import games.brennan.dungeontotems.mixin.client.MultiLineEditBoxAccess;
+import net.minecraft.client.gui.components.MultiLineEditBox;
+import net.minecraft.client.gui.components.MultilineTextField;
+import net.minecraft.client.gui.components.Whence;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.font.TextFieldHelper;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
@@ -41,11 +43,12 @@ public final class ZombieWriting {
             input.setValue(edit.text());
             input.setCursorPosition(edit.cursor());
             input.setHighlightPos(edit.cursor());
-        } else if (screen instanceof BookEditScreen && screen instanceof BookEditScreenAccess book) {
-            TextFieldHelper cursor = book.dungeontotems$pageEdit();
-            ZombieGibberish.Edit edit = write(book.dungeontotems$pageText(), cursor.getCursorPos());
-            book.dungeontotems$setPageText(edit.text());
-            cursor.setCursorPos(edit.cursor(), false);
+        } else if (screen instanceof BookEditScreen && screen.getFocused() instanceof MultiLineEditBox page) {
+            // 26.x: the page is a multi-line edit box; setting its value tells the book, then the cursor goes back.
+            MultilineTextField field = ((MultiLineEditBoxAccess) page).dungeontotems$textField();
+            ZombieGibberish.Edit edit = write(page.getValue(), field.cursor());
+            page.setValue(edit.text());
+            field.seekCursor(Whence.ABSOLUTE, edit.cursor());
         }
     }
 

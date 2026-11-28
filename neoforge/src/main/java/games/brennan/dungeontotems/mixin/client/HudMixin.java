@@ -4,17 +4,20 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import games.brennan.dungeontotems.client.ZombieReading;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** The item name over the hotbar reads as zombie gibberish while you are Zombified ({@link ZombieReading}). */
-@Mixin(Gui.class)
-public abstract class GuiMixin {
+/**
+ * The item name that pops up over the hotbar reads as mumbles for a Zombified player, like the tooltip
+ * (main's {@code GuiMixin}: 26.x draws it in {@link Hud}).
+ */
+@Mixin(Hud.class)
+public abstract class HudMixin {
 
-    @WrapOperation(method = "renderSelectedItemName(Lnet/minecraft/client/gui/GuiGraphicsExtractor;I)V", at = @At(value = "INVOKE",
+    @WrapOperation(method = "extractSelectedItemName(Lnet/minecraft/client/gui/GuiGraphicsExtractor;I)V", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/item/ItemStack;getHoverName()Lnet/minecraft/network/chat/Component;"))
     private Component dungeontotems$zombieCantRead(ItemStack stack, Operation<Component> original) {
         Component name = original.call(stack);

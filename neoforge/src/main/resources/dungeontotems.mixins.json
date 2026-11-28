@@ -18,11 +18,11 @@
   "client": [
     "client.AbstractContainerScreenAccess",
     "client.AdvancementWidgetMixin",
-    "client.BookEditScreenAccess",
     "client.BookViewScreenMixin",
-    "client.GuiMixin",
+    "client.HudMixin",
     "client.ItemInHandRendererMixin",
     "client.ItemInHandRendererInvoker",
-    "client.ModelPartAccessor"
+    "client.ModelPartAccessor",
+    "client.MultiLineEditBoxAccess"
   ]
 }

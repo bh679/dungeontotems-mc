@@ -28,7 +28,7 @@ public abstract class AdvancementWidgetMixin {
 
     @Shadow @Final private AdvancementNode advancementNode;
     @Shadow @Final private DisplayInfo display;
-    @Shadow @Final private FormattedCharSequence title;
+    @Shadow @Final private List<FormattedCharSequence> titleLines;
     @Shadow @Final private Minecraft minecraft;
     @Shadow @Final @Mutable private List<FormattedCharSequence> description;
     @Shadow @Final @Mutable private int width;
@@ -37,11 +37,15 @@ public abstract class AdvancementWidgetMixin {
 
     @Shadow private List<FormattedText> findOptimalLines(Component component, int maxWidth) { throw new AssertionError(); }
 
+    private static final int TITLE_MIN_WIDTH = 80;
+
     @Inject(method = "setProgress", at = @At("TAIL"))
     private void dungeontotems$tooltip(AdvancementProgress progress, CallbackInfo ci) {
         AdvancementTooltips.Lines lines = AdvancementTooltips.lines(advancementNode.holder(), display, progress);
         if (lines == null) return;
-        int wrap = 29 + minecraft.font.width(title) + getMaxProgressWidth();
+        // 26.x wraps the title over lines, at least 80 wide, as the constructor does.
+        int titleWidth = Math.max(titleLines.stream().mapToInt(minecraft.font::width).max().orElse(0), TITLE_MIN_WIDTH);
+        int wrap = 29 + titleWidth + getMaxProgressWidth();
         List<FormattedCharSequence> text = AdvancementTooltips.layout(minecraft.font, lines,
             Math.max(wrap, AdvancementTooltips.minWidth(lines)), this::findOptimalLines);
         int widest = wrap;
