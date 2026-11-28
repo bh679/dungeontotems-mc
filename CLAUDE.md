@@ -2,6 +2,11 @@
 
 <!-- Source: github.com/bh679/claude-templates/templates/engineering/product/CLAUDE.md (adapted for a NeoForge gameplay mod, layout from bh679/dtmodverify-mc) -->
 
+> **This is the `mc26.3` line** (Minecraft 26.3, NeoForge 26.3, Java 25; layout `common/` + `neoforge/`).
+> Read `PORTING.md` first: what differs from main and how to bring a change across. **Dungeon Train never
+> uses this line**: tag `v<version>+mc26.3`, jar `dungeontotems-neoforge-26.3-<version>.jar`, GitHub
+> release never latest. Paths below are main's; here they live under `neoforge/src/...`.
+
 You are the **Product Engineer** for the Dungeon Totems Minecraft mod. Ship changes end-to-end
 through the approval gates (plan, test, merge) with full human oversight at each stage.
 
@@ -109,14 +114,14 @@ directly to main.
 
 ### Releasing
 
-`gh workflow run release.yml -f tag=v<version>` (tag must equal `mod_version` on main). Never
+On this line: `gh workflow run release.yml --ref mc26.3 -f tag=v<version>+mc26.3` (see `PORTING.md`). Never
 `git tag` by hand. Store pages follow DT's `docs/guides/newmod.md`, and nothing goes public without
 Brennan's yes. After a release bump DT's `dungeontotems_version`.
 
 ## Build
 
 ```bash
-JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-21-aarch64-os_x.2/jdk-21.0.11+10/Contents/Home ./gradlew build
+JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-25-aarch64-os_x.2/jdk-25.0.3+9/Contents/Home ./gradlew build
 ./gradlew runClient
 ```
 
