@@ -5,7 +5,8 @@ name: Release (1.20.1)
 # Same file name as main's release so GitHub lets it be dispatched; it refuses any other branch.
 #
 # Dungeon Train must never use this build. DT resolves releases/download/v<v>/dungeontotems-neoforge-<v>.jar,
-# so this release's tag (v<v>+mc1.20.1) and jar (dungeontotems-forge-1.20.1-<v>.jar) can never match, and
+# so this release's tag (v<v>+mc1.20.1) and jars (dungeontotems-forge-1.20.1-<v>.jar,
+# dungeontotems-fabric-1.20.1-<v>.jar) can never match, and
 # the GitHub release is never marked latest. Uploads are files only: no listing text or settings change.
 
 on:
@@ -60,6 +61,7 @@ jobs:
           fi
           echo "MOD_VERSION=$GRADLE_VERSION" >> "$GITHUB_ENV"
           echo "JAR=dungeontotems-forge-${MC_VERSION}-${GRADLE_VERSION}.jar" >> "$GITHUB_ENV"
+          echo "FABRIC_JAR=dungeontotems-fabric-${MC_VERSION}-${GRADLE_VERSION}.jar" >> "$GITHUB_ENV"
 
       - name: Check tag does not already exist
         env:
@@ -84,17 +86,18 @@ jobs:
 
       - run: ./gradlew build --no-daemon
 
-      - name: Stage the Forge jar
+      - name: Stage the Forge and Fabric jars
         run: |
           mkdir -p release-artifacts
           cp "forge/build/libs/${JAR}" release-artifacts/
-          case "$(ls release-artifacts)" in *neoforge*) echo "::error::Port jar must not use the neoforge name"; exit 1;; esac
+          cp "fabric/build/libs/${FABRIC_JAR}" release-artifacts/
+          case "$(ls release-artifacts)" in *neoforge*) echo "::error::Port jars must not use the neoforge name"; exit 1;; esac
           ls -la release-artifacts/
 
       - name: Create GitHub Release (never latest)
         uses: softprops/action-gh-release@v2
         with:
-          name: Dungeon Totems ${{ env.MOD_VERSION }} for Minecraft 1.20.1 (Forge)
+          name: Dungeon Totems ${{ env.MOD_VERSION }} for Minecraft 1.20.1 (Forge, NeoForge, Fabric)
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ env.LINE_BRANCH }}
           generate_release_notes: true
@@ -142,6 +145,28 @@ jobs:
           retry-delay: 10000
           fail-mode: warn
           dependencies: ""
+
+      # The Fabric jar, a file of its own on the same projects. Fabric API is required.
+      - name: Publish to Modrinth + CurseForge (1.20.1, Fabric)
+        if: steps.publish_check.outputs.modrinth == 'true' || steps.publish_check.outputs.curseforge == 'true'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ steps.publish_check.outputs.modrinth == 'true' && vars.MODRINTH_PROJECT_ID || '' }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: ${{ steps.publish_check.outputs.curseforge == 'true' && vars.CURSEFORGE_PROJECT_ID || '' }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: release-artifacts/${{ env.FABRIC_JAR }}
+          name: Dungeon Totems ${{ env.MOD_VERSION }} (1.20.1 Fabric)
+          version: ${{ env.MOD_VERSION }}+mc1.20.1-fabric
+          version-type: ${{ steps.release_type.outputs.type }}
+          loaders: fabric
+          game-versions: 1.20.1
+          java: 17
+          retry-attempts: 2
+          retry-delay: 10000
+          fail-mode: warn
+          dependencies: |
+            fabric-api(required){modrinth:P7dR8mSH}{curseforge:306612}
 
       - name: Notify Discord
         if: ${{ inputs.notify_discord && env.RELEASE_TAG != '' }}

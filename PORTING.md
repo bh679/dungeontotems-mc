@@ -1,32 +1,39 @@
-# Dungeon Totems for Minecraft 1.20.1 (Forge)
+# Dungeon Totems for Minecraft 1.20.1 (Forge, NeoForge, Fabric)
 
 This branch (`mc1.20.1`) is the 1.20.1 line of Dungeon Totems, ported from main (NeoForge 1.21.1).
-One jar runs on **Forge 47** and **NeoForge 20.1**.
+Two jars: one runs on **Forge 47** and **NeoForge 20.1**, the other on **Fabric** (Loader 0.15+, Fabric API).
 
-**Dungeon Train never uses this line.** Its releases are tagged `v<version>+mc1.20.1` with the jar
-`dungeontotems-forge-1.20.1-<version>.jar`; Dungeon Train resolves only `dungeontotems-neoforge-<v>.jar`
-under `v<v>`, and its CurseForge dependency picks the 1.21.1 file. Never rename this jar to the neoforge
-pattern, never tag it plain `v<version>`, and never mark its GitHub release latest.
+**Dungeon Train never uses this line.** Its releases are tagged `v<version>+mc1.20.1` with the jars
+`dungeontotems-forge-1.20.1-<version>.jar` and `dungeontotems-fabric-1.20.1-<version>.jar`; Dungeon Train
+resolves only `dungeontotems-neoforge-<v>.jar` under `v<v>`, and its CurseForge dependency picks the 1.21.1
+file. Never rename either jar to the neoforge pattern, never tag it plain `v<version>`, and never mark its
+GitHub release latest.
 
 ## Layout
 
 | Where | What |
 |---|---|
-| `common/` | Vanilla-only code (no loader imports), compiled into each loader's jar: entity data (`data/`), the curse marks (`curse/CurseMarks`), packets (`net/*Payload`), `util/`, and their mixins. A Fabric port reuses it. |
-| `forge/` | Everything else: the mod, its events, registries, client, GameTests, resources. |
+| `common/` | The whole mod, loader-free: gameplay, client, GameTests, data and assets, the shared mixins (`dungeontotems.mixins.json`), unit tests. Compiled into both jars. |
+| `common/.../platform/event/` | The mod's own event bus (`TotemEvents`), with Forge-shaped event classes (`LivingHurtEvent`, `TickEvent.PlayerTickEvent`...) and `@SubscribeEvent`/`@EventBusSubscriber`. Every subscriber class is listed in `CommonEvents` (a unit test checks). |
+| `common/.../platform/Services` | What common asks of the loader, by ServiceLoader: `RegistryService`, `NetworkService`, `PlatformService`, `LoaderHooks`. |
+| `forge/` | The Forge entry point, `ForgeEventBridge` (each Forge event forwarded per priority, so HIGHEST/LOWEST keep their place among other mods), services, GLM, the advancement condition, `dungeontotems.forge.mixins.json`. |
+| `fabric/` | The Fabric entry points, Fabric API callbacks (`FabricEvents`, `DungeonTotemsFabricClient`), services, and mixins at Forge 47's exact patch points (`fabric/mixin`, `dungeontotems.fabric.mixins.json`). |
 | `scripts/to_1_20_1.py` | Converts data copied from main to 1.20.1's format and folders. |
 | `scripts/neoforge_to_forge.py` | First-pass Java renames (imports, simple names) for code copied from main. |
 
-`mod_version` is the main version this line was ported from (0.26.0).
+`mod_version` names main's minor this line was ported from (0.26); the patch is this line's own changes.
 
 ## Bringing a change across from main
 
-1. Copy the changed files from main into `forge/src/...` (or `common/` if the file lives there here).
-2. `python3 scripts/neoforge_to_forge.py forge/src` for the renames, then fix what's left by hand with
-   the table below. A main `PlayerTickEvent.Pre`/`Post` handler needs `if (event.phase != TickEvent.Phase.START/END) return;`
+1. Copy the changed files from main into `common/src/...`.
+2. `python3 scripts/neoforge_to_forge.py common/src` for the renames, then fix what's left by hand with
+   the table below. Forge event imports become `games.brennan.dungeontotems.platform.event.<Name>` (same
+   names); a new event type needs a class there, a forward in `ForgeEventBridge` and a Fabric hook. A new
+   `@EventBusSubscriber` class goes in `CommonEvents`. Anything else loader-specific goes behind `Services`. A main `PlayerTickEvent.Pre`/`Post` handler needs `if (event.phase != TickEvent.Phase.START/END) return;`
    and `event.player` for `event.getEntity()`: Forge's one tick event fires twice.
 3. `python3 scripts/to_1_20_1.py` after copying any data files.
-4. `./gradlew build` and `./gradlew :forge:runGameTestServer` (all GameTests must pass).
+4. `./gradlew build`, `./gradlew :forge:runGameTestServer` and `./gradlew :fabric:runGametest` (all GameTests
+   must pass on both).
 
 ## What differs from main
 
@@ -50,8 +57,28 @@ pattern, never tag it plain `v<version>`, and never mark its GitHub release late
 **Left out:** the armadillo morph form and its roll move (1.20.1 has no armadillo), dropped from the
 morph table, the Great and Small advancement and the self-tests. Everything else matches main 0.26.0.
 
-**Not yet in `common/`:** most of the mod still lives in `forge/` because it is tied to Forge's events and
-registries. The Fabric port moves code to `common/` behind loader seams as it needs to.
+## Fabric
+
+| Forge 47 | Fabric |
+|---|---|
+| `LivingHurtEvent` / `LivingDamageEvent` | `@ModifyVariable` in `actuallyHurt` (`LivingEntity` and `Player`, which overrides it) at Forge's spots: the first read of the amount (before armour), and just before health drops (vanilla keeps that amount in the argument's slot: ordinals from javap). Fabric API's `ALLOW_DAMAGE` fires before armour and `ALLOW_DEATH` before the vanilla totem, so neither is used |
+| `LivingDeathEvent` | `die` HEAD (`LivingEntity`; `ServerPlayer` after its death game event) |
+| `PlayerTickEvent`, login/logout | `Player.tick` HEAD/TAIL; `PlayerList.placeNewPlayer` TAIL / `remove` HEAD |
+| Effect added/removed/expired, milk | `LivingEntity` mixins; milk keeps an uncurable curse (`MilkBucketItemMixin` → `LoaderHooks.cureWithMilk`) |
+| Target, tame, trade, container open, advancement earned, break speed, size, use item, fall, jump, breathe | Mixins at Forge's patch lines (see each class's javadoc) |
+| Right-click block (`useBlock`/`useItem`) | `ServerPlayerGameMode.useItemOn` / `MultiPlayerGameMode.performUseItemOn` |
+| Right-click item, left-click block, block break, respawn, clone, tracking, entity load/unload, commands, tooltip, chat sent, screen render, client tick | Fabric API callbacks |
+| `SimpleChannel` (protocol 6) | One channel per packet, `dungeontotems:v6/<name>`; a client without them is disconnected after 5 s (`ProtocolCheck`) |
+| GLM (evoker totems) | `dungeontotems:swap_totems` loot function on every pool of the evoker table (`LootTableEvents.MODIFY`) |
+| Advancement `conditions` | `fabric:load_conditions` with the same id (`to_1_20_1.py` writes both) |
+| `forge:step_height_addition` | `dungeontotems:step_height`, added in `Entity.maxUpStep` for players |
+| Rage/Lonely timer icons (client extension) | `GuiEffectsMixin`, `EffectRenderingInventoryScreenMixin` |
+| GameTest `@GameTestHolder` | `fabric-gametest` entrypoints; `GameTestRegistryMixin` gives the `empty` template our namespace (on Forge, `ForgeGameTestHooksMixin`) |
+| Jade `@WailaPlugin` | `jade` entrypoint, same class |
+| PlayerMob gift compat | Off (PlayerMob is Forge-only) |
+
+Runs: `./gradlew :fabric:runClient`, `:fabric:runServer` (in `fabric/run-server`), `:fabric:runGametest`,
+`:fabric:runSelfTest` (same `-D` options as Forge's; needs a clean "New World" save in `fabric/run-selftest/saves`).
 
 ## Releasing
 
@@ -59,6 +86,7 @@ registries. The Fabric port moves code to `common/` behind loader seams as it ne
 gh workflow run release.yml --ref mc1.20.1 -f tag=v<mod_version>+mc1.20.1
 ```
 
-It refuses any other branch or tag shape, builds, makes a GitHub release that is never marked latest,
-and uploads the jar to the same CurseForge and Modrinth projects as main, tagged Minecraft 1.20.1 with
-the Forge and NeoForge loaders. Files only: no listing text or settings change.
+It refuses any other branch or tag shape, builds, makes a GitHub release with both jars that is never
+marked latest, and uploads them to the same CurseForge and Modrinth projects as main, tagged Minecraft
+1.20.1: the Forge jar with the Forge and NeoForge loaders, the Fabric jar with Fabric (Fabric API required).
+Files only: no listing text or settings change.

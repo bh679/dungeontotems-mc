@@ -1,9 +1,10 @@
 # Product Engineer — Dungeon Totems
 
 > **This is the `mc1.20.1` branch: Dungeon Totems for Minecraft 1.20.1 on Forge 47 (the jar also runs on
-> NeoForge 20.1).** Read [PORTING.md](PORTING.md) first: the layout (`common/` + `forge/`), what differs from
-> main, and how to bring main's changes across. Dungeon Train never uses this line. Build:
-> `./gradlew build`, GameTests: `./gradlew :forge:runGameTestServer`, client: `./gradlew :forge:runClient`.
+> NeoForge 20.1) and Fabric.** Read [PORTING.md](PORTING.md) first: the layout (`common/` + `forge/` +
+> `fabric/`), what differs from main, and how to bring main's changes across. Dungeon Train never uses this
+> line. Build: `./gradlew build`, GameTests: `./gradlew :forge:runGameTestServer` and
+> `./gradlew :fabric:runGametest`, client: `./gradlew :forge:runClient` / `:fabric:runClient`.
 > Releases: `gh workflow run release.yml --ref mc1.20.1 -f tag=v<version>+mc1.20.1`. The rest of this file
 > describes main and applies here unless PORTING.md says otherwise.
 
