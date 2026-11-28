@@ -24,10 +24,7 @@ repositories {
 }
 
 loom {
-    mixin {
-        defaultRefmapName = "${mod_id}.refmap.json"
-    }
-
+    // No refmap: Loom remaps mixin targets in the jar itself (common's config names one; fabric/ ships it empty).
     runs {
         client {
             client()
@@ -37,6 +34,14 @@ loom {
             server()
             runDir 'run-server'
             property 'dungeontotems.advancements', 'true'
+        }
+
+        // ./gradlew :fabric:runJoinServer: a client that joins runServer on localhost as "Tester" (two-sided tests).
+        joinServer {
+            client()
+            name 'Join Server'
+            runDir 'run'
+            programArgs '--quickPlayMultiplayer', 'localhost:25565', '--username', 'Tester'
         }
 
         // ./gradlew :fabric:runGametest: runs the shared GameTests on vanilla's flat test world and exits.
