@@ -5,6 +5,8 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.UUID;
@@ -20,21 +22,32 @@ final class MockPlayers {
     private MockPlayers() {}
 
     static ServerPlayer create(GameTestHelper helper) {
-        ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
-                new GameProfile(UUID.randomUUID(), "test-mock-player")) {
-            @Override
-            public boolean isSpectator() {
-                return false;
-            }
-
-            @Override
-            public boolean isCreative() {
-                return true;
-            }
-        };
+        ServerPlayer player = new MockPlayer(helper.getLevel().getServer(), helper.getLevel(),
+                new GameProfile(UUID.randomUUID(), "test-mock-player"));
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
         new EmbeddedChannel(connection); // registers the connection, which takes the channel as it goes active
         helper.getLevel().getServer().getPlayerList().placeNewPlayer(connection, player);
         return player;
+    }
+
+    /**
+     * Named, not anonymous: javac builds an anonymous class's constructor from the super constructor's
+     * parameter names, and without Parchment names (CI) those collide.
+     */
+    private static final class MockPlayer extends ServerPlayer {
+
+        MockPlayer(MinecraftServer server, ServerLevel level, GameProfile profile) {
+            super(server, level, profile);
+        }
+
+        @Override
+        public boolean isSpectator() {
+            return false;
+        }
+
+        @Override
+        public boolean isCreative() {
+            return true;
+        }
     }
 }
