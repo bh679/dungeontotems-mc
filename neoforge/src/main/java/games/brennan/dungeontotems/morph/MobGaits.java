@@ -82,7 +82,7 @@ public final class MobGaits {
         Map.entry(EntityTypes.PANDA, Gait.of(1.0, 2.0)),
         Map.entry(EntityTypes.PIG, Gait.of(1.0, 1.25)),
         Map.entry(EntityTypes.POLAR_BEAR, Gait.of(1.0, 2.0).tuned(3.3, 4.3)),
-        Map.entry(EntityTypes.RABBIT, Gait.measured(0.6, 2.2, 0.68, 5.55)),
+        Map.entry(EntityTypes.RABBIT, Gait.measured(0.6, 2.2, 0.42, 3.64)), // 26.3 rabbits hop slower than 1.21.1's (0.68, 5.55)
         Map.entry(EntityTypes.SHEEP, Gait.of(1.0, 1.25)),
         Map.entry(EntityTypes.SKELETON_HORSE, Gait.ridden(0.7, 0.0)),
         Map.entry(EntityTypes.SNIFFER, Gait.of(1.0, 2.0)),

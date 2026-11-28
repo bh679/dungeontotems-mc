@@ -32,7 +32,7 @@ public final class MorphCommand {
 
     private static final int OP_LEVEL = 2;
     private static final DynamicCommandExceptionType NOT_A_FORM = new DynamicCommandExceptionType(
-        id -> Component.translatableWithFallback("commands.dungeontotems.morph.not_a_form", "%s isn't a morph form", id));
+        id -> Component.translatableWithFallback("commands.dungeontotems.morph.not_a_form", "%s isn't a morph form", String.valueOf(id)));
 
     private MorphCommand() {}
 

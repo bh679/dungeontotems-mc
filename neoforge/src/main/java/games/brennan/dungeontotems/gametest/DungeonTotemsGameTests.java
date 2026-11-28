@@ -317,7 +317,7 @@ public final class DungeonTotemsGameTests {
         pop(player, Curse.RESTRAINT);
         tick(player, 20);
         player.setHealth(20.0F);
-        player.setInvulnerableTime(0); // the pop's own hit would otherwise swallow the doom
+        player.damageCooldownTime = 0; // the pop's own hit would otherwise swallow the doom
         openBarrel(helper, player);
         tick(player, 2);
         check(helper, player.isAlive(), "a curse can't kill you after a save");
@@ -368,7 +368,7 @@ public final class DungeonTotemsGameTests {
     public static void takingDamageKeepsTheVow(GameTestHelper helper) {
         ServerPlayer player = holding(helper, Curse.PACIFISM);
         Pig pig = helper.spawn(EntityTypes.PIG, 2, 1, 2);
-        player.setInvulnerableTime(0);
+        player.damageCooldownTime = 0;
         player.hurt(player.damageSources().mobAttack(pig), 1.0F);
         tick(player, 2);
         check(helper, !player.getMainHandItem().isEmpty(), "being hurt does not break the vow");
@@ -436,7 +436,7 @@ public final class DungeonTotemsGameTests {
         Curses.apply(player, Curse.RAGE, 1, 400);
         player.setHealth(1.0F);
         overdue(player, TotemRegistries.LAST_HIT, 1);
-        player.setInvulnerableTime(0);
+        player.damageCooldownTime = 0;
         tick(player, 1);
         check(helper, player.isAlive() && player.getHealth() == 1.0F, "rage after a save stops at half a heart");
         MobEffectInstance rage = player.getEffect(TotemRegistries.RAGE);
@@ -450,7 +450,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = holding(helper, Curse.RAGE);
         tick(player, HeldCurses.CHECK_TICKS);
         player.setHealth(1.0F);
-        player.setInvulnerableTime(0);
+        player.damageCooldownTime = 0;
         overdue(player, TotemRegistries.LAST_HIT, 0);
         tick(player, 1);
         check(helper, player.isAlive(), "the held totem should save you from its own rage");
@@ -499,7 +499,7 @@ public final class DungeonTotemsGameTests {
         tick(player, 1);
         check(helper, player.getHealth() == 20.0F, "lonely should not hurt at Poison's rate, health " + player.getHealth());
         player.setData(TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 50);
-        player.setInvulnerableTime(0);
+        player.damageCooldownTime = 0;
         tick(player, 1);
         check(helper, player.getHealth() < 20.0F, "lonely should hurt every 50 ticks once overdue");
         helper.succeed();
@@ -1064,6 +1064,8 @@ public final class DungeonTotemsGameTests {
                     if (mob.getBrain().checkMemory(MemoryModuleType.RAM_COOLDOWN_TICKS, MemoryStatus.REGISTERED)) {
                         mob.getBrain().setMemory(MemoryModuleType.RAM_COOLDOWN_TICKS, Integer.MAX_VALUE);
                     }
+                    // 26.x zombie horses burn by day and snow golems melt here: either stops the lane, so no fire.
+                    mob.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
                     helper.getLevel().addFreshEntity(mob);
                     mobs.add(mob);
                     last.add(null);
@@ -1388,7 +1390,7 @@ public final class DungeonTotemsGameTests {
         piglin.setTarget(player);
         check(helper, piglin.getTarget() == null, "zombified piglins don't turn on their own");
         Pig pig = helper.spawn(EntityTypes.PIG, 4, 1, 2);
-        player.setInvulnerableTime(0);
+        player.damageCooldownTime = 0;
         player.hurt(player.damageSources().mobAttack(pig), 1.0F);
         check(helper, piglin.getTarget() == pig, "the pack turns on whoever hurts you");
         helper.succeed();
@@ -1699,7 +1701,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         pop(player, Curse.WEAKNESS);
         check(helper, player.getData(TotemRegistries.CURSE_TRIALS).contains("weakness"), "a pop starts a trial");
-        player.setInvulnerableTime(0);
+        player.damageCooldownTime = 0;
         player.hurt(player.damageSources().generic(), LETHAL);
         check(helper, !player.isAlive() && player.getData(TotemRegistries.CURSE_TRIALS).isEmpty(), "dying ends every trial");
         helper.succeed();
@@ -1842,7 +1844,7 @@ public final class DungeonTotemsGameTests {
     /** Pops {@code curse}'s totem on the player. */
     private static void pop(ServerPlayer player, Curse curse) {
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(TotemRegistries.TOTEMS.get(curse).get()));
-        player.setInvulnerableTime(0); // vanilla ignores a second hit this soon
+        player.damageCooldownTime = 0; // vanilla ignores a second hit this soon
         player.hurt(player.damageSources().generic(), LETHAL);
     }
 

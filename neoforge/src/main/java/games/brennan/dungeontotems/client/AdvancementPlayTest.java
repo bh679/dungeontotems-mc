@@ -167,7 +167,7 @@ final class AdvancementPlayTest {
 
     private static void popByDying(ServerPlayer player, Curse curse) {
         hold(player, curse);
-        player.setInvulnerableTime(0);
+        player.damageCooldownTime = 0;
         player.hurt(player.damageSources().generic(), LETHAL);
         Morphs.formOf(player).ifPresent(form -> REAL_FORMS.add(BuiltInRegistries.ENTITY_TYPE.getKey(form).toString()));
     }
