@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.morph;
 
+import net.minecraft.world.entity.EntitySpawnRequest;
+import net.minecraft.world.entity.EntitySpawnReason;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.advancement.TotemTriggers;
 import games.brennan.dungeontotems.net.MorphSyncPayload;
@@ -143,6 +145,12 @@ public final class Morphs {
     }
 
     /** The player's current form, if any. Safe on both sides and during entity construction. */
+    /**
+     * How a form's stand-in (the mob drawn, or asked about, for a morphed player) is made. 26.x refuses to make
+     * a hostile mob on Peaceful unless checks are skipped, which left a Zombified player drawn as themselves.
+     */
+    public static final EntitySpawnRequest STAND_IN = new EntitySpawnRequest(EntitySpawnReason.LOAD, true);
+
     public static Optional<EntityType<?>> formOf(Player player) {
         if (!player.hasData(TotemRegistries.FORM)) return Optional.empty();
         String id = player.getData(TotemRegistries.FORM);

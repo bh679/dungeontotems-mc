@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.gametest;
 
+import games.brennan.dungeontotems.morph.Morphs;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.Holder;
@@ -16,6 +17,9 @@ import java.util.UUID;
 
 /** GameTest helpers that 26.x's own helper no longer gives. */
 final class MockPlayers {
+
+    /** A lane mob made whatever the difficulty (26.x refuses hostile mobs on Peaceful otherwise). */
+    static final net.minecraft.world.entity.EntitySpawnRequest STAND_IN = games.brennan.dungeontotems.morph.Morphs.STAND_IN;
 
     private MockPlayers() {}
 

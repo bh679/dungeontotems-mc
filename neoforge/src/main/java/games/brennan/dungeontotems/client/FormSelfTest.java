@@ -50,7 +50,7 @@ import java.util.UUID;
 public final class FormSelfTest {
 
     private static final boolean ENABLED = System.getProperty("dungeontotems.selftest") != null && !AdvancementSelfTest.ENABLED
-        && !StackingSelfTest.ENABLED && !ZombieSelfTest.ENABLED;
+        && !StackingSelfTest.ENABLED && !ZombieSelfTest.ENABLED && !PopSelfTest.ENABLED;
     private static final int WARM_UP_TICKS = 100;
     private static final int TICKS_PER_FORM = 140;
     /** The test area: a grass platform, a water pool to its south and a lava pool to its north, high up. */
@@ -332,7 +332,7 @@ public final class FormSelfTest {
         if (!realRates.isEmpty()) line.append(", real armadillo ").append(stats(realRates));
         line.append(String.format(", walks %.2f b/s, sprints %.2f b/s, leaves the ground %d times", perSecond(walkSteps), perSecond(sprintSteps), hops));
         MobGaits.Gait gait = MobGaits.of(form);
-        if (gait != null && form.create(Minecraft.getInstance().level, EntitySpawnReason.LOAD) instanceof LivingEntity mob) {
+        if (gait != null && form.create(Minecraft.getInstance().level, Morphs.STAND_IN) instanceof LivingEntity mob) {
             double mobSpeed = mob.getAttributeBaseValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
             line.append(String.format(" (its mob: %.2f, %.2f)", MobGaits.toBlocksPerSecond(MobGaits.walkSpeed(gait, mobSpeed)),
                 MobGaits.toBlocksPerSecond(MobGaits.runSpeed(gait, mobSpeed))));

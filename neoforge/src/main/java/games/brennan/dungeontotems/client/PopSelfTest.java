@@ -1,5 +1,8 @@
 package games.brennan.dungeontotems.client;
 
+import games.brennan.dungeontotems.morph.Morphs;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.core.BlockPos;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.registry.TotemRegistries;
@@ -34,7 +37,7 @@ import java.util.List;
 /**
  * Development only ({@code ./gradlew runSelfTest -Dpop=true}): a real client is saved by one totem after
  * another, in a fresh flat world. Each pop is screenshotted in first person as the totem flies up
- * ({@code screenshots/selftest_pop_<curse>_0_pop.png}) and again from behind once its curse has set in
+ * ({@code screenshots/selftest_pop_<curse>_0_pop.png}) and again from the front once its curse has set in
  * ({@code _1_after}), and reported to {@code selftest/pop.txt}; then the client quits.
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID, value = Dist.CLIENT)
@@ -54,6 +57,8 @@ public final class PopSelfTest {
     private static int tick;
     private static int failures;
     private static boolean worldRequested;
+    private static boolean moved;
+    private static final int AWAY = 400;
 
     private PopSelfTest() {}
 
@@ -77,6 +82,7 @@ public final class PopSelfTest {
         minecraft.options.pauseOnLostFocus = false; // an unfocused window would pause the server for good
         if (minecraft.gui.screen() != null) minecraft.gui.setScreen(null);
         tick++;
+        if (tick < WARM_UP_TICKS && minecraft.player.isDeadOrDying()) minecraft.player.respawn(); // a save left dead
         ServerPlayer player = server.getPlayerList().getPlayer(minecraft.player.getUUID());
         if (player == null || tick < WARM_UP_TICKS) return;
         int t = tick - WARM_UP_TICKS;
@@ -96,6 +102,16 @@ public final class PopSelfTest {
                     player.level().registryAccess().get(WorldClocks.OVERWORLD).orElseThrow(), NOON);
                 player.setGameMode(GameType.SURVIVAL);
                 player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(TotemRegistries.TOTEMS.get(curse).get()));
+                if (!moved) { // clear daylight ground, away from anything an earlier test left in the world
+                    moved = true;
+                    player.level().getServer().setWeatherParameters(24000, 0, false, false);
+                    BlockPos spot = player.blockPosition().offset(AWAY, 0, AWAY);
+                    player.level().getChunkAt(spot); // generate it first, or its surface reads as the bottom of the world
+                    BlockPos far = player.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, spot);
+                    player.teleportTo(far.getX() + 0.5, far.getY(), far.getZ() + 0.5);
+                }
+                player.setYRot(0.0F);
+                player.setXRot(10.0F);
             });
         }
         if (at == POP_AT) {
@@ -104,16 +120,21 @@ public final class PopSelfTest {
                 player.hurt(player.damageSources().generic(), LETHAL);
             });
         }
-        if (at == POP_SHOT_AT) shot(minecraft, curse, "0_pop");
-        if (at == POP_SHOT_AT + 1) minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        if (at == POP_AT + 3) shot(minecraft, curse, "0_pop");
+        if (at == POP_SHOT_AT) shot(minecraft, curse, "0_pop_later");
+        if (at == POP_SHOT_AT + 1) minecraft.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+        if (at == AFTER_SHOT_AT - 2) server.execute(player::clearFire); // a Zombified player's sunburn would hide the form
         if (at == AFTER_SHOT_AT) {
+            String clientForm = String.valueOf(Morphs.formOf(minecraft.player).orElse(null));
+            String standIn = String.valueOf(MorphRenderer.standIn(minecraft.player));
             shot(minecraft, curse, "1_after");
             server.execute(() -> {
                 boolean saved = player.isAlive() && player.getMainHandItem().isEmpty();
                 boolean cursed = curse.effect() == null || player.hasEffect(curse.effect());
                 if (!saved || !cursed) failures++;
-                REPORT.add(String.format("%s  %-12s alive %s, totem used %s, cursed %s, health %.1f", saved && cursed ? "PASS" : "FAIL",
-                    curse.name(), player.isAlive(), player.getMainHandItem().isEmpty(), cursed, player.getHealth()));
+                REPORT.add(String.format("%s  %-12s alive %s, totem used %s, cursed %s, health %.1f, form %s (client %s, stand-in %s)",
+                    saved && cursed ? "PASS" : "FAIL", curse.name(), player.isAlive(), player.getMainHandItem().isEmpty(), cursed,
+                    player.getHealth(), Morphs.formOf(player).orElse(null), clientForm, standIn));
             });
         }
     }

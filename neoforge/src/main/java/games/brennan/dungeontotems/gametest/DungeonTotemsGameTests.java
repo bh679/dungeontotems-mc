@@ -1052,7 +1052,7 @@ public final class DungeonTotemsGameTests {
                     }
                 }
                 for (int i = 0; i < current.size(); i++) {
-                    Mob mob = (Mob) current.get(i).form().create(helper.getLevel(), EntitySpawnReason.LOAD);
+                    Mob mob = (Mob) current.get(i).form().create(helper.getLevel(), MockPlayers.STAND_IN);
                     Vec3 at = helper.absoluteVec(new Vec3(i * LANE_SPACING + 1.5, 60, 0.5));
                     mob.snapTo(at.x, at.y, at.z, 0.0F, 0.0F);
                     mob.goalSelector.removeAllGoals(goal -> true);
