@@ -1,13 +1,13 @@
 package games.brennan.dungeontotems.fabric.mixin;
 
 import games.brennan.dungeontotems.fabric.FabricGameTests;
-import net.fabricmc.fabric.impl.gametest.FabricGameTestModInitializer;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestInstance;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.RegistryLoadTask;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -16,10 +16,11 @@ import java.util.List;
 
 /**
  * Fabric API adds its {@code @GameTest} instances to the test-instance registry as the data registries
- * load; ours go in at the same moment ({@link FabricGameTests}). Optional: nothing happens if Fabric's
- * GameTest module changes.
+ * load; ours go in at the same moment ({@link FabricGameTests}). {@link Pseudo}: players' Fabric API jars
+ * leave the GameTest module out, and then there is nothing to hook (and nothing to test).
  */
-@Mixin(value = FabricGameTestModInitializer.class, remap = false)
+@Pseudo
+@Mixin(targets = "net.fabricmc.fabric.impl.gametest.FabricGameTestModInitializer", remap = false)
 public abstract class FabricGameTestModInitializerMixin {
 
     @SuppressWarnings("unchecked")
