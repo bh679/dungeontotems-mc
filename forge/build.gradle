@@ -54,8 +54,11 @@ legacyForge {
         }
 
         // ./gradlew :forge:runGameTestServer: runs the GameTests and exits.
+        // Forge 47 starts its GameTest server as a dedicated server, which makes its world from
+        // server.properties, not vanilla's flat test world: prepareGameTestWorld writes one (see below).
         gameTestServer {
             type = 'gameTestServer'
+            gameDirectory = project.file('run-gametest')
             systemProperty 'forge.enabledGameTestNamespaces', mod_id
             systemProperty 'dungeontotems.advancements', 'true'
         }
@@ -104,6 +107,26 @@ tasks.named('test', Test).configure {
     useJUnitPlatform()
     testLogging { events 'passed', 'skipped', 'failed' }
 }
+
+// A fresh flat world on Normal for every GameTest run, as vanilla's GameTestServer.create makes
+// (gametest/GameTestWorld sets its game rules). level.dat pins the generator, so the old world goes.
+tasks.register('prepareGameTestWorld') {
+    def dir = project.file('run-gametest')
+    doLast {
+        project.delete(new File(dir, 'world'))
+        dir.mkdirs()
+        new File(dir, 'server.properties').text = [
+            'level-type=minecraft\\:flat',
+            'difficulty=normal',
+            'generate-structures=false',
+            'spawn-animals=false',
+            'spawn-monsters=false',
+            'spawn-npcs=false',
+            'online-mode=false',
+        ].join('\n') + '\n'
+    }
+}
+tasks.matching { it.name == 'runGameTestServer' }.configureEach { dependsOn 'prepareGameTestWorld' }
 
 // Generate mods.toml from its template.
 tasks.register('generateModMetadata', ProcessResources) {

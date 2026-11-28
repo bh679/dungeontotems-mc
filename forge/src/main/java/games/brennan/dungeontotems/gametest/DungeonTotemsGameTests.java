@@ -1645,7 +1645,7 @@ public final class DungeonTotemsGameTests {
             "before launch, only a dev run's property loads the tab");
         check(helper, TotemAdvancements.isLaunched(true, null), "a launched release loads it");
         Map<ResourceLocation, Resource> files = helper.getLevel().getServer().getResourceManager()
-            .listResources("advancement", path -> path.getNamespace().equals(DungeonTotems.MOD_ID) && path.getPath().endsWith(".json"));
+            .listResources("advancements", path -> path.getNamespace().equals(DungeonTotems.MOD_ID) && path.getPath().endsWith(".json"));
         check(helper, files.size() == TabComplete.TAB.size() + 1, "expected every advancement file, found " + files.keySet());
         List<ResourceLocation> ungated = new ArrayList<>();
         files.forEach((path, resource) -> {
