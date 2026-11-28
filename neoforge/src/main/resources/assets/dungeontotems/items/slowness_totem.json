@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "dungeontotems:item/slowness_totem"
+  }
+}
