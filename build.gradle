@@ -1,6 +1,8 @@
 // Dungeon Totems, Minecraft 1.20.1 line. See settings.gradle.
 plugins {
     id 'net.neoforged.moddev.legacyforge' version '2.0.149' apply false
+    // Loom 1.15 is the newest that runs on this Gradle (9.2) and JDK 21; 1.16+ needs Gradle 9.8 or JDK 25.
+    id 'fabric-loom' version '1.15.5' apply false
 }
 
 tasks.named('wrapper', Wrapper).configure {

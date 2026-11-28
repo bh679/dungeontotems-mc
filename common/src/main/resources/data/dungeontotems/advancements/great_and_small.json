@@ -4,6 +4,11 @@
       "type": "dungeontotems:advancements_launched"
     }
   ],
+  "fabric:load_conditions": [
+    {
+      "condition": "dungeontotems:advancements_launched"
+    }
+  ],
   "parent": "dungeontotems:back_on_two_legs",
   "display": {
     "icon": {
