@@ -1,12 +1,15 @@
 package games.brennan.dungeontotems.gametest;
 
+import games.brennan.dungeontotems.registry.TotemAttributes;
+import games.brennan.dungeontotems.data.TotemData;
+
 import com.google.gson.JsonParser;
 import net.minecraft.server.packs.resources.Resource;
 import games.brennan.dungeontotems.advancement.TotemAdvancements;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.advancements.CriterionProgress;
 import net.minecraft.advancements.AdvancementProgress;
-import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.Advancement;
 import games.brennan.dungeontotems.curse.DeadlineCurses;
 import games.brennan.dungeontotems.curse.CurseTrials;
 import games.brennan.dungeontotems.advancement.TabComplete;
@@ -70,7 +73,6 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
@@ -245,13 +247,13 @@ public final class DungeonTotemsGameTests {
     public static void aStackSavesOnceAndCursesAtItsLevel(GameTestHelper helper) {
         ServerPlayer player = holding(helper, Curse.RAGE, 2);
         tick(player, HeldCurses.CHECK_TICKS);
-        check(helper, player.getEffect(TotemRegistries.RAGE).getAmplifier() == 1, "a stack of 2 should be Rage II while held");
+        check(helper, player.getEffect(TotemRegistries.RAGE.get()).getAmplifier() == 1, "a stack of 2 should be Rage II while held");
         player.hurt(player.damageSources().generic(), LETHAL);
         check(helper, player.isAlive() && player.getMainHandItem().getCount() == 1, "the pop should use one of the two");
-        MobEffectInstance saved = player.getEffect(TotemRegistries.RAGE);
+        MobEffectInstance saved = player.getEffect(TotemRegistries.RAGE.get());
         check(helper, saved != null && saved.getAmplifier() == 2 && !saved.isInfiniteDuration(), "two totems' save should be Rage III, was " + saved);
         tick(player, HeldCurses.CHECK_TICKS);
-        check(helper, player.getEffect(TotemRegistries.RAGE).getAmplifier() == 2, "the stronger after-save curse should run out first");
+        check(helper, player.getEffect(TotemRegistries.RAGE.get()).getAmplifier() == 2, "the stronger after-save curse should run out first");
         helper.succeed();
     }
 
@@ -261,7 +263,7 @@ public final class DungeonTotemsGameTests {
         tick(player, HeldCurses.CHECK_TICKS);
         player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         tick(player, HeldCurses.CHECK_TICKS);
-        MobEffectInstance after = player.getEffect(TotemRegistries.LONELY);
+        MobEffectInstance after = player.getEffect(TotemRegistries.LONELY.get());
         check(helper, after != null && !after.isInfiniteDuration() && after.getAmplifier() == 2, "letting go of 3 should leave Lonely III, was " + after);
         helper.succeed();
     }
@@ -325,7 +327,7 @@ public final class DungeonTotemsGameTests {
         tick(player, 2);
         check(helper, player.isAlive(), "a curse can't kill you after a save");
         check(helper, player.getHealth() == 1.0F, "should be on half a heart, was " + player.getHealth());
-        MobEffectInstance restrained = player.getEffect(TotemRegistries.RESTRAINED);
+        MobEffectInstance restrained = player.getEffect(TotemRegistries.RESTRAINED.get());
         check(helper, restrained != null && restrained.getDuration() >= Curse.RESTRAINT.afterSaveTicks() - 2,
             "half a heart should restart Restrained, it has " + restrained);
         helper.succeed();
@@ -442,7 +444,7 @@ public final class DungeonTotemsGameTests {
         player.invulnerableTime = 0;
         tick(player, 1);
         check(helper, player.isAlive() && player.getHealth() == 1.0F, "rage after a save stops at half a heart");
-        MobEffectInstance rage = player.getEffect(TotemRegistries.RAGE);
+        MobEffectInstance rage = player.getEffect(TotemRegistries.RAGE.get());
         check(helper, rage != null && rage.getAmplifier() == 1 && rage.getDuration() >= Curse.RAGE.afterSaveTicks() - 2,
             "half a heart should restart Rage II, it has " + rage);
         helper.succeed();
@@ -467,7 +469,7 @@ public final class DungeonTotemsGameTests {
         Curses.apply(player, Curse.LONELINESS, 0, 400);
         overdue(player, TotemRegistries.LAST_GIFT, 0);
         trade(player, villager(helper));
-        check(helper, player.getData(TotemRegistries.LAST_GIFT) == player.level().getGameTime(), "a trade should restart the timer");
+        check(helper, TotemData.get(player, TotemRegistries.LAST_GIFT) == player.level().getGameTime(), "a trade should restart the timer");
         helper.succeed();
     }
 
@@ -477,9 +479,9 @@ public final class DungeonTotemsGameTests {
         Curses.apply(player, Curse.LONELINESS, 0, 400);
         overdue(player, TotemRegistries.LAST_GIFT, 0);
         PlayerMobGifts.gift(player, UUID.randomUUID(), false);
-        check(helper, player.getData(TotemRegistries.LAST_GIFT) != player.level().getGameTime(), "a gift to you is not yours");
+        check(helper, TotemData.get(player, TotemRegistries.LAST_GIFT) != player.level().getGameTime(), "a gift to you is not yours");
         PlayerMobGifts.gift(player, UUID.randomUUID(), true);
-        check(helper, player.getData(TotemRegistries.LAST_GIFT) == player.level().getGameTime(), "your gift restarts the timer");
+        check(helper, TotemData.get(player, TotemRegistries.LAST_GIFT) == player.level().getGameTime(), "your gift restarts the timer");
         helper.succeed();
     }
 
@@ -498,10 +500,10 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         Curses.apply(player, Curse.LONELINESS, 0, 400);
         long timer = CurseTimers.seconds(Curse.LONELINESS, 0) * 20L;
-        player.setData(TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 25);
+        TotemData.set(player, TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 25);
         tick(player, 1);
         check(helper, player.getHealth() == 20.0F, "lonely should not hurt at Poison's rate, health " + player.getHealth());
-        player.setData(TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 50);
+        TotemData.set(player, TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 50);
         player.invulnerableTime = 0;
         tick(player, 1);
         check(helper, player.getHealth() < 20.0F, "lonely should hurt every 50 ticks once overdue");
@@ -543,17 +545,17 @@ public final class DungeonTotemsGameTests {
     public static void breathlessEndsWhenItSavesYou(GameTestHelper helper) {
         ServerPlayer player = holding(helper, Curse.BREATHLESSNESS);
         HeldCurses.update(player);
-        check(helper, player.hasEffect(TotemRegistries.BREATHLESS), "breathless while held");
+        check(helper, player.hasEffect(TotemRegistries.BREATHLESS.get()), "breathless while held");
         player.setAirSupply(-19);
         player.hurt(player.damageSources().generic(), LETHAL);
         check(helper, player.isAlive(), "player should survive");
         check(helper, player.getMainHandItem().isEmpty(), "totem should be used up");
-        check(helper, !player.hasEffect(TotemRegistries.BREATHLESS), "breathless should end with the save");
+        check(helper, !player.hasEffect(TotemRegistries.BREATHLESS.get()), "breathless should end with the save");
         check(helper, !Curses.isSaved(player, Curse.BREATHLESSNESS), "nothing left to shield");
         HeldCurses.update(player);
         float health = player.getHealth();
         tick(player, 40);
-        check(helper, !player.hasEffect(TotemRegistries.BREATHLESS), "it doesn't come back");
+        check(helper, !player.hasEffect(TotemRegistries.BREATHLESS.get()), "it doesn't come back");
         check(helper, player.getAirSupply() > 0, "air should refill on land, was " + player.getAirSupply());
         check(helper, player.getHealth() >= health, "no more drowning on land");
         helper.succeed();
@@ -741,7 +743,7 @@ public final class DungeonTotemsGameTests {
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         check(helper, form != null, "player should have a form");
         int expected = Morphs.formData(form).map(MorphForm::ticks).orElse(-1);
-        MobEffectInstance morphed = player.getEffect(TotemRegistries.MORPHED);
+        MobEffectInstance morphed = player.getEffect(TotemRegistries.MORPHED.get());
         check(helper, morphed != null && morphed.getDuration() == expected,
             form + " should last " + expected + " ticks, was " + (morphed == null ? "none" : morphed.getDuration()));
         check(helper, Curses.isSaved(player, Curse.MORPHING), "the save should cover the form's time");
@@ -875,7 +877,7 @@ public final class DungeonTotemsGameTests {
     public static void camelCantJumpAndHorsesGallop(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         Morphs.setForm(player, EntityType.CAMEL);
-        check(helper, player.getAttributeValue(Attributes.JUMP_STRENGTH) == 0.0, "camels can't jump");
+        check(helper, player.getAttributeValue(TotemAttributes.jumpStrength()) == 0.0, "camels can't jump");
         Morphs.setForm(player, EntityType.HORSE);
         double walking = player.getAttributeValue(Attributes.MOVEMENT_SPEED);
         player.setSprinting(true);
@@ -974,7 +976,7 @@ public final class DungeonTotemsGameTests {
                 }
                 if (FormUse.USABLE.contains(form)) FormUse.use(player);
                 Double jump = FORM_JUMPS.get(form);
-                double strength = player.getAttributeValue(Attributes.JUMP_STRENGTH);
+                double strength = player.getAttributeValue(TotemAttributes.jumpStrength());
                 if (jump != null && Math.abs(strength - jump) > 1.0E-6) wrong.add(name + " jumps " + strength + ", expected " + jump);
                 if (MorphFlight.flies(form) != player.getAbilities().mayfly) wrong.add(name + (player.getAbilities().mayfly ? " flies" : " can't fly"));
                 tick(player, 20);
@@ -1331,7 +1333,7 @@ public final class DungeonTotemsGameTests {
         slime.setSize(1, true);
         MinecraftForge.EVENT_BUS.post(new AttackEntityEvent(player, slime));
         check(helper, slime.isRemoved(), "a frog's tongue should eat a small slime whole");
-        check(helper, player.getAttributeValue(Attributes.JUMP_STRENGTH) > 0.42 * 1.4, "a frog should leap");
+        check(helper, player.getAttributeValue(TotemAttributes.jumpStrength()) > 0.42 * 1.4, "a frog should leap");
         helper.succeed();
     }
 
@@ -1456,9 +1458,9 @@ public final class DungeonTotemsGameTests {
         check(helper, Morphs.formOf(player).orElse(null) == EntityType.ZOMBIE, "player should be a zombie");
         var witch = helper.spawn(EntityType.WITCH, new BlockPos(1, 2, 1));
         player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 400), witch); // a splash
-        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED), "weakness alone should not cure");
+        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED.get()), "weakness alone should not cure");
         eatGoldenApple(player);
-        check(helper, !player.hasEffect(TotemRegistries.ZOMBIFIED), "golden apple while weakened should cure");
+        check(helper, !player.hasEffect(TotemRegistries.ZOMBIFIED.get()), "golden apple while weakened should cure");
         check(helper, Morphs.formOf(player).isEmpty(), "form should be gone");
         helper.succeed();
     }
@@ -1468,7 +1470,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = holding(helper, Curse.ZOMBIFIED);
         player.hurt(player.damageSources().generic(), LETHAL);
         eatGoldenApple(player);
-        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED), "a golden apple alone should not cure");
+        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED.get()), "a golden apple alone should not cure");
         helper.succeed();
     }
 
@@ -1477,9 +1479,9 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         pop(player, Curse.ZOMBIFIED);
         pop(player, Curse.WEAKNESS);
-        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED), "a totem's weakness alone is no cure");
+        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED.get()), "a totem's weakness alone is no cure");
         eatGoldenApple(player);
-        check(helper, !player.hasEffect(TotemRegistries.ZOMBIFIED), "golden apple with the Weakness curse should cure");
+        check(helper, !player.hasEffect(TotemRegistries.ZOMBIFIED.get()), "golden apple with the Weakness curse should cure");
         helper.succeed();
     }
 
@@ -1498,21 +1500,21 @@ public final class DungeonTotemsGameTests {
     public static void zombifiedLastsUntilCured(GameTestHelper helper) {
         ServerPlayer player = holding(helper, Curse.ZOMBIFIED);
         player.hurt(player.damageSources().generic(), LETHAL);
-        expectEffect(helper, player, TotemRegistries.ZOMBIFIED, MobEffectInstance.INFINITE_DURATION);
+        expectEffect(helper, player, TotemRegistries.ZOMBIFIED.get(), MobEffectInstance.INFINITE_DURATION);
         tick(player, 200);
         check(helper, player.isAlive(), "zombification should not kill");
-        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED), "zombification should not wear off");
+        check(helper, player.hasEffect(TotemRegistries.ZOMBIFIED.get()), "zombification should not wear off");
         helper.succeed();
     }
 
     @GameTest(template = EMPTY)
     public static void anOldTimedZombifiedEndsWithoutKilling(GameTestHelper helper) {
         ServerPlayer player = player(helper);
-        player.addEffect(new MobEffectInstance(TotemRegistries.ZOMBIFIED, 2, 0)); // from before it had no timer
+        player.addEffect(new MobEffectInstance(TotemRegistries.ZOMBIFIED.get(), 2, 0)); // from before it had no timer
         Morphs.setForm(player, EntityType.ZOMBIE);
         tick(player, 5);
         check(helper, player.isAlive(), "a zombification that runs out should not kill");
-        check(helper, !player.hasEffect(TotemRegistries.ZOMBIFIED), "it should be gone");
+        check(helper, !player.hasEffect(TotemRegistries.ZOMBIFIED.get()), "it should be gone");
         helper.succeed();
     }
 
@@ -1521,11 +1523,11 @@ public final class DungeonTotemsGameTests {
     @GameTest(template = EMPTY)
     public static void milkLeavesTheCurses(GameTestHelper helper) {
         ServerPlayer player = player(helper);
-        player.addEffect(new MobEffectInstance(TotemRegistries.RAGE, 400, 0));
-        player.addEffect(new MobEffectInstance(TotemRegistries.HEARTBREAK, 400, 0));
-        player.removeEffectsCuredBy(net.minecraftforge.common.EffectCures.MILK);
-        check(helper, player.hasEffect(TotemRegistries.RAGE), "milk should not lift rage");
-        check(helper, !player.hasEffect(TotemRegistries.HEARTBREAK), "milk does lift heartbreak");
+        player.addEffect(new MobEffectInstance(TotemRegistries.RAGE.get(), 400, 0));
+        player.addEffect(new MobEffectInstance(TotemRegistries.HEARTBREAK.get(), 400, 0));
+        player.curePotionEffects(new ItemStack(Items.MILK_BUCKET));
+        check(helper, player.hasEffect(TotemRegistries.RAGE.get()), "milk should not lift rage");
+        check(helper, !player.hasEffect(TotemRegistries.HEARTBREAK.get()), "milk does lift heartbreak");
         helper.succeed();
     }
 
@@ -1534,7 +1536,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         for (Curse curse : List.of(Curse.FATIGUE, Curse.HEARTBREAK, Curse.WEAKNESS)) pop(player, curse);
         check(helper, player.hasEffect(MobEffects.DIG_SLOWDOWN), "fatigue cleared by a later pop");
-        check(helper, player.hasEffect(TotemRegistries.HEARTBREAK), "heartbreak cleared by a later pop");
+        check(helper, player.hasEffect(TotemRegistries.HEARTBREAK.get()), "heartbreak cleared by a later pop");
         check(helper, player.hasEffect(MobEffects.WEAKNESS), "weakness missing");
         helper.succeed();
     }
@@ -1570,10 +1572,10 @@ public final class DungeonTotemsGameTests {
         ServerPlayer respawned = player(helper);
         CurseMemory.onClone(new PlayerEvent.Clone(respawned, dead, true));
         CurseMemory.onRespawn(new PlayerEvent.PlayerRespawnEvent(respawned, false));
-        MobEffectInstance rage = respawned.getEffect(TotemRegistries.RAGE);
+        MobEffectInstance rage = respawned.getEffect(TotemRegistries.RAGE.get());
         check(helper, rage != null && rage.getAmplifier() == 1, "rage II should come back, was " + rage);
-        expectEffect(helper, respawned, TotemRegistries.RAGE, Curse.RAGE.afterSaveTicks());
-        check(helper, respawned.hasEffect(TotemRegistries.HEARTBREAK), "heartbreak should come back");
+        expectEffect(helper, respawned, TotemRegistries.RAGE.get(), Curse.RAGE.afterSaveTicks());
+        check(helper, respawned.hasEffect(TotemRegistries.HEARTBREAK.get()), "heartbreak should come back");
         check(helper, !respawned.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "a held curse should not come back");
         check(helper, !respawned.hasEffect(MobEffects.BLINDNESS), "a plain effect should not come back");
         helper.succeed();
@@ -1583,11 +1585,11 @@ public final class DungeonTotemsGameTests {
     public static void deathClearsZombified(GameTestHelper helper) {
         ServerPlayer dead = player(helper);
         pop(dead, Curse.ZOMBIFIED);
-        check(helper, dead.hasEffect(TotemRegistries.ZOMBIFIED), "the totem should have zombified you");
+        check(helper, dead.hasEffect(TotemRegistries.ZOMBIFIED.get()), "the totem should have zombified you");
         ServerPlayer respawned = player(helper);
         CurseMemory.onClone(new PlayerEvent.Clone(respawned, dead, true));
         CurseMemory.onRespawn(new PlayerEvent.PlayerRespawnEvent(respawned, false));
-        check(helper, !respawned.hasEffect(TotemRegistries.ZOMBIFIED), "dying should clear zombification");
+        check(helper, !respawned.hasEffect(TotemRegistries.ZOMBIFIED.get()), "dying should clear zombification");
         helper.succeed();
     }
 
@@ -1693,10 +1695,10 @@ public final class DungeonTotemsGameTests {
     public static void dyingEndsACurseTrial(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         pop(player, Curse.WEAKNESS);
-        check(helper, player.getData(TotemRegistries.CURSE_TRIALS).contains("weakness"), "a pop starts a trial");
+        check(helper, TotemData.get(player, TotemRegistries.CURSE_TRIALS).contains("weakness"), "a pop starts a trial");
         player.invulnerableTime = 0;
         player.hurt(player.damageSources().generic(), LETHAL);
-        check(helper, !player.isAlive() && player.getData(TotemRegistries.CURSE_TRIALS).isEmpty(), "dying ends every trial");
+        check(helper, !player.isAlive() && TotemData.get(player, TotemRegistries.CURSE_TRIALS).isEmpty(), "dying ends every trial");
         helper.succeed();
     }
 
@@ -1747,7 +1749,7 @@ public final class DungeonTotemsGameTests {
     public static void greatAndSmallHasEveryForm(GameTestHelper helper) {
         Set<String> criteria = helper.getLevel().getServer().getAdvancements().get(DungeonTotems.id("great_and_small")).value().criteria().keySet();
         Set<String> forms = new HashSet<>();
-        BuiltInRegistries.ENTITY_TYPE.getDataMap(MorphForm.DATA_MAP).keySet().forEach(key -> forms.add(key.location().toString()));
+        games.brennan.dungeontotems.morph.MorphFormTable.all().keySet().forEach(key -> forms.add(key.location().toString()));
         check(helper, criteria.equals(forms), "Great and Small should list every morph form (run scripts/make_advancements.py): "
             + "missing " + forms.stream().filter(f -> !criteria.contains(f)).toList());
         ServerPlayer player = player(helper);
@@ -1762,8 +1764,8 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         for (ResourceLocation id : TabComplete.TAB) {
             check(helper, !progress(player, TabComplete.FULFILLED.getPath()).isDone(), "fulfilled before " + id);
-            AdvancementHolder holder = helper.getLevel().getServer().getAdvancements().get(id);
-            holder.value().criteria().keySet().forEach(criterion -> player.getAdvancements().award(holder, criterion));
+            Advancement holder = helper.getLevel().getServer().getAdvancements().get(id);
+            holder.getCriteria().keySet().forEach(criterion -> player.getAdvancements().award(holder, criterion));
         }
         check(helper, progress(player, TabComplete.FULFILLED.getPath()).isDone(), "every advancement should fulfil the terms");
         helper.succeed();
@@ -1807,9 +1809,9 @@ public final class DungeonTotemsGameTests {
     }
 
     /** Puts the last hit or gift {@code ticksPast} ticks beyond the timer, so it has run out. */
-    private static void overdue(ServerPlayer player, java.util.function.Supplier<net.minecraftforge.attachment.AttachmentType<Long>> last, int amplifier) {
+    private static void overdue(ServerPlayer player, games.brennan.dungeontotems.data.DataKey<Long> last, int amplifier) {
         Curse curse = last == TotemRegistries.LAST_HIT ? Curse.RAGE : Curse.LONELINESS;
-        player.setData(last, player.level().getGameTime() - CurseTimers.seconds(curse, amplifier) * 20L);
+        TotemData.set(player, last, player.level().getGameTime() - CurseTimers.seconds(curse, amplifier) * 20L);
     }
 
     private static void eatGoldenApple(ServerPlayer player) {
@@ -1821,7 +1823,7 @@ public final class DungeonTotemsGameTests {
     }
 
     private static void trade(ServerPlayer player, Villager villager) {
-        MerchantOffer offer = new MerchantOffer(new ItemCost(Items.EMERALD), new ItemStack(Items.BREAD), 1, 1, 0.0F);
+        MerchantOffer offer = new MerchantOffer(new ItemStack(Items.EMERALD), new ItemStack(Items.BREAD), 1, 1, 0.0F);
         MinecraftForge.EVENT_BUS.post(new TradeWithVillagerEvent(player, offer, villager));
     }
 
@@ -1854,7 +1856,7 @@ public final class DungeonTotemsGameTests {
         for (int i = 0; i < ticks && player.isAlive(); i++) player.doTick();
     }
 
-    private static void expectEffect(GameTestHelper helper, ServerPlayer player, Holder<MobEffect> effect, int duration) {
+    private static void expectEffect(GameTestHelper helper, ServerPlayer player, MobEffect effect, int duration) {
         MobEffectInstance instance = player.getEffect(effect);
         check(helper, instance != null, "missing " + effect.getRegisteredName());
         check(helper, instance.getDuration() == duration,

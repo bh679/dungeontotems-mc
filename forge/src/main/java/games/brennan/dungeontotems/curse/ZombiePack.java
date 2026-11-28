@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.curse;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.net.TotemNetwork;
@@ -106,7 +108,7 @@ public final class ZombiePack {
     /** Something you carried when you turned, so it may go into a locked slot. */
     public static boolean carriedBefore(Player player, ItemStack stack) {
         if (stack.isEmpty()) return false;
-        for (ItemStack carried : player.getData(TotemRegistries.ZOMBIE_CARRIED)) {
+        for (ItemStack carried : TotemData.get(player, TotemRegistries.ZOMBIE_CARRIED)) {
             if (ItemStack.isSameItemSameComponents(carried, stack)) return true;
         }
         return false;
@@ -161,7 +163,7 @@ public final class ZombiePack {
     @SubscribeEvent
     public static void onEffectAdded(MobEffectEvent.Added event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (event.getEffectInstance().is(TotemRegistries.ZOMBIFIED) && event.getOldEffectInstance() == null) remember(player);
+        if (event.getEffectInstance().is(TotemRegistries.ZOMBIFIED.get()) && event.getOldEffectInstance() == null) remember(player);
     }
 
     /** Remembers what {@code player} carries as they turn: one of each hotbar and offhand item. */
@@ -188,7 +190,7 @@ public final class ZombiePack {
     }
 
     private static void clearIfZombified(Object entity, MobEffectInstance instance) {
-        if (entity instanceof ServerPlayer player && instance != null && instance.is(TotemRegistries.ZOMBIFIED)) {
+        if (entity instanceof ServerPlayer player && instance != null && instance.is(TotemRegistries.ZOMBIFIED.get())) {
             setCarried(player, List.of());
         }
     }
@@ -204,11 +206,11 @@ public final class ZombiePack {
     }
 
     private static void setCarried(ServerPlayer player, List<ItemStack> carried) {
-        player.setData(TotemRegistries.ZOMBIE_CARRIED, carried);
+        TotemData.set(player, TotemRegistries.ZOMBIE_CARRIED, carried);
         sync(player);
     }
 
     private static void sync(ServerPlayer player) {
-        TotemNetwork.sendTo(player, new ZombieCarriedPayload(player.getData(TotemRegistries.ZOMBIE_CARRIED)));
+        TotemNetwork.sendTo(player, new ZombieCarriedPayload(TotemData.get(player, TotemRegistries.ZOMBIE_CARRIED)));
     }
 }

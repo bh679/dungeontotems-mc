@@ -122,6 +122,7 @@ public final class MorphRenderer {
     /** Animations advance once a tick (see {@link FormAnimator}). */
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) {
             DUMMIES.clear();

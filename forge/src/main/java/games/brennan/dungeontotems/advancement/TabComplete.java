@@ -1,7 +1,7 @@
 package games.brennan.dungeontotems.advancement;
 
 import games.brennan.dungeontotems.DungeonTotems;
-import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,12 +28,12 @@ public final class TabComplete {
 
     @SubscribeEvent
     public static void onEarned(AdvancementEvent.AdvancementEarnEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !TAB.contains(event.getAdvancement().id())) return;
+        if (!(event.getEntity() instanceof ServerPlayer player) || !TAB.contains(event.getAdvancement().getId())) return;
         ServerAdvancementManager advancements = player.server.getAdvancements();
-        AdvancementHolder fulfilled = advancements.get(FULFILLED);
+        Advancement fulfilled = advancements.get(FULFILLED);
         if (fulfilled == null) return;
         for (ResourceLocation id : TAB) {
-            AdvancementHolder holder = advancements.get(id);
+            Advancement holder = advancements.get(id);
             if (holder == null || !player.getAdvancements().getOrStartProgress(holder).isDone()) return;
         }
         player.getAdvancements().award(fulfilled, CRITERION);

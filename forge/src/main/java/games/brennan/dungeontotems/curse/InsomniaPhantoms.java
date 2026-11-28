@@ -53,7 +53,8 @@ public final class InsomniaPhantoms {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !player.hasEffect(TotemRegistries.INSOMNIA)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player) || !player.hasEffect(TotemRegistries.INSOMNIA.get())) return;
         RandomSource random = player.getRandom();
         Integer next = NEXT_TRY.get(player.getUUID());
         if (next == null || next <= 1) {

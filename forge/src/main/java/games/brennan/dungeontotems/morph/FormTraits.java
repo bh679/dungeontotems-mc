@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.morph;
 
+import games.brennan.dungeontotems.util.Modifiers;
 import games.brennan.dungeontotems.DungeonTotems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -58,7 +59,7 @@ public final class FormTraits {
 
 
     /** Every hidden effect a form can bring (see {@link #effectsFor}). */
-    private static final List<Holder<MobEffect>> FORM_EFFECTS =
+    private static final List<MobEffect> FORM_EFFECTS =
         List.of(MobEffects.SLOW_FALLING, MobEffects.DOLPHINS_GRACE, MobEffects.FIRE_RESISTANCE, MobEffects.WATER_BREATHING);
 
 
@@ -96,8 +97,8 @@ public final class FormTraits {
         }
         AttributeModifier current = speed.getModifier(RUN_ID);
         if (current == null ? wanted == 0.0 : current.amount() == wanted) return;
-        speed.removeModifier(RUN_ID);
-        if (wanted != 0.0) speed.addTransientModifier(new AttributeModifier(RUN_ID, wanted, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        Modifiers.remove(speed, RUN_ID);
+        if (wanted != 0.0) speed.addTransientModifier(Modifiers.of(RUN_ID, wanted, AttributeModifier.Operation.MULTIPLY_TOTAL));
     }
 
     /** {@code isSensitiveToWater}: water, rain and bubble columns hurt these forms, as they hurt the mobs. */
@@ -129,15 +130,15 @@ public final class FormTraits {
         AttributeInstance speed = player.getAttribute(Attributes.MOVEMENT_SPEED);
         if (speed == null) return;
         boolean cold = form == EntityType.STRIDER && !isWarmStrider(player);
-        if (cold == speed.hasModifier(STRIDER_COLD_ID)) return;
-        if (cold) speed.addTransientModifier(new AttributeModifier(STRIDER_COLD_ID, STRIDER_COLD * STRIDER_COLD - 1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-        else speed.removeModifier(STRIDER_COLD_ID);
+        if (cold == Modifiers.has(speed, STRIDER_COLD_ID)) return;
+        if (cold) speed.addTransientModifier(Modifiers.of(STRIDER_COLD_ID, STRIDER_COLD * STRIDER_COLD - 1.0, AttributeModifier.Operation.MULTIPLY_TOTAL));
+        else Modifiers.remove(speed, STRIDER_COLD_ID);
     }
 
     /** From {@link Morphs#setForm}: swap the hidden effects to the new form's. */
     static void onFormChanged(ServerPlayer player, @Nullable EntityType<?> form) {
-        Set<Holder<MobEffect>> wantedEffects = effectsFor(form);
-        for (Holder<MobEffect> effect : FORM_EFFECTS) {
+        Set<MobEffect> wantedEffects = effectsFor(form);
+        for (MobEffect effect : FORM_EFFECTS) {
             boolean wanted = wantedEffects.contains(effect);
             MobEffectInstance current = player.getEffect(effect);
             if (wanted && current == null) {
@@ -148,7 +149,7 @@ public final class FormTraits {
         }
     }
 
-    private static Set<Holder<MobEffect>> effectsFor(@Nullable EntityType<?> form) {
+    private static Set<MobEffect> effectsFor(@Nullable EntityType<?> form) {
         if (form == null) return Set.of();
         if (form == EntityType.CHICKEN) return Set.of(MobEffects.SLOW_FALLING);
         if (form == EntityType.TURTLE) return Set.of(MobEffects.DOLPHINS_GRACE); // it breathes under water (WaterLife)
@@ -167,7 +168,8 @@ public final class FormTraits {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !player.isAlive()) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player) || !player.isAlive()) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         run(player, form);
         chill(player, form);

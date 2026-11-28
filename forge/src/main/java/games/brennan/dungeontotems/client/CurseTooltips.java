@@ -17,7 +17,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.event.GatherEffectScreenTooltipsEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 
 import java.util.ArrayList;
@@ -37,12 +36,6 @@ public final class CurseTooltips {
     private static final int WIDE_PANEL = 120;
 
     private CurseTooltips() {}
-
-    @SubscribeEvent
-    public static void onEffectTooltip(GatherEffectScreenTooltipsEvent event) {
-        Player player = Minecraft.getInstance().player;
-        if (player != null) event.getTooltip().addAll(lines(event.getEffectInstance(), player));
-    }
 
     @SubscribeEvent
     public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
@@ -71,19 +64,20 @@ public final class CurseTooltips {
     }
 
     /** The extra lines for a curse, or none for any other effect. */
-    static List<Component> lines(MobEffectInstance effect, Player player) {
+    /** Also added to vanilla's narrow-list tooltip, by {@code mixin/client/EffectRenderingInventoryScreenMixin}. */
+    public static List<Component> lines(MobEffectInstance effect, Player player) {
         List<Component> lines = new ArrayList<>();
-        if (effect.is(TotemRegistries.HEARTBREAK)) {
+        if (effect.is(TotemRegistries.HEARTBREAK.get())) {
             lines.add(Component.translatable("effect.dungeontotems.heartbreak.hearts", heartsTaken(effect, player)).withStyle(ChatFormatting.GRAY));
-        } else if (effect.is(TotemRegistries.ZOMBIFIED)) {
+        } else if (effect.is(TotemRegistries.ZOMBIFIED.get())) {
             lines.add(Component.translatable("effect.dungeontotems.zombified.cure").withStyle(ChatFormatting.GRAY));
-        } else if (effect.is(TotemRegistries.RAGE)) {
+        } else if (effect.is(TotemRegistries.RAGE.get())) {
             lines.add(timer("rage", ClientPayloads.secondsLeft(Curse.RAGE)));
-        } else if (effect.is(TotemRegistries.BREATHLESS) || effect.is(TotemRegistries.INSOMNIA)
-            || effect.is(TotemRegistries.VOW_OF_PEACE) || effect.is(TotemRegistries.MELON_DIET) || effect.is(TotemRegistries.RESTRAINED)) {
+        } else if (effect.is(TotemRegistries.BREATHLESS.get()) || effect.is(TotemRegistries.INSOMNIA.get())
+            || effect.is(TotemRegistries.VOW_OF_PEACE.get()) || effect.is(TotemRegistries.MELON_DIET.get()) || effect.is(TotemRegistries.RESTRAINED.get())) {
             String id = effect.getEffect().unwrapKey().map(key -> key.location().getPath()).orElse("");
             lines.add(Component.translatable("effect.dungeontotems." + id + ".rule").withStyle(ChatFormatting.GRAY));
-        } else if (effect.is(TotemRegistries.LONELY)) {
+        } else if (effect.is(TotemRegistries.LONELY.get())) {
             lines.add(timer("lonely", ClientPayloads.secondsLeft(Curse.LONELINESS)));
         }
         return lines;

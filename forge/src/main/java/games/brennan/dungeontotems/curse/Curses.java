@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.curse;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.morph.MorphForm;
 import games.brennan.dungeontotems.morph.Morphs;
@@ -7,7 +9,6 @@ import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.common.EffectCures;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -43,14 +44,14 @@ public final class Curses {
 
     /** {@code curse} can't kill you for the next {@code ticks} (see {@link SavedCurseShield}). */
     public static void markSaved(ServerPlayer player, Curse curse, int ticks) {
-        Map<String, Long> saved = new HashMap<>(player.getData(TotemRegistries.SAVED_UNTIL));
+        Map<String, Long> saved = new HashMap<>(TotemData.get(player, TotemRegistries.SAVED_UNTIL));
         saved.put(curse.name(), player.level().getGameTime() + ticks);
-        player.setData(TotemRegistries.SAVED_UNTIL, Map.copyOf(saved));
+        TotemData.set(player, TotemRegistries.SAVED_UNTIL, Map.copyOf(saved));
     }
 
     /** Whether {@code curse} is still in the time after a save, when it can't kill you. */
     public static boolean isSaved(ServerPlayer player, Curse curse) {
-        Long until = player.getData(TotemRegistries.SAVED_UNTIL).get(curse.name());
+        Long until = TotemData.get(player, TotemRegistries.SAVED_UNTIL).get(curse.name());
         return until != null && until > player.level().getGameTime();
     }
 
@@ -80,15 +81,13 @@ public final class Curses {
 
     private static MobEffectInstance timed(Curse curse, int duration, int amplifier) {
         // showIcon true, visible particles off: a curse is a status, not a potion cloud.
-        MobEffectInstance instance = new MobEffectInstance(curse.effect(), duration, amplifier, false, false, true);
-        instance.getCures().remove(EffectCures.PROTECTED_BY_TOTEM);
-        return instance;
+        return CurseMarks.mark(new MobEffectInstance(curse.effect(), duration, amplifier, false, false, true));
     }
 
     /** The curse this effect instance is, or null when it is not one (no curse, or a totem would clear it). */
     @Nullable
     public static Curse curseOf(MobEffectInstance instance) {
-        if (instance.getCures().contains(EffectCures.PROTECTED_BY_TOTEM)) return null;
+        if (!CurseMarks.isCurse(instance)) return null;
         return Curse.forEffect(instance.getEffect());
     }
 }

@@ -11,7 +11,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.event.entity.living.LivingIncomingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 
 import java.util.Map;
 
@@ -36,7 +36,7 @@ public final class SavedCurseShield {
     private SavedCurseShield() {}
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onIncomingDamage(LivingIncomingDamageEvent event) {
+    public static void onIncomingDamage(LivingHurtEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         Curse curse = event.getSource().typeHolder().unwrapKey().map(CURSE_DAMAGE::get).orElse(null);
         if (curse == null || !Curses.isSaved(player, curse)) return;

@@ -68,7 +68,7 @@ public final class RuleCurses {
 
     /** Under the melon diet: holding its totem, or cursed with it. */
     static boolean dieting(ServerPlayer player) {
-        return HeldCurses.heldTotem(player, Curse.MELON_DIET) != null || player.hasEffect(TotemRegistries.MELON_DIET);
+        return HeldCurses.heldTotem(player, Curse.MELON_DIET) != null || player.hasEffect(TotemRegistries.MELON_DIET.get());
     }
 
     static boolean breaksMelonDiet(ItemStack stack, ServerPlayer player) {

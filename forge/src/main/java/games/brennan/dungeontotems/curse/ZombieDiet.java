@@ -41,7 +41,7 @@ public final class ZombieDiet {
     private ZombieDiet() {}
 
     public static boolean isZombie(Player player) {
-        return player.hasEffect(TotemRegistries.ZOMBIFIED);
+        return player.hasEffect(TotemRegistries.ZOMBIFIED.get());
     }
 
     /** Food a zombie won't eat. Drinks and non-food items are never refused. */

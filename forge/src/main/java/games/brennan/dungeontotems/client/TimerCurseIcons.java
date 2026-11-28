@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.client.extensions.common.IClientMobEffectExtensions;
-import net.minecraftforge.client.extensions.common.RegisterClientExtensionsEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -18,7 +17,7 @@ import java.util.List;
  * Rage and Lonely show their timer on the effect box's own border: it starts lit in the curse's colour
  * and drains back to grey clockwise from the top. Once the time is up, the border flashes with a glow
  * just outside it until you hit something or give a gift. Same on the HUD and in the inventory.
- * Registered on the mod bus by {@link DungeonTotems}, on the client only.
+ * Every {@code CurseEffect} hands Forge {@link #EXTENSION}, which draws only for Rage and Lonely.
  */
 public final class TimerCurseIcons {
 
@@ -38,22 +37,34 @@ public final class TimerCurseIcons {
 
     private TimerCurseIcons() {}
 
-    public static void onRegister(RegisterClientExtensionsEvent event) {
-        event.registerMobEffect(new Timed(Curse.RAGE, RAGE_COLOUR), TotemRegistries.RAGE.get());
-        event.registerMobEffect(new Timed(Curse.LONELINESS, LONELY_COLOUR), TotemRegistries.LONELY.get());
+    public static final IClientMobEffectExtensions EXTENSION = new Timed();
+
+    /** The timer curse an effect instance is, or null. Looked up when drawn: the effects are made before the registry is filled. */
+    private static Curse timed(MobEffectInstance instance) {
+        if (instance.getEffect() == TotemRegistries.RAGE.get()) return Curse.RAGE;
+        if (instance.getEffect() == TotemRegistries.LONELY.get()) return Curse.LONELINESS;
+        return null;
     }
 
-    private record Timed(Curse curse, int colour) implements IClientMobEffectExtensions {
+    private static int colourOf(Curse curse) {
+        return curse == Curse.RAGE ? RAGE_COLOUR : LONELY_COLOUR;
+    }
+
+    private static final class Timed implements IClientMobEffectExtensions {
 
         @Override
         public boolean renderGuiIcon(MobEffectInstance instance, Gui gui, GuiGraphics graphics, int x, int y, float z, float alpha) {
-            drawCountdown(graphics, x, y, HUD_BOX, HUD_BOX, curse, colour);
+            Curse curse = timed(instance);
+            if (curse != null) drawCountdown(graphics, x, y, HUD_BOX, HUD_BOX, curse, colourOf(curse));
             return false; // vanilla draws the icon on top
         }
 
         @Override
         public boolean renderInventoryIcon(MobEffectInstance instance, EffectRenderingInventoryScreen<?> screen, GuiGraphics graphics,
                                            int x, int y, int blitOffset) {
+            Curse curse = timed(instance);
+            if (curse == null) return false;
+            int colour = colourOf(curse);
             int panelsAt = screen.getGuiLeft() + screen.getXSize() + 2;
             if (x - LARGE_ICON_INSET == panelsAt) {
                 drawCountdown(graphics, panelsAt, y, LARGE_PANEL, PANEL_HEIGHT, curse, colour);

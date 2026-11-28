@@ -84,7 +84,7 @@ public final class FormAllies {
 
     /** {@code ZombifiedPiglin#alertOthers}: hurt one of the pack and the pack comes for you. */
     @SubscribeEvent
-    public static void onHurt(LivingDamageEvent.Post event) {
+    public static void onHurt(LivingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !is(player, EntityType.ZOMBIFIED_PIGLIN)) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker) || attacker == player) return;
         AABB area = player.getBoundingBox().inflate(PACK_RADIUS);
@@ -111,7 +111,8 @@ public final class FormAllies {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        Player player = event.getEntity();
+        if (event.phase != TickEvent.Phase.START) return;
+        Player player = event.player;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == EntityType.STRIDER) walkOnLava(player);
         if (form == EntityType.DOLPHIN && player instanceof ServerPlayer server && server.tickCount % 20 == 0) shareGrace(server);

@@ -258,7 +258,8 @@ public final class FormAttacks {
     /** {@code Bee#customServerAiStep}: a bee without its stinger dies at a random moment, likelier as time passes. */
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         Integer since = STUNG.get(player.getUUID());
         if (since == null) return;
         int ticks = since + 1;

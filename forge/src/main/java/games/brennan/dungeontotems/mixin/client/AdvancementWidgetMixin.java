@@ -1,7 +1,7 @@
 package games.brennan.dungeontotems.mixin.client;
 
+import net.minecraft.advancements.Advancement;
 import games.brennan.dungeontotems.client.AdvancementTooltips;
-import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.Minecraft;
@@ -26,7 +26,7 @@ import java.util.List;
 @Mixin(AdvancementWidget.class)
 public abstract class AdvancementWidgetMixin {
 
-    @Shadow @Final private AdvancementNode advancementNode;
+    @Shadow @Final private Advancement advancement;
     @Shadow @Final private DisplayInfo display;
     @Shadow @Final private FormattedCharSequence title;
     @Shadow @Final private Minecraft minecraft;
@@ -39,7 +39,7 @@ public abstract class AdvancementWidgetMixin {
 
     @Inject(method = "setProgress", at = @At("TAIL"))
     private void dungeontotems$tooltip(AdvancementProgress progress, CallbackInfo ci) {
-        AdvancementTooltips.Lines lines = AdvancementTooltips.lines(advancementNode.holder(), display, progress);
+        AdvancementTooltips.Lines lines = AdvancementTooltips.lines(advancement, display, progress);
         if (lines == null) return;
         int wrap = 29 + minecraft.font.width(title) + getMaxProgressWidth();
         List<FormattedCharSequence> text = AdvancementTooltips.layout(minecraft.font, lines,

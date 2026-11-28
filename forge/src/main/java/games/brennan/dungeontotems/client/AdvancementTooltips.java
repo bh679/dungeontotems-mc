@@ -1,7 +1,7 @@
 package games.brennan.dungeontotems.client;
 
 import games.brennan.dungeontotems.DungeonTotems;
-import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.CriterionProgress;
 import net.minecraft.advancements.DisplayInfo;
@@ -45,13 +45,13 @@ public final class AdvancementTooltips {
 
     /** The tooltip for this advancement, or null to leave vanilla's. */
     @Nullable
-    public static Lines lines(AdvancementHolder holder, DisplayInfo display, AdvancementProgress progress) {
-        if (!holder.id().getNamespace().equals(DungeonTotems.MOD_ID)) return null;
+    public static Lines lines(Advancement holder, DisplayInfo display, AdvancementProgress progress) {
+        if (!holder.getId().getNamespace().equals(DungeonTotems.MOD_ID)) return null;
         Style colour = Style.EMPTY.withColor(display.getType().getChatColor());
         Component text = display.getDescription();
         String hintKey = hintKey(text);
         if (!progress.isDone() && hintKey != null && I18n.exists(hintKey)) text = Component.translatable(hintKey);
-        Component list = holder.id().equals(GREAT_AND_SMALL) ? animals(holder, progress) : null;
+        Component list = holder.getId().equals(GREAT_AND_SMALL) ? animals(holder, progress) : null;
         return new Lines(ComponentUtils.mergeStyles(text.copy(), colour), list);
     }
 
@@ -65,10 +65,10 @@ public final class AdvancementTooltips {
     }
 
     /** Every animal of Great and Small, by name once you've been it. */
-    private static Component animals(AdvancementHolder holder, AdvancementProgress progress) {
+    private static Component animals(Advancement holder, AdvancementProgress progress) {
         MutableComponent list = Component.empty();
         // The client gets an advancement's requirements but not its criteria: one requirement per form.
-        List<String> forms = new ArrayList<>(holder.value().requirements().names());
+        List<String> forms = new ArrayList<>(holder.requirements().names());
         forms.sort(null);
         for (int i = 0; i < forms.size(); i++) {
             if (i > 0) list.append(Component.literal(", ").withStyle(ChatFormatting.DARK_GRAY));

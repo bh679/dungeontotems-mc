@@ -93,7 +93,8 @@ public final class VoidRescue {
     /** Remembers where the player last stood on solid ground, once a second. */
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         if (player.tickCount % TRACK_EVERY_TICKS != 0) return;
         if (!player.onGround() || player.isPassenger() || player.isInLiquid()) return;
         BlockPos below = player.blockPosition().below();

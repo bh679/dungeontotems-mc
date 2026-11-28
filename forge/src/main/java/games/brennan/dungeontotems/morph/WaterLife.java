@@ -93,7 +93,8 @@ public final class WaterLife {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !player.isAlive()) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player) || !player.isAlive()) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (!FormTraits.isWaterForm(form)) return;
         if (form == EntityType.DOLPHIN) breatheAir(player);

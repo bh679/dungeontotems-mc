@@ -29,7 +29,8 @@ public final class HeldCurses {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !player.isAlive()) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player) || !player.isAlive()) return;
         if (player.tickCount % CHECK_TICKS == 0) update(player);
     }
 

@@ -1,17 +1,16 @@
 package games.brennan.dungeontotems;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontotems.client.TimerCurseIcons;
 import games.brennan.dungeontotems.loot.EvokerTotemLootModifier;
-import games.brennan.dungeontotems.morph.MorphForm;
+import games.brennan.dungeontotems.morph.MorphFormTable;
 import games.brennan.dungeontotems.net.TotemNetwork;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 /**
@@ -27,12 +26,12 @@ public final class DungeonTotems {
     public static final String MOD_ID = "dungeontotems";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public DungeonTotems(IEventBus modBus, ModContainer container) {
+    public DungeonTotems() {
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         TotemRegistries.register(modBus);
         EvokerTotemLootModifier.register(modBus);
-        modBus.addListener(TotemNetwork::register);
-        modBus.addListener(MorphForm::register);
-        if (FMLEnvironment.dist == Dist.CLIENT) modBus.addListener(TimerCurseIcons::onRegister);
+        TotemNetwork.register();
+        MinecraftForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(MorphFormTable.INSTANCE));
         LOGGER.info("Dungeon Totems loaded");
     }
 

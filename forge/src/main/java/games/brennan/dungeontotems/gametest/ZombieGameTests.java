@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.gametest;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.Curses;
@@ -10,7 +12,6 @@ import games.brennan.dungeontotems.morph.MorphEvents;
 import games.brennan.dungeontotems.morph.Morphs;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.core.Direction;
@@ -48,7 +49,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -209,11 +210,11 @@ public final class ZombieGameTests {
         ServerPlayer player = player(helper);
         hostBackpackOwner = player;
         ItemStack totem = new ItemStack(TotemRegistries.TOTEMS.get(Curse.WEAKNESS).get());
-        List<ItemStack> reachable = List.of(PotionContents.createItemStack(Items.POTION, Potions.WEAKNESS),
-            PotionContents.createItemStack(Items.SPLASH_POTION, Potions.LONG_WEAKNESS),
-            PotionContents.createItemStack(Items.LINGERING_POTION, Potions.WEAKNESS), totem);
-        List<ItemStack> kept = List.of(PotionContents.createItemStack(Items.POTION, Potions.HEALING),
-            PotionContents.createItemStack(Items.TIPPED_ARROW, Potions.WEAKNESS),
+        List<ItemStack> reachable = List.of(PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.WEAKNESS),
+            PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION), Potions.LONG_WEAKNESS),
+            PotionUtils.setPotion(new ItemStack(Items.LINGERING_POTION), Potions.WEAKNESS), totem);
+        List<ItemStack> kept = List.of(PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.HEALING),
+            PotionUtils.setPotion(new ItemStack(Items.TIPPED_ARROW), Potions.WEAKNESS),
             new ItemStack(TotemRegistries.TOTEMS.get(Curse.FATIGUE).get()), new ItemStack(Items.TOTEM_OF_UNDYING));
         zombify(player);
         Slot pack = player.inventoryMenu.getSlot(PACK_SLOT);
@@ -341,7 +342,7 @@ public final class ZombieGameTests {
         check(helper, !full.mayPickup(player), "nothing comes out of it");
         check(helper, !empty.mayPlace(new ItemStack(Items.ARROW)), "nothing goes in, not even what you carried");
         check(helper, !ZombiePack.isLockedSlot(new Slot(new SimpleContainer(1), 0, 0, 0)), "other containers are untouched");
-        player.removeEffect(TotemRegistries.ZOMBIFIED);
+        player.removeEffect(TotemRegistries.ZOMBIFIED.get());
         check(helper, full.mayPickup(player) && empty.mayPlace(new ItemStack(Items.BREAD)), "curing opens it again");
         hostBackpackOwner = null;
         helper.succeed();
@@ -352,9 +353,9 @@ public final class ZombieGameTests {
         ServerPlayer player = player(helper);
         player.getInventory().setItem(0, new ItemStack(Items.ARROW));
         zombify(player);
-        check(helper, !player.getData(TotemRegistries.ZOMBIE_CARRIED).isEmpty(), "what you carried is remembered");
-        player.removeEffect(TotemRegistries.ZOMBIFIED);
-        check(helper, player.getData(TotemRegistries.ZOMBIE_CARRIED).isEmpty(), "and forgotten once cured");
+        check(helper, !TotemData.get(player, TotemRegistries.ZOMBIE_CARRIED).isEmpty(), "what you carried is remembered");
+        player.removeEffect(TotemRegistries.ZOMBIFIED.get());
+        check(helper, TotemData.get(player, TotemRegistries.ZOMBIE_CARRIED).isEmpty(), "and forgotten once cured");
         check(helper, player.inventoryMenu.getSlot(PACK_SLOT).mayPlace(new ItemStack(Items.BREAD)), "the pack is open again");
         helper.succeed();
     }
@@ -560,11 +561,11 @@ public final class ZombieGameTests {
         Set<String> labels = new HashSet<>();
         for (Holder<Potion> potion : List.of(Potions.WEAKNESS, Potions.LONG_WEAKNESS)) {
             for (Item item : List.of(Items.POTION, Items.SPLASH_POTION, Items.LINGERING_POTION, Items.TIPPED_ARROW)) {
-                ItemStack stack = PotionContents.createItemStack(item, potion);
+                ItemStack stack = PotionUtils.setPotion(new ItemStack(item), potion);
                 check(helper, ZombieGibberish.weakens(stack), stack + " should read as weakness");
             }
         }
-        check(helper, !ZombieGibberish.weakens(PotionContents.createItemStack(Items.POTION, Potions.HEALING)), "healing isn't weakness");
+        check(helper, !ZombieGibberish.weakens(PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.HEALING)), "healing isn't weakness");
         for (int seed = 0; seed < ZombieGibberish.WEAKNESS_LABELS * 4; seed++) labels.add(key(ZombieGibberish.weaknessLabel(seed)));
         check(helper, labels.size() == ZombieGibberish.WEAKNESS_LABELS, "all six labels turn up, saw " + labels);
         helper.succeed();
@@ -613,8 +614,8 @@ public final class ZombieGameTests {
         ServerPlayer player = zombie(helper);
         ItemStack sword = new ItemStack(Items.IRON_SWORD);
         Component name = sword.getHoverName();
-        player.removeEffect(TotemRegistries.ZOMBIFIED);
-        check(helper, sword.getHoverName().equals(name) && !sword.has(DataComponents.CUSTOM_NAME),
+        player.removeEffect(TotemRegistries.ZOMBIFIED.get());
+        check(helper, sword.getHoverName().equals(name) && !sword.hasCustomHoverName(),
             "the item itself never changes, so it reads again once cured");
         helper.succeed();
     }

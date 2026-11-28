@@ -12,7 +12,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraftforge.common.EffectCures;
+import games.brennan.dungeontotems.curse.CurseMarks;
 import games.brennan.dungeontotems.net.TotemNetwork;
 
 /**
@@ -35,7 +35,7 @@ public final class TotemPop {
         player.gameEvent(GameEvent.ITEM_INTERACT_FINISH);
 
         player.setHealth(1.0F);
-        player.removeEffectsCuredBy(EffectCures.PROTECTED_BY_TOTEM);
+        CurseMarks.removeAllButCurses(player);
         player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 900, 1));
         player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 1));
         // A single-purpose totem (void, fall, explosion) gives no Fire Resistance; the Fire Totem does.

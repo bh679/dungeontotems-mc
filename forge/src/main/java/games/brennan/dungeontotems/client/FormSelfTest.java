@@ -21,7 +21,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.WalkTarget;
-import net.minecraft.world.entity.animal.armadillo.Armadillo;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -80,6 +79,7 @@ public final class FormSelfTest {
 
     @SubscribeEvent
     public static void onTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         if (!ENABLED) return;
         Minecraft minecraft = Minecraft.getInstance();
         MinecraftServer server = minecraft.getSingleplayerServer();
@@ -173,7 +173,6 @@ public final class FormSelfTest {
         if (t == 25 || t == 45) lastPlayerPosition = null; // past the speed-up into each gait
         if (t >= 25 && t < 36) step(player, walkSteps);
         if (t >= 45 && t < 56) step(player, sprintSteps);
-        if (form == EntityType.ARMADILLO && t % 10 == 0) server.execute(() -> steerRealArmadillo(server));
         if (t == 30) shot(minecraft, name, "2_walk");
         if (t == 50) shot(minecraft, name, "3_sprint");
         if (t == 56) {
@@ -211,18 +210,11 @@ public final class FormSelfTest {
         if (t == 95) KeyMapping.click(minecraft.options.keyUse.getKey());
         if (t == 98) shot(minecraft, name, "7_use");
         if (t == 112) shot(minecraft, name, "8_use_after");
-        if (t == 118 && form != EntityType.ARMADILLO) KeyMapping.click(minecraft.options.keyUse.getKey());
-        if (form == EntityType.ARMADILLO && t >= 118 && t < 124) minecraft.options.keyUp.setDown(true); // pushing to move unrolls it
-        if (form == EntityType.ARMADILLO && t == 124) minecraft.options.keyUp.setDown(false);
+        if (t == 118) KeyMapping.click(minecraft.options.keyUse.getKey());
         if (t == 112) {
             ServerPlayer serverPlayer = server.getPlayerList().getPlayer(player.getUUID());
             if (MorphRenderer.standIn(player) instanceof net.minecraft.world.entity.animal.camel.Camel camel) REPORT.add(name + ": " + (camel.isCamelSitting() ? "sits on right-click" : "DIDN'T sit"));
             if (MorphRenderer.standIn(player) instanceof net.minecraft.world.entity.animal.Cat cat) REPORT.add(name + ": " + (cat.isInSittingPose() ? "sits on right-click" : "DIDN'T sit"));
-            if (form == EntityType.ARMADILLO) REPORT.add(name + ": " + (serverPlayer != null && FormUse.isRolled(serverPlayer) ? "rolled up on right-click" : "DIDN'T roll up"));
-        }
-        if (form == EntityType.ARMADILLO && t == 136) {
-            ServerPlayer serverPlayer = server.getPlayerList().getPlayer(player.getUUID());
-            REPORT.add(name + ": " + (serverPlayer != null && FormUse.isRolled(serverPlayer) ? "still rolled after moving" : "unrolled when moved"));
         }
         if (t == 121) shot(minecraft, name, "9_use_again");
         if (t == 136) shot(minecraft, name, "10_use_again_after");
@@ -246,7 +238,6 @@ public final class FormSelfTest {
             }
             Morphs.setForm(serverPlayer, form);
             home(server, player.getUUID(), form);
-            if (form == EntityType.ARMADILLO) spawnRealArmadillo(server);
         });
     }
 
@@ -277,27 +268,7 @@ public final class FormSelfTest {
         pigId = pig.getId();
     }
 
-    /** A real armadillo walking west beside the form, for the walk-cycle comparison. */
-    private static void spawnRealArmadillo(MinecraftServer server) {
-        ServerLevel level = server.overworld();
-        Armadillo armadillo = EntityType.ARMADILLO.create(level);
-        if (armadillo == null) return;
-        armadillo.moveTo(FAR.getX() + 8.5, FAR.getY(), FAR.getZ() + 0.5, 90.0F, 0.0F);
-        level.addFreshEntity(armadillo);
-        realArmadilloId = armadillo.getId();
-        steerRealArmadillo(server);
-    }
-
-    /** Keeps the real armadillo walking west at its own walk speed. */
-    private static void steerRealArmadillo(MinecraftServer server) {
-        if (!(server.overworld().getEntity(realArmadilloId) instanceof Armadillo armadillo)) return;
-        armadillo.getBrain().setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(FAR.offset(-28, 0, 0), 1.0F, 0));
-    }
-
     private static void discardTestMobs(MinecraftServer server) {
-        Entity armadillo = server.overworld().getEntity(realArmadilloId);
-        if (armadillo != null) armadillo.discard();
-        realArmadilloId = -1;
         Entity pig = server.overworld().getEntity(pigId);
         if (pig != null) pig.discard();
         pigId = -1;

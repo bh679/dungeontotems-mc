@@ -1,8 +1,10 @@
 package games.brennan.dungeontotems.effect;
 
+import games.brennan.dungeontotems.util.Modifiers;
 import games.brennan.dungeontotems.DungeonTotems;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -23,16 +25,16 @@ public class HeartbreakEffect extends CurseEffect {
     public HeartbreakEffect(int color) {
         super(MobEffectCategory.HARMFUL, color, true);
         // Registered so removal and the inventory's attribute lines know the modifier; the amount is set below.
-        addAttributeModifier(Attributes.MAX_HEALTH, MODIFIER_ID, -HEALTH_PER_LEVEL, AttributeModifier.Operation.ADD_VALUE);
+        addAttributeModifier(Attributes.MAX_HEALTH, Modifiers.uuid(MODIFIER_ID).toString(), -HEALTH_PER_LEVEL, AttributeModifier.Operation.ADDITION);
     }
 
     @Override
-    public void addAttributeModifiers(AttributeMap attributes, int amplifier) {
+    public void addAttributeModifiers(LivingEntity entity, AttributeMap attributes, int amplifier) {
         AttributeInstance maxHealth = attributes.getInstance(Attributes.MAX_HEALTH);
         if (maxHealth == null) return;
-        maxHealth.removeModifier(MODIFIER_ID);
+        Modifiers.remove(maxHealth, MODIFIER_ID);
         double spare = Math.max(0.0, maxHealth.getValue() - HALF_HEART);
         double taken = Math.min(HEALTH_PER_LEVEL * (amplifier + 1), spare);
-        maxHealth.addPermanentModifier(new AttributeModifier(MODIFIER_ID, -taken, AttributeModifier.Operation.ADD_VALUE));
+        maxHealth.addPermanentModifier(Modifiers.of(MODIFIER_ID, -taken, AttributeModifier.Operation.ADDITION));
     }
 }

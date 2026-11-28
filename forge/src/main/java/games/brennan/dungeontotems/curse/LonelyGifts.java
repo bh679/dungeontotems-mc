@@ -36,7 +36,7 @@ public final class LonelyGifts {
     @SubscribeEvent
     public static void onItemGone(EntityLeaveLevelEvent event) {
         if (!(event.getEntity() instanceof ItemEntity item) || item.getRemovalReason() != Entity.RemovalReason.DISCARDED) return;
-        if (!(item.getOwner() instanceof ServerPlayer player) || !player.hasEffect(TotemRegistries.LONELY)) return;
+        if (!(item.getOwner() instanceof ServerPlayer player) || !player.hasEffect(TotemRegistries.LONELY.get())) return;
         if (!Villager.FOOD_POINTS.containsKey(item.getItem().getItem())) return;
         if (!event.getLevel().getEntitiesOfClass(Player.class, item.getBoundingBox().inflate(PICKUP_REACH)).isEmpty()) return;
         if (!event.getLevel().getEntitiesOfClass(Villager.class, item.getBoundingBox().inflate(PICKUP_REACH)).isEmpty()) {

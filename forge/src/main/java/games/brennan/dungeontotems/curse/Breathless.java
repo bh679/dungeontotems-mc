@@ -34,12 +34,14 @@ public final class Breathless {
 
     @SubscribeEvent
     public static void onTickStart(TickEvent.PlayerTickEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) AIR_BEFORE.put(player.getUUID(), player.getAirSupply());
+        if (event.phase != TickEvent.Phase.START) return;
+        if (event.player instanceof ServerPlayer player) AIR_BEFORE.put(player.getUUID(), player.getAirSupply());
     }
 
     @SubscribeEvent
     public static void onTickEnd(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         Integer before = AIR_BEFORE.remove(player.getUUID());
         if (before == null || !suffocates(player)) return;
         int air = before - 1;
@@ -54,7 +56,7 @@ public final class Breathless {
 
     /** Breathless, out of water, and nothing to breathe with. */
     static boolean suffocates(ServerPlayer player) {
-        if (!player.isAlive() || !player.hasEffect(TotemRegistries.BREATHLESS)) return false;
+        if (!player.isAlive() || !player.hasEffect(TotemRegistries.BREATHLESS.get())) return false;
         if (player.isEyeInFluid(FluidTags.WATER) || player.getAbilities().invulnerable) return false;
         return !player.hasEffect(MobEffects.WATER_BREATHING) && !player.hasEffect(MobEffects.CONDUIT_POWER);
     }

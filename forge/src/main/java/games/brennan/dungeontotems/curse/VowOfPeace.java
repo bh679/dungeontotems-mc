@@ -19,8 +19,8 @@ public final class VowOfPeace {
     private VowOfPeace() {}
 
     @SubscribeEvent
-    public static void onDamage(LivingDamageEvent.Post event) {
-        if (event.getNewDamage() <= 0.0F) return;
+    public static void onDamage(LivingDamageEvent event) {
+        if (event.getAmount() <= 0.0F) return;
         if (!(event.getSource().getEntity() instanceof ServerPlayer attacker) || attacker == event.getEntity()) return;
         RuleCurses.broke(attacker, Curse.PACIFISM, TotemRegistries.BROKEN_VOW);
     }

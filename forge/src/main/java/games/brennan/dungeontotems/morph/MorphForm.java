@@ -3,16 +3,13 @@ package games.brennan.dungeontotems.morph;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import games.brennan.dungeontotems.DungeonTotems;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.registries.datamaps.DataMapType;
-import net.minecraftforge.registries.datamaps.RegisterDataMapTypesEvent;
 
 /**
  * One morph form's place in the pick: which pool it is drawn from, how often, and how many seconds
- * the morph lasts once it lands on this form. Lives in the {@code dungeontotems:morph_forms} data map
- * on entity types, so a datapack can change it; the shipped values come from Brennan's table. A weight
+ * the morph lasts once it lands on this form. Read from {@code data/<namespace>/morph_forms/*.json}
+ * by {@link MorphFormTable} (main uses a NeoForge data map), so a datapack can change it; the shipped values come from Brennan's table. A weight
  * of 0 leaves the form out; a form without {@code seconds} lasts the curse's usual 30.
  */
 public record MorphForm(Pool pool, int weight, int seconds) {
@@ -43,13 +40,5 @@ public record MorphForm(Pool pool, int weight, int seconds) {
     /** How long a morph into this form lasts, in ticks. */
     public int ticks() {
         return seconds * 20;
-    }
-
-    public static final DataMapType<EntityType<?>, MorphForm> DATA_MAP =
-        DataMapType.builder(DungeonTotems.id("morph_forms"), Registries.ENTITY_TYPE, CODEC).build();
-
-    /** Mod-bus listener, added in {@link DungeonTotems}. */
-    public static void register(RegisterDataMapTypesEvent event) {
-        event.register(DATA_MAP);
     }
 }

@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.client;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.advancement.TabComplete;
 import games.brennan.dungeontotems.advancement.TotemTriggers;
@@ -7,7 +9,7 @@ import games.brennan.dungeontotems.curse.Curses;
 import games.brennan.dungeontotems.morph.MorphForm;
 import games.brennan.dungeontotems.morph.Morphs;
 import games.brennan.dungeontotems.registry.TotemRegistries;
-import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -94,7 +96,7 @@ final class AdvancementPlayTest {
             for (int i = 0; i < 5; i++) popByDying(player, Curse.MORPHING);
         }),
         new Step("the rest of the animals (not playable here)", player -> {
-            BuiltInRegistries.ENTITY_TYPE.getDataMap(MorphForm.DATA_MAP).keySet().forEach(key ->
+            games.brennan.dungeontotems.morph.MorphFormTable.all().keySet().forEach(key ->
                 TotemTriggers.BECAME_FORM.get().trigger(player, key.location().toString()));
         }),
         new Step("settle", player -> {}));
@@ -148,7 +150,7 @@ final class AdvancementPlayTest {
         List<ResourceLocation> tab = new ArrayList<>(TabComplete.TAB);
         tab.add(TabComplete.FULFILLED);
         for (ResourceLocation id : tab) {
-            AdvancementHolder holder = server.getAdvancements().get(id);
+            Advancement holder = server.getAdvancements().get(id);
             if (holder == null) {
                 out.add(id.getPath() + ": NOT LOADED");
                 continue;
@@ -161,7 +163,7 @@ final class AdvancementPlayTest {
                 : "not earned" + (text == null ? "" : " " + text.getString()) + (missing.size() <= 10 ? ", missing " + missing : "")));
         }
         out.add("animals morphed into for real: " + REAL_FORMS);
-        out.add("curse trials left open: " + player.getData(TotemRegistries.CURSE_TRIALS));
+        out.add("curse trials left open: " + TotemData.get(player, TotemRegistries.CURSE_TRIALS));
         return out;
     }
 

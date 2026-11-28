@@ -16,8 +16,6 @@ import snownee.jade.api.WailaPlugin;
 import snownee.jade.api.ui.IBoxElement;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.ui.ITextElement;
-import snownee.jade.impl.Tooltip;
 import snownee.jade.impl.ui.TextElement;
 
 import java.util.List;
@@ -41,9 +39,9 @@ public final class ZombieJadePlugin implements IWailaPlugin {
         registration.addTooltipCollectedCallback(AFTER_EVERYONE, ZombieJadePlugin::mumble);
     }
 
-    private static void mumble(IBoxElement box, Accessor<?> accessor) {
+    private static void mumble(ITooltip tooltip, Accessor<?> accessor) {
         if (!ZombieReading.cantRead(accessor.getPlayer())) return;
-        mumble(box.getTooltip(), seedOf(accessor), new int[] {0});
+        mumble(tooltip, seedOf(accessor), new int[] {0});
     }
 
     /** Swaps every text element for a mumble; {@code line} counts lines across nested boxes. */
@@ -55,19 +53,15 @@ public final class ZombieJadePlugin implements IWailaPlugin {
                 for (int e = 0; e < elements.size(); e++) {
                     IElement element = elements.get(e);
                     if (element instanceof IBoxElement nested) {
-                        mumble(nested.getTooltip(), seed, line);
-                    } else if (element instanceof ITextElement) {
+                        mumble(nested.getTooltipRenderer().getTooltip(), seed, line);
+                    } else if (element instanceof TextElement) {
                         Component text = ZombieGibberish.line(seed, line[0]).withStyle(styleOf(element));
                         elements.set(e, IElementHelper.get().text(text));
                         hadText = true;
                     }
                 }
             }
-            if (hadText) {
-                line[0]++;
-                // Jade caches a line's width; re-measure it for the new words, or they run past the box.
-                if (tooltip instanceof Tooltip impl) impl.lines.get(i).markDirty();
-            }
+            if (hadText) line[0]++; // Jade 11 measures a line when drawn, after this, so the width is right
         }
     }
 

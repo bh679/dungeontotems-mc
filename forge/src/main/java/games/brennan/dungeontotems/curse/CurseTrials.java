@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.curse;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.advancement.TotemTriggers;
@@ -38,7 +40,7 @@ public final class CurseTrials {
         } else if (!trials(player).contains(curse.key())) {
             List<String> trials = new ArrayList<>(trials(player));
             trials.add(curse.key());
-            player.setData(TotemRegistries.CURSE_TRIALS, List.copyOf(trials));
+            TotemData.set(player, TotemRegistries.CURSE_TRIALS, List.copyOf(trials));
         }
     }
 
@@ -50,14 +52,15 @@ public final class CurseTrials {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) { // a totem's save cancels the event first
-            player.setData(TotemRegistries.CURSE_TRIALS, List.of());
+            TotemData.set(player, TotemRegistries.CURSE_TRIALS, List.of());
         }
     }
 
     /** Last in the tick, so a deferred death ({@link DeadlineCurses#doom}) has had its chance. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !player.isAlive()) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player) || !player.isAlive()) return;
         for (String key : trials(player)) {
             Curse curse = forKey(key);
             if (curse == null) {
@@ -77,7 +80,7 @@ public final class CurseTrials {
     private static void end(ServerPlayer player, String key) {
         List<String> trials = new ArrayList<>(trials(player));
         trials.remove(key);
-        player.setData(TotemRegistries.CURSE_TRIALS, List.copyOf(trials));
+        TotemData.set(player, TotemRegistries.CURSE_TRIALS, List.copyOf(trials));
     }
 
     private static Curse forKey(String key) {
@@ -88,6 +91,6 @@ public final class CurseTrials {
     }
 
     private static List<String> trials(ServerPlayer player) {
-        return player.getData(TotemRegistries.CURSE_TRIALS);
+        return TotemData.get(player, TotemRegistries.CURSE_TRIALS);
     }
 }

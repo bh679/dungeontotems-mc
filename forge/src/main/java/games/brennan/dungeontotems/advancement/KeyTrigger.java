@@ -1,11 +1,14 @@
 package games.brennan.dungeontotems.advancement;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.google.gson.JsonObject;
+import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
-import net.minecraft.advancements.critereon.EntityPredicate;
+import net.minecraft.advancements.critereon.DeserializationContext;
+import net.minecraft.advancements.critereon.SerializationContext;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.GsonHelper;
 
 import java.util.Optional;
 
@@ -16,27 +19,52 @@ import java.util.Optional;
  */
 public final class KeyTrigger extends SimpleCriterionTrigger<KeyTrigger.Instance> {
 
-    private final Codec<Instance> codec;
+    private final ResourceLocation id;
+    private final String field;
 
-    public KeyTrigger(String field) {
-        this.codec = RecordCodecBuilder.create(in -> in.group(
-            EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
-            Codec.STRING.optionalFieldOf(field).forGetter(Instance::key)
-        ).apply(in, Instance::new));
+    public KeyTrigger(ResourceLocation id, String field) {
+        this.id = id;
+        this.field = field;
     }
 
     @Override
-    public Codec<Instance> codec() {
-        return codec;
+    public ResourceLocation getId() {
+        return id;
+    }
+
+    @Override
+    protected Instance createInstance(JsonObject json, ContextAwarePredicate player, DeserializationContext context) {
+        Optional<String> key = json.has(field) ? Optional.of(GsonHelper.getAsString(json, field)) : Optional.empty();
+        return new Instance(id, field, player, key);
     }
 
     public void trigger(ServerPlayer player, String key) {
         trigger(player, instance -> instance.matches(key));
     }
 
-    public record Instance(Optional<ContextAwarePredicate> player, Optional<String> key) implements SimpleCriterionTrigger.SimpleInstance {
+    public static final class Instance extends AbstractCriterionTriggerInstance {
+        private final String field;
+        private final Optional<String> key;
+
+        Instance(ResourceLocation id, String field, ContextAwarePredicate player, Optional<String> key) {
+            super(id, player);
+            this.field = field;
+            this.key = key;
+        }
+
+        public Optional<String> key() {
+            return key;
+        }
+
         boolean matches(String fired) {
             return key.map(fired::equals).orElse(true);
+        }
+
+        @Override
+        public JsonObject serializeToJson(SerializationContext context) {
+            JsonObject json = super.serializeToJson(context);
+            key.ifPresent(k -> json.addProperty(field, k));
+            return json;
         }
     }
 }

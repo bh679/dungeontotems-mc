@@ -13,7 +13,6 @@ import net.minecraft.world.entity.animal.PolarBear;
 import net.minecraft.world.entity.animal.Pufferfish;
 import net.minecraft.world.entity.animal.Rabbit;
 import net.minecraft.world.entity.animal.Sheep;
-import net.minecraft.world.entity.animal.armadillo.Armadillo;
 import net.minecraft.world.entity.animal.axolotl.Axolotl;
 import net.minecraft.world.entity.animal.camel.Camel;
 import net.minecraft.world.entity.animal.frog.Frog;
@@ -49,9 +48,6 @@ final class FormAnimator {
     private static final int DIG_TICKS = 120;
     /** {@code PolarBearMeleeAttackGoal}: how long the bear stays up on its hind legs. */
     private static final int STAND_TICKS = 20;
-    /** {@code Armadillo.ArmadilloState} durations: rolling into the ball, and unrolling out of it. */
-    private static final int ROLL_UP_TICKS = 10;
-    private static final int UNROLL_TICKS = 30;
     /** A bee's sting flip: it tips nose-up until its stinger swings round underneath, then back. */
     private static final int FLIP_TICKS = 10;
     private static final float FLIP_DEGREES = -100.0F;
@@ -96,11 +92,7 @@ final class FormAnimator {
         if (FLAPPING.containsKey(id)) standIn.setOnGround(false); // a chicken's wings beat while it's off the ground
         runOwnTick(standIn);
         follow(standIn, player);
-        if (standIn instanceof Armadillo armadillo && armadillo.isScared()) {
-            armadillo.walkAnimation.setSpeed(0.0F); // a ball doesn't walk
-        } else {
-            standIn.calculateEntityAnimation(MorphFlight.flies(standIn.getType()));
-        }
+        standIn.calculateEntityAnimation(MorphFlight.flies(standIn.getType()));
         animateEating(standIn, player);
 
         if (jumped) onJump(standIn, id);
@@ -151,24 +143,7 @@ final class FormAnimator {
                 if (standIn instanceof AbstractHorse horse) horse.setEating(true);
                 EATING.put(player, EAT_TICKS);
             }
-            case ROLL_UP -> { // as the mob's AI does: roll into the ball, then stay curled
-                if (!(standIn instanceof Armadillo armadillo)) return;
-                CURLED_YAW.put(player, armadillo.yBodyRot);
-                armadillo.switchToState(Armadillo.ArmadilloState.ROLLING);
-                startTimed(player, ROLL_UP_TICKS, () -> {
-                    armadillo.switchToState(Armadillo.ArmadilloState.SCARED);
-                    CURLED.add(player);
-                });
-            }
-            case UNROLL -> { // and unroll before standing up again
-                if (!(standIn instanceof Armadillo armadillo)) return;
-                armadillo.switchToState(Armadillo.ArmadilloState.UNROLLING);
-                CURLED.remove(player);
-                startTimed(player, UNROLL_TICKS, () -> {
-                    armadillo.switchToState(Armadillo.ArmadilloState.IDLE);
-                    CURLED_YAW.remove(player);
-                });
-            }
+            case ROLL_UP, UNROLL -> { } // main's armadillo; 1.20.1 has none
             case STAND -> {
                 if (standIn instanceof PolarBear bear) bear.setStanding(true);
                 STANDING.put(player, STAND_TICKS);

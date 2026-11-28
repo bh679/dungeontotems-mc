@@ -1,8 +1,12 @@
 package games.brennan.dungeontotems.morph;
 
+import games.brennan.dungeontotems.util.Modifiers;
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.advancement.TotemTriggers;
 import games.brennan.dungeontotems.net.MorphSyncPayload;
+import games.brennan.dungeontotems.registry.TotemAttributes;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -60,7 +64,7 @@ public final class Morphs {
     /**
      * Turns the player into a random form from the pool for where they are (in lava, underwater, or
      * anywhere else; an empty lava or water pool falls back to land), weighted by the
-     * {@link MorphForm#DATA_MAP}, among the forms that fit where they stand. Returns the form, or null
+     * {@link MorphFormTable}, among the forms that fit where they stand. Returns the form, or null
      * when none fits and they stay a player.
      */
     @Nullable
@@ -87,7 +91,7 @@ public final class Morphs {
     /** The pool's forms with weight above 0 that fit around the player. */
     private static List<EntityType<?>> fitting(ServerPlayer player, MorphForm.Pool pool) {
         List<EntityType<?>> fitting = new ArrayList<>();
-        BuiltInRegistries.ENTITY_TYPE.getDataMap(MorphForm.DATA_MAP).forEach((key, form) -> {
+        MorphFormTable.all().forEach((key, form) -> {
             if (form.pool() != pool || form.weight() <= 0) return;
             EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(key);
             if (type != null && DefaultAttributes.hasSupplier(type) && fits(player, type)) fitting.add(type);
@@ -97,7 +101,7 @@ public final class Morphs {
 
     /** The form's pool, weight and time, if it has one. */
     public static Optional<MorphForm> formData(EntityType<?> type) {
-        return Optional.ofNullable(BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(type).getData(MorphForm.DATA_MAP));
+        return MorphFormTable.get(type);
     }
 
     private static int weightOf(EntityType<?> type) {
@@ -116,9 +120,9 @@ public final class Morphs {
     }
 
     /** Called when the Morphed or Zombified curse ends: falls back to whichever is still running. */
-    public static void onCurseEnded(ServerPlayer player, Holder<MobEffect> ending) {
-        boolean zombified = !ending.is(TotemRegistries.ZOMBIFIED) && player.hasEffect(TotemRegistries.ZOMBIFIED);
-        boolean morphed = !ending.is(TotemRegistries.MORPHED) && player.hasEffect(TotemRegistries.MORPHED);
+    public static void onCurseEnded(ServerPlayer player, MobEffect ending) {
+        boolean zombified = !ending.is(TotemRegistries.ZOMBIFIED.get()) && player.hasEffect(TotemRegistries.ZOMBIFIED.get());
+        boolean morphed = !ending.is(TotemRegistries.MORPHED.get()) && player.hasEffect(TotemRegistries.MORPHED.get());
         if (zombified) setForm(player, EntityType.ZOMBIE);
         else if (morphed) startRandomMorph(player);
         else setForm(player, null);
@@ -128,7 +132,7 @@ public final class Morphs {
     public static void setForm(ServerPlayer player, @Nullable EntityType<?> type) {
         EntityType<?> previous = formOf(player).orElse(null);
         String id = type == null ? "" : BuiltInRegistries.ENTITY_TYPE.getKey(type).toString();
-        player.setData(TotemRegistries.FORM, id);
+        TotemData.set(player, TotemRegistries.FORM, id);
         applyStats(player, type);
         player.refreshDimensions();
         if (type != null) dropMonsterAggro(player);
@@ -143,8 +147,8 @@ public final class Morphs {
 
     /** The player's current form, if any. Safe on both sides and during entity construction. */
     public static Optional<EntityType<?>> formOf(Player player) {
-        if (!player.hasData(TotemRegistries.FORM)) return Optional.empty();
-        String id = player.getData(TotemRegistries.FORM);
+        if (!TotemData.has(player, TotemRegistries.FORM)) return Optional.empty();
+        String id = TotemData.get(player, TotemRegistries.FORM);
         if (id.isEmpty()) return Optional.empty();
         ResourceLocation key = ResourceLocation.tryParse(id);
         return key == null ? Optional.empty() : BuiltInRegistries.ENTITY_TYPE.getOptional(key);
@@ -156,46 +160,70 @@ public final class Morphs {
         clear(player, Attributes.MAX_HEALTH, MAX_HEALTH_ID);
         clear(player, Attributes.MOVEMENT_SPEED, SPEED_ID);
         clear(player, Attributes.ATTACK_DAMAGE, ATTACK_ID);
-        clear(player, Attributes.JUMP_STRENGTH, JUMP_ID);
-        clear(player, Attributes.STEP_HEIGHT, STEP_ID);
-        clear(player, Attributes.JUMP_STRENGTH, FORM_JUMP_ID);
+        clear(player, TotemAttributes.jumpStrength(), JUMP_ID);
+        clear(player, TotemAttributes.stepHeight(), STEP_ID);
+        clear(player, TotemAttributes.jumpStrength(), FORM_JUMP_ID);
         if (type == null || !DefaultAttributes.hasSupplier(type)) return;
 
         AttributeSupplier mob = DefaultAttributes.getSupplier((EntityType<? extends LivingEntity>) type);
-        add(player, mob, Attributes.MAX_HEALTH, MAX_HEALTH_ID, MorphStats::maxHealthDelta, AttributeModifier.Operation.ADD_VALUE);
+        add(player, mob, Attributes.MAX_HEALTH, MAX_HEALTH_ID, MorphStats::maxHealthDelta, AttributeModifier.Operation.ADDITION);
         MobGaits.Gait gait = MobGaits.of(type);
         if (WaterLife.isLandlocked(type)) { // can't walk on land (swimming doesn't use this speed)
-            add(player, mob, Attributes.MOVEMENT_SPEED, SPEED_ID, mobSpeed -> -1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+            add(player, mob, Attributes.MOVEMENT_SPEED, SPEED_ID, mobSpeed -> -1.0, AttributeModifier.Operation.MULTIPLY_TOTAL);
         } else if (gait == null) { // flyers
-            add(player, mob, Attributes.MOVEMENT_SPEED, SPEED_ID, MorphStats::speedBonus, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+            add(player, mob, Attributes.MOVEMENT_SPEED, SPEED_ID, MorphStats::speedBonus, AttributeModifier.Operation.MULTIPLY_TOTAL);
         } else { // land forms walk at their mob's stroll
             add(player, mob, Attributes.MOVEMENT_SPEED, SPEED_ID,
-                mobSpeed -> MobGaits.walkSpeed(gait, mobSpeed) / MobGaits.PLAYER_WALK_SPEED - 1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+                mobSpeed -> MobGaits.walkSpeed(gait, mobSpeed) / MobGaits.PLAYER_WALK_SPEED - 1.0, AttributeModifier.Operation.MULTIPLY_TOTAL);
         }
-        add(player, mob, Attributes.ATTACK_DAMAGE, ATTACK_ID, MorphStats::attackDelta, AttributeModifier.Operation.ADD_VALUE);
+        add(player, mob, Attributes.ATTACK_DAMAGE, ATTACK_ID, MorphStats::attackDelta, AttributeModifier.Operation.ADDITION);
         if (!FORM_JUMP.containsKey(type)) {
-            add(player, mob, Attributes.JUMP_STRENGTH, JUMP_ID, MorphStats::jumpBonus, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+            addFrom(player, TotemAttributes.jumpStrength(), JUMP_ID, MorphStats.jumpBonus(mobJump(mob)), AttributeModifier.Operation.MULTIPLY_TOTAL);
         }
-        add(player, mob, Attributes.STEP_HEIGHT, STEP_ID, MorphStats::stepDelta, AttributeModifier.Operation.ADD_VALUE);
-        AttributeInstance jump = player.getAttribute(Attributes.JUMP_STRENGTH);
+        addFrom(player, TotemAttributes.stepHeight(), STEP_ID, MorphStats.stepDelta(mobStep(player, type)), AttributeModifier.Operation.ADDITION);
+        AttributeInstance jump = player.getAttribute(TotemAttributes.jumpStrength());
         if (jump != null && FORM_JUMP.containsKey(type)) { // to exactly this strength, from the player's own
-            jump.addTransientModifier(new AttributeModifier(FORM_JUMP_ID, FORM_JUMP.get(type) - jump.getBaseValue(), AttributeModifier.Operation.ADD_VALUE));
+            jump.addTransientModifier(Modifiers.of(FORM_JUMP_ID, FORM_JUMP.get(type) - jump.getBaseValue(), AttributeModifier.Operation.ADDITION));
         }
         if (player.getHealth() > player.getMaxHealth()) player.setHealth(player.getMaxHealth());
     }
 
-    private static void add(Player player, AttributeSupplier mob, Holder<Attribute> attribute, ResourceLocation id,
+    private static void add(Player player, AttributeSupplier mob, Attribute attribute, ResourceLocation id,
                             DoubleUnaryOperator toAmount, AttributeModifier.Operation operation) {
         AttributeInstance instance = player.getAttribute(attribute);
         if (instance == null || !mob.hasAttribute(attribute)) return;
         double amount = toAmount.applyAsDouble(mob.getBaseValue(attribute));
         if (amount == 0.0) return;
-        instance.addTransientModifier(new AttributeModifier(id, amount, operation));
+        instance.addTransientModifier(Modifiers.of(id, amount, operation));
     }
 
-    private static void clear(Player player, Holder<Attribute> attribute, ResourceLocation id) {
+    private static void addFrom(Player player, Attribute attribute, ResourceLocation id, double amount,
+                                AttributeModifier.Operation operation) {
         AttributeInstance instance = player.getAttribute(attribute);
-        if (instance != null) instance.removeModifier(id);
+        if (instance == null || amount == 0.0) return;
+        instance.addTransientModifier(Modifiers.of(id, amount, operation));
+    }
+
+    /**
+     * The mob's jump strength as 1.21 has it: 1.20.1 gives only horses, donkeys, mules and llamas one
+     * ({@code horse.jump_strength}); every other mob jumps at the player's 0.42.
+     */
+    private static double mobJump(AttributeSupplier mob) {
+        return mob.hasAttribute(Attributes.JUMP_STRENGTH) ? mob.getBaseValue(Attributes.JUMP_STRENGTH) : TotemAttributes.PLAYER_JUMP;
+    }
+
+    /** The mob's step height: a field on each mob in 1.20.1 (an attribute in 1.21), so read from a throwaway one. */
+    private static double mobStep(Player player, EntityType<?> type) {
+        net.minecraft.world.entity.Entity probe = type.create(player.level());
+        if (probe == null) return MorphStats.PLAYER_STEP_HEIGHT;
+        double step = probe.maxUpStep();
+        probe.discard();
+        return step;
+    }
+
+    private static void clear(Player player, Attribute attribute, ResourceLocation id) {
+        AttributeInstance instance = player.getAttribute(attribute);
+        if (instance != null) Modifiers.remove(instance, id);
     }
 
     private static boolean fits(ServerPlayer player, EntityType<?> type) {

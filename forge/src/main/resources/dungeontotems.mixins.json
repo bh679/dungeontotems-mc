@@ -5,6 +5,10 @@
   "package": "games.brennan.dungeontotems.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "EntityDataMixin",
+    "ServerPlayerDataMixin",
+    "MobEffectInstanceMixin",
+    "LivingEntityTotemMixin",
     "EntityMixin",
     "LivingEntityMixin",
     "PlayerMixin",

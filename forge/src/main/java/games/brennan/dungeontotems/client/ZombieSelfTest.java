@@ -19,7 +19,6 @@ import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
@@ -52,10 +51,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.alchemy.Potions;
-import net.minecraft.world.item.component.WrittenBookContent;
-import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
@@ -245,7 +242,7 @@ public final class ZombieSelfTest {
             (minecraft, player) -> {}, player -> player.getInventory().getItem(1).isEnchanted()),
         new Step("a weakness potion gives itself away", true, MENU_HOTBAR + 3, player -> {
                 packed(player);
-                put(player, 3, PotionContents.createItemStack(Items.SPLASH_POTION, Potions.WEAKNESS));
+                put(player, 3, PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION), Potions.WEAKNESS));
             },
             (minecraft, player) -> {}, player -> ZombieGibberish.weakens(player.getInventory().getItem(3))),
         new Step("a lucid item thinks", true, MENU_HOTBAR + 2, player -> { packed(player); put(player, 2, thoughtfulBlade()); },
@@ -341,6 +338,7 @@ public final class ZombieSelfTest {
 
     @SubscribeEvent
     public static void onTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         if (!ENABLED) return;
         Minecraft minecraft = Minecraft.getInstance();
         MinecraftServer server = minecraft.getSingleplayerServer();
@@ -371,7 +369,7 @@ public final class ZombieSelfTest {
                 server.setDifficulty(Difficulty.NORMAL, true);
                 player.serverLevel().setDayTime(MIDNIGHT); // no sunburn
                 player.setGameMode(GameType.SURVIVAL);
-                player.removeEffect(TotemRegistries.ZOMBIFIED);
+                player.removeEffect(TotemRegistries.ZOMBIFIED.get());
                 player.getInventory().clearContent();
                 player.getInventory().selected = 0;
                 step.setup().run(player);
@@ -411,10 +409,10 @@ public final class ZombieSelfTest {
     /** {@link #packed}, plus the cure's Weakness in the pack (15..17) and a healing potion beside it (18). */
     private static void weaknessPacked(ServerPlayer player) {
         packed(player);
-        put(player, 15, PotionContents.createItemStack(Items.POTION, Potions.WEAKNESS));
-        put(player, 16, PotionContents.createItemStack(Items.SPLASH_POTION, Potions.WEAKNESS));
+        put(player, 15, PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.WEAKNESS));
+        put(player, 16, PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION), Potions.WEAKNESS));
         put(player, 17, new ItemStack(TotemRegistries.TOTEMS.get(Curse.WEAKNESS).get()));
-        put(player, 18, PotionContents.createItemStack(Items.POTION, Potions.HEALING));
+        put(player, 18, PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.HEALING));
     }
 
     /** A diamond sword with Sharpness V, Unbreaking III and Looting III: a long tooltip in rare colour. */
@@ -431,7 +429,7 @@ public final class ZombieSelfTest {
     private static ItemStack thoughtfulBlade() {
         for (int n = 0; ; n++) {
             ItemStack blade = new ItemStack(Items.IRON_SWORD);
-            blade.set(DataComponents.CUSTOM_NAME, Component.literal("Old Blade " + n));
+            blade.setHoverName(Component.literal("Old Blade " + n));
             if (ZombieGibberish.thought(ItemStack.hashItemAndComponents(blade)) != null) return blade;
         }
     }
@@ -448,8 +446,13 @@ public final class ZombieSelfTest {
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
         Component page = Component.literal("Dear traveller, the train leaves at dawn. Bring bread for the journey and do not "
             + "open the last carriage, whatever you hear knocking inside it.");
-        book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(Filterable.passThrough("Warning"), "Conductor", 0,
-            List.of(Filterable.passThrough(page)), true));
+        net.minecraft.nbt.CompoundTag tag = book.getOrCreateTag();
+        tag.putString("title", "Warning");
+        tag.putString("author", "Conductor");
+        net.minecraft.nbt.ListTag pages = new net.minecraft.nbt.ListTag();
+        pages.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(page)));
+        tag.put("pages", pages);
+        tag.putBoolean("resolved", true);
         return book;
     }
 

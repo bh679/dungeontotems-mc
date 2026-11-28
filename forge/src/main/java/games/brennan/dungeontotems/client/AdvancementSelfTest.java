@@ -2,8 +2,7 @@ package games.brennan.dungeontotems.client;
 
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.advancement.TabComplete;
-import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.advancements.AdvancementNode;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.MouseHandler;
@@ -55,6 +54,7 @@ public final class AdvancementSelfTest {
 
     @SubscribeEvent
     public static void onTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         if (!ENABLED) return;
         Minecraft minecraft = Minecraft.getInstance();
         MinecraftServer server = minecraft.getSingleplayerServer();
@@ -141,11 +141,11 @@ public final class AdvancementSelfTest {
 
     /** The tooltip text the widget draws, from the same code it uses. */
     private static void report(Minecraft minecraft, MinecraftServer server, ResourceLocation id) {
-        AdvancementHolder holder = server.getAdvancements().get(id);
+        Advancement holder = server.getAdvancements().get(id);
         ServerPlayer player = server.getPlayerList().getPlayer(minecraft.player.getUUID());
-        if (holder == null || player == null || holder.value().display().isEmpty()) return;
+        if (holder == null || player == null || holder.display().isEmpty()) return;
         AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
-        AdvancementTooltips.Lines lines = AdvancementTooltips.lines(holder, holder.value().display().get(), progress);
+        AdvancementTooltips.Lines lines = AdvancementTooltips.lines(holder, holder.display().get(), progress);
         StringBuilder text = new StringBuilder(id.getPath()).append(" (").append(progress.isDone() ? "earned" : progress.getProgressText() == null ? "not earned" : progress.getProgressText().getString()).append("): ");
         if (lines == null) {
             text.append("vanilla tooltip");

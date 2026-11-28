@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.morph;
 
+import games.brennan.dungeontotems.registry.TotemAttributes;
+import games.brennan.dungeontotems.util.Modifiers;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.net.TotemNetwork;
 import games.brennan.dungeontotems.net.MorphActionPayload;
@@ -29,7 +31,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.event.entity.living.LivingIncomingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.TickEvent;
 
 import javax.annotation.Nullable;
@@ -39,21 +41,15 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * "Use" with an empty hand, as a form, does the mob's own extra move: a chicken lays an egg; an
- * armadillo rolls into its shell (it can't move, and hits hurt as they hurt a rolled-up armadillo) or
- * back out, and rolls up by itself when hurt; the rest are in {@link LandMoves} and {@link WaterMoves}.
+ * "Use" with an empty hand, as a form, does the mob's own extra move: a chicken lays an egg; the rest
+ * are in {@link LandMoves} and {@link WaterMoves}. (Main's armadillo roll is left out: 1.20.1 has no armadillo.)
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID)
 public final class FormUse {
 
     private static final int EGG_COOLDOWN_TICKS = 100;
-    /** How long an armadillo stays rolled up after being hurt. */
-    private static final int ARMADILLO_SCARED_TICKS = 60;
-    private static final ResourceLocation ROLLED_SPEED_ID = DungeonTotems.id("morph.rolled_speed");
-    private static final ResourceLocation ROLLED_JUMP_ID = DungeonTotems.id("morph.rolled_jump");
 
     private static final Map<UUID, Long> LAST_EGG = new ConcurrentHashMap<>();
-    private static final Set<UUID> ROLLED = ConcurrentHashMap.newKeySet();
 
     private FormUse() {}
 
@@ -62,7 +58,6 @@ public final class FormUse {
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == null) return;
         if (form == EntityType.CHICKEN) layEgg(player);
-        else if (form == EntityType.ARMADILLO) setRolled(player, !ROLLED.contains(player.getUUID()));
         else if (form == EntityType.CAMEL || form == EntityType.CAT) LandMoves.sit(player);
         else if (form == EntityType.BAT) LandMoves.hang(player);
         else if (form == EntityType.FROG) LandMoves.croak(player);
@@ -86,7 +81,7 @@ public final class FormUse {
     public static final Set<EntityType<?>> OWN_JUMP = Set.of(EntityType.CAMEL);
 
     /** Forms with a "use" move; the rest make their sound. */
-    public static final Set<EntityType<?>> USABLE = Set.of(EntityType.CHICKEN, EntityType.ARMADILLO, EntityType.CAMEL,
+    public static final Set<EntityType<?>> USABLE = Set.of(EntityType.CHICKEN, EntityType.CAMEL,
         EntityType.CAT, EntityType.BAT, EntityType.FROG, EntityType.SNIFFER, EntityType.SNOW_GOLEM, EntityType.TURTLE,
         EntityType.PARROT, EntityType.AXOLOTL, EntityType.PUFFERFISH, EntityType.SQUID, EntityType.GLOW_SQUID, EntityType.DOLPHIN);
 
@@ -114,61 +109,32 @@ public final class FormUse {
         player.level().addFreshEntity(egg);
     }
 
-    private static void setRolled(ServerPlayer player, boolean rolled) {
-        if (rolled) ROLLED.add(player.getUUID());
-        else ROLLED.remove(player.getUUID());
-        hold(player, Attributes.MOVEMENT_SPEED, ROLLED_SPEED_ID, rolled);
-        hold(player, Attributes.JUMP_STRENGTH, ROLLED_JUMP_ID, rolled);
-        player.level().playSound(null, player.blockPosition(),
-            rolled ? SoundEvents.ARMADILLO_ROLL : SoundEvents.ARMADILLO_UNROLL_FINISH, SoundSource.PLAYERS, 1.0F, 1.0F);
-        FormAction action = rolled ? FormAction.ROLL_UP : FormAction.UNROLL;
-        TotemNetwork.sendToTrackingAndSelf(player, new MorphActionPayload(player.getId(), action.ordinal()));
-    }
-
-    /** Pins an attribute to nothing (rolled up, playing dead), or lets it go. */
-    static void hold(ServerPlayer player, Holder<Attribute> attribute, ResourceLocation id, boolean held) {
+    /** Pins an attribute to nothing (playing dead), or lets it go. */
+    static void hold(ServerPlayer player, Attribute attribute, ResourceLocation id, boolean held) {
         AttributeInstance instance = player.getAttribute(attribute);
         if (instance == null) return;
-        instance.removeModifier(id);
-        if (held) instance.addTransientModifier(new AttributeModifier(id, -1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        Modifiers.remove(instance, id);
+        if (held) instance.addTransientModifier(Modifiers.of(id, -1.0, AttributeModifier.Operation.MULTIPLY_TOTAL));
     }
 
-    /** {@code Armadillo#hurt}: a rolled-up armadillo takes {@code (damage - 1) / 2}. */
+    /** Hurt, a squid inks, as the mob does. */
     @SubscribeEvent
-    public static void onHurt(LivingIncomingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && ROLLED.contains(player.getUUID())) {
-            event.setAmount(Math.max(0.0F, (event.getAmount() - 1.0F) / 2.0F));
-        }
-    }
-
-    /** Hurt, an armadillo rolls up for a moment and a squid inks, as the mobs do. */
-    @SubscribeEvent
-    public static void onHurtAfter(LivingDamageEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || event.getNewDamage() <= 0.0F || !player.isAlive()) return;
+    public static void onHurtAfter(LivingDamageEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.getAmount() <= 0.0F || !player.isAlive()) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
-        if (form == EntityType.ARMADILLO && !ROLLED.contains(player.getUUID())) {
-            setRolled(player, true);
-            FormTimers.later(player, ARMADILLO_SCARED_TICKS, rolled -> {
-                if (ROLLED.contains(rolled.getUUID())) setRolled(rolled, false);
-            });
-        } else if (form == EntityType.SQUID || form == EntityType.GLOW_SQUID) {
+        if (form == EntityType.SQUID || form == EntityType.GLOW_SQUID) {
             WaterMoves.ink(player);
         }
     }
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) WaterMoves.tickPuffed(player);
+        if (event.phase != TickEvent.Phase.END) return;
+        if (event.player instanceof ServerPlayer player) WaterMoves.tickPuffed(player);
     }
 
-    /** From {@link Morphs#setForm}: changing form unrolls. */
+    /** From {@link Morphs#setForm}. */
     static void onFormChanged(ServerPlayer player, @Nullable EntityType<?> form) {
-        if (ROLLED.contains(player.getUUID())) setRolled(player, false);
         WaterMoves.onFormChanged(player);
-    }
-
-    /** Test seam. */
-    public static boolean isRolled(ServerPlayer player) {
-        return ROLLED.contains(player.getUUID());
     }
 }

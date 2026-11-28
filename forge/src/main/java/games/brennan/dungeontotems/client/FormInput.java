@@ -19,7 +19,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.network.PacketDistributor;
+import games.brennan.dungeontotems.net.TotemNetwork;
 
 /**
  * A morphed player's keys, sent to the server where the form does something of its own:
@@ -34,11 +34,7 @@ import net.minecraftforge.network.PacketDistributor;
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID, value = Dist.CLIENT)
 public final class FormInput {
 
-    /** Ticks between unroll requests while you keep pushing to move. */
-    private static final int UNROLL_RETRY_TICKS = 10;
-
     private static boolean jumpWasDown;
-    private static int unrollWait;
 
     private FormInput() {}
 
@@ -53,7 +49,7 @@ public final class FormInput {
         if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && FormUse.isUsable(player.level(), block.getBlockPos())) return;
         event.setCanceled(true);
         event.setSwingHand(false);
-        PacketDistributor.sendToServer(FormUsePayload.INSTANCE);
+        TotemNetwork.sendToServer(FormUsePayload.INSTANCE);
     }
 
     @SubscribeEvent
@@ -65,24 +61,20 @@ public final class FormInput {
         if (!air) return; // mobs and blocks go the usual way
         event.setCanceled(true);
         event.setSwingHand(false);
-        PacketDistributor.sendToServer(FormAttackPayload.INSTANCE);
+        TotemNetwork.sendToServer(FormAttackPayload.INSTANCE);
     }
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         EntityType<?> form = player == null ? null : Morphs.formOf(player).orElse(null);
         boolean jumpDown = minecraft.options.keyJump.isDown();
         if (form != null && FormUse.OWN_JUMP.contains(form) && jumpDown && !jumpWasDown && minecraft.screen == null) {
-            PacketDistributor.sendToServer(FormJumpPayload.INSTANCE);
+            TotemNetwork.sendToServer(FormJumpPayload.INSTANCE);
         }
         jumpWasDown = jumpDown;
 
-        if (unrollWait > 0) unrollWait--;
-        if (form == EntityType.ARMADILLO && unrollWait == 0 && FormAnimator.isCurled(player.getUUID()) && player.input.getMoveVector().lengthSquared() > 0.0F) {
-            PacketDistributor.sendToServer(FormUsePayload.INSTANCE); // "use" toggles the roll: out it comes
-            unrollWait = UNROLL_RETRY_TICKS;
-        }
     }
 }

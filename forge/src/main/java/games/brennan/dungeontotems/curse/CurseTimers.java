@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.curse;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.net.CurseTimerPayload;
@@ -14,7 +16,7 @@ import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.attachment.AttachmentType;
+import games.brennan.dungeontotems.data.DataKey;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.TickEvent;
 
@@ -61,26 +63,27 @@ public final class CurseTimers {
 
     /** A fresh Rage or Lonely curse: its timer starts full. */
     public static void restart(ServerPlayer player, Curse curse) {
-        if (curse.isTimed()) player.setData(last(curse), player.level().getGameTime());
+        if (curse.isTimed()) TotemData.set(player, last(curse), player.level().getGameTime());
     }
 
     /** You gave a gift: Lonely's timer starts again. */
     public static void gift(ServerPlayer player) {
-        player.setData(TotemRegistries.LAST_GIFT, player.level().getGameTime());
+        TotemData.set(player, TotemRegistries.LAST_GIFT, player.level().getGameTime());
     }
 
     /** You hurt something other than yourself: Rage's timer starts again. */
     @SubscribeEvent
-    public static void onHit(LivingDamageEvent.Post event) {
-        if (event.getNewDamage() <= 0.0F) return;
+    public static void onHit(LivingDamageEvent event) {
+        if (event.getAmount() <= 0.0F) return;
         if (event.getSource().getEntity() instanceof ServerPlayer attacker && attacker != event.getEntity()) {
-            attacker.setData(TotemRegistries.LAST_HIT, attacker.level().getGameTime());
+            TotemData.set(attacker, TotemRegistries.LAST_HIT, attacker.level().getGameTime());
         }
     }
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !player.isAlive()) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player) || !player.isAlive()) return;
         for (Curse curse : TIMED) tick(player, curse);
     }
 
@@ -88,7 +91,7 @@ public final class CurseTimers {
         MobEffectInstance instance = player.getEffect(curse.effect());
         if (instance == null) return;
         int total = seconds(curse, instance.getAmplifier()) * 20;
-        long overdue = player.level().getGameTime() - player.getData(last(curse)) - total;
+        long overdue = player.level().getGameTime() - TotemData.get(player, last(curse)) - total;
         if (overdue >= 0 && overdue % damageInterval(curse) == 0) {
             player.hurt(damage(player, curse), DAMAGE);
         }
@@ -103,7 +106,7 @@ public final class CurseTimers {
         return new DamageSource(type);
     }
 
-    private static Supplier<AttachmentType<Long>> last(Curse curse) {
+    private static DataKey<Long> last(Curse curse) {
         return curse == Curse.RAGE ? TotemRegistries.LAST_HIT : TotemRegistries.LAST_GIFT;
     }
 }

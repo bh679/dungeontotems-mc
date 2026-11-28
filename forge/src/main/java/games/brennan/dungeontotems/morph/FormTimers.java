@@ -51,7 +51,8 @@ public final class FormTimers {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         List<Later> pending = LATER.get(player.getUUID());
         if (pending == null || pending.isEmpty()) return;
         long now = player.level().getGameTime();

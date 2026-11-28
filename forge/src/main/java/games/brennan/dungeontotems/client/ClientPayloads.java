@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.client;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.net.MorphSyncPayload;
 import games.brennan.dungeontotems.net.CurseTimerPayload;
@@ -52,7 +54,7 @@ public final class ClientPayloads {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) return;
         if (!(level.getEntity(payload.entityId()) instanceof Player player)) return;
-        player.setData(TotemRegistries.FORM, payload.form());
+        TotemData.set(player, TotemRegistries.FORM, payload.form());
         player.refreshDimensions();
         MorphRenderer.forget(player);
         if (player == Minecraft.getInstance().player) followMorphWithCamera(player, payload.form());
@@ -64,7 +66,7 @@ public final class ClientPayloads {
      */
     private static void followMorphWithCamera(Player player, String form) {
         Minecraft mc = Minecraft.getInstance();
-        if (!form.isEmpty() && player.hasEffect(TotemRegistries.MORPHED)) {
+        if (!form.isEmpty() && player.hasEffect(TotemRegistries.MORPHED.get())) {
             if (cameraBeforeMorph == null) cameraBeforeMorph = mc.options.getCameraType();
             mc.options.setCameraType(MORPH_CAMERA);
         } else if (form.isEmpty() && cameraBeforeMorph != null) {
@@ -100,6 +102,6 @@ public final class ClientPayloads {
     /** What you carried when you turned, for the locked pack's checks on this side. */
     public static void onZombieCarried(ZombieCarriedPayload payload) {
         Player player = Minecraft.getInstance().player;
-        if (player != null) player.setData(TotemRegistries.ZOMBIE_CARRIED, java.util.List.copyOf(payload.carried()));
+        if (player != null) TotemData.set(player, TotemRegistries.ZOMBIE_CARRIED, java.util.List.copyOf(payload.carried()));
     }
 }

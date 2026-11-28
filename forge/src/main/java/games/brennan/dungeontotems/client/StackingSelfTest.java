@@ -93,6 +93,7 @@ public final class StackingSelfTest {
 
     @SubscribeEvent
     public static void onTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         if (!ENABLED) return;
         Minecraft minecraft = Minecraft.getInstance();
         MinecraftServer server = minecraft.getSingleplayerServer();

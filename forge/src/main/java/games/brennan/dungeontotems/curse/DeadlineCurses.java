@@ -46,7 +46,8 @@ public final class DeadlineCurses {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         ResourceKey<DamageType> cause = PENDING_DEATHS.remove(player.getUUID());
         if (cause == null || !player.isAlive()) return;
         Holder<DamageType> type = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(cause);
@@ -58,9 +59,9 @@ public final class DeadlineCurses {
     @SubscribeEvent
     public static void onFinishUsing(LivingEntityUseItemEvent.Finish event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!player.hasEffect(TotemRegistries.ZOMBIFIED)) return;
+        if (!player.hasEffect(TotemRegistries.ZOMBIFIED.get())) return;
         if (isGoldenApple(event.getItem()) && player.hasEffect(MobEffects.WEAKNESS)) {
-            cure(player, TotemRegistries.ZOMBIFIED, "zombified");
+            cure(player, TotemRegistries.ZOMBIFIED.get(), "zombified");
         }
     }
 
@@ -69,7 +70,7 @@ public final class DeadlineCurses {
     }
 
     /** Lifts {@code curse}: a message and a sound. */
-    static void cure(ServerPlayer player, Holder<MobEffect> curse, String name) {
+    static void cure(ServerPlayer player, MobEffect curse, String name) {
         player.removeEffect(curse);
         Curse lifted = Curse.forEffect(curse);
         if (lifted != null) CurseTrials.onLifted(player, lifted);

@@ -2,14 +2,16 @@ package games.brennan.dungeontotems.effect;
 
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.common.EffectCure;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.client.extensions.common.IClientMobEffectExtensions;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * A curse effect. {@code curable == false} gives it no cures at all: milk leaves it, and so does
- * another totem's pop (vanilla clears only effects cured by {@code PROTECTED_BY_TOTEM}).
+ * A curse effect. {@code curable == false} gives it no curative items: milk leaves it, and so does
+ * another totem's pop ({@code mixin/LivingEntityTotemMixin} keeps uncurable curses through it).
  */
 public class CurseEffect extends MobEffect {
 
@@ -20,8 +22,18 @@ public class CurseEffect extends MobEffect {
         this.curable = curable;
     }
 
+    public boolean curable() {
+        return curable;
+    }
+
     @Override
-    public void fillEffectCures(Set<EffectCure> cures, MobEffectInstance effectInstance) {
-        if (curable) super.fillEffectCures(cures, effectInstance);
+    public List<ItemStack> getCurativeItems() {
+        return curable ? super.getCurativeItems() : new ArrayList<>();
+    }
+
+    /** Client only (Forge calls it on the client): Rage and Lonely draw their timer on the effect box. */
+    @Override
+    public void initializeClient(Consumer<IClientMobEffectExtensions> consumer) {
+        consumer.accept(games.brennan.dungeontotems.client.TimerCurseIcons.EXTENSION);
     }
 }

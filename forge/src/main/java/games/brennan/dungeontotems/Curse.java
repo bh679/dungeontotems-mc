@@ -26,29 +26,29 @@ import java.util.function.Supplier;
 public enum Curse {
     WEAKNESS("weakness_totem", Kind.HELD, () -> MobEffects.WEAKNESS, 0, 0, Ticks.MINUTE * 4),
     FATIGUE("fatigue_totem", Kind.HELD, () -> MobEffects.DIG_SLOWDOWN, 0, 0, Ticks.MINUTE * 4),
-    HEARTBREAK("heartbreak_totem", Kind.HELD, () -> TotemRegistries.HEARTBREAK, 0, 0, Ticks.MINUTE * 4),
+    HEARTBREAK("heartbreak_totem", Kind.HELD, () -> TotemRegistries.HEARTBREAK.get(), 0, 0, Ticks.MINUTE * 4),
     HUNGER("hunger_totem", Kind.HELD, () -> MobEffects.HUNGER, 0, 0, Ticks.MINUTE * 4),
     SLOWNESS("slowness_totem", Kind.HELD, () -> MobEffects.MOVEMENT_SLOWDOWN, 0, 0, Ticks.MINUTE * 4),
     BLINDNESS("blindness_totem", Kind.AFTER, () -> MobEffects.BLINDNESS, 0, 0, Ticks.SECOND * 30),
-    MORPHING("morphing_totem", Kind.AFTER, () -> TotemRegistries.MORPHED, 0, 0, Ticks.SECOND * 30),
-    ZOMBIFIED("zombification_totem", Kind.AFTER, () -> TotemRegistries.ZOMBIFIED, 0, 0, MobEffectInstance.INFINITE_DURATION),
+    MORPHING("morphing_totem", Kind.AFTER, () -> TotemRegistries.MORPHED.get(), 0, 0, Ticks.SECOND * 30),
+    ZOMBIFIED("zombification_totem", Kind.AFTER, () -> TotemRegistries.ZOMBIFIED.get(), 0, 0, MobEffectInstance.INFINITE_DURATION),
     /** Hit something within the timer (see {@code curse/CurseTimers}). */
-    RAGE("rage_totem", Kind.HELD, () -> TotemRegistries.RAGE, 0, 1, Ticks.MINUTE * 5, Ticks.MINUTE),
+    RAGE("rage_totem", Kind.HELD, () -> TotemRegistries.RAGE.get(), 0, 1, Ticks.MINUTE * 5, Ticks.MINUTE),
     /** Give a gift within the timer (see {@code curse/CurseTimers}). */
-    LONELINESS("loneliness_totem", Kind.HELD, () -> TotemRegistries.LONELY, 0, 1, Ticks.MINUTE * 5, Ticks.MINUTE),
+    LONELINESS("loneliness_totem", Kind.HELD, () -> TotemRegistries.LONELY.get(), 0, 1, Ticks.MINUTE * 5, Ticks.MINUTE),
     /** Hurt anything and the held totem pops; after a save, you drop to half a heart. */
-    PACIFISM("pacifism_totem", Kind.HELD, () -> TotemRegistries.VOW_OF_PEACE, 0, 0, Ticks.MINUTE * 4),
+    PACIFISM("pacifism_totem", Kind.HELD, () -> TotemRegistries.VOW_OF_PEACE.get(), 0, 0, Ticks.MINUTE * 4),
     /** Eat anything but melon and the held totem pops; after a save, you drop to half a heart. */
-    MELON_DIET("melon_diet_totem", Kind.HELD, () -> TotemRegistries.MELON_DIET, 0, 0, Ticks.MINUTE * 10),
+    MELON_DIET("melon_diet_totem", Kind.HELD, () -> TotemRegistries.MELON_DIET.get(), 0, 0, Ticks.MINUTE * 10),
     /** Open a chest, barrel or ender chest and the held totem pops; after a save, you drop to half a heart. */
-    RESTRAINT("restraint_totem", Kind.HELD, () -> TotemRegistries.RESTRAINED, 0, 0, Ticks.MINUTE * 4),
+    RESTRAINT("restraint_totem", Kind.HELD, () -> TotemRegistries.RESTRAINED.get(), 0, 0, Ticks.MINUTE * 4),
     /**
      * You lose air even out of water (see {@code curse/Breathless}), only while held: it ends when the totem
      * saves you. On land its drowning can't be waited out, so an after-save curse would never end.
      */
-    BREATHLESSNESS("breathlessness_totem", Kind.HELD, () -> TotemRegistries.BREATHLESS, 0, 0, 0),
+    BREATHLESSNESS("breathlessness_totem", Kind.HELD, () -> TotemRegistries.BREATHLESS.get(), 0, 0, 0),
     /** Phantoms come for you, by day as well (see {@code curse/InsomniaPhantoms}). */
-    INSOMNIA("insomnia_totem", Kind.HELD, () -> TotemRegistries.INSOMNIA, 0, 0, Ticks.MINUTE * 4),
+    INSOMNIA("insomnia_totem", Kind.HELD, () -> TotemRegistries.INSOMNIA.get(), 0, 0, Ticks.MINUTE * 4),
     /** Saves you only from falling out of the world. */
     VOID("void_totem", Kind.NARROW, null, 0, 0, 0),
     /** Saves you only from a deadly fall. */
@@ -62,18 +62,18 @@ public enum Curse {
 
     private final String itemName;
     private final Kind kind;
-    @Nullable private final Supplier<Holder<MobEffect>> effect;
+    @Nullable private final Supplier<MobEffect> effect;
     private final int heldAmplifier;
     private final int afterSaveAmplifier;
     private final int afterSaveTicks;
     private final int letGoTicks;
 
-    Curse(String itemName, Kind kind, @Nullable Supplier<Holder<MobEffect>> effect,
+    Curse(String itemName, Kind kind, @Nullable Supplier<MobEffect> effect,
           int heldAmplifier, int afterSaveAmplifier, int afterSaveTicks) {
         this(itemName, kind, effect, heldAmplifier, afterSaveAmplifier, afterSaveTicks, 0);
     }
 
-    Curse(String itemName, Kind kind, @Nullable Supplier<Holder<MobEffect>> effect,
+    Curse(String itemName, Kind kind, @Nullable Supplier<MobEffect> effect,
           int heldAmplifier, int afterSaveAmplifier, int afterSaveTicks, int letGoTicks) {
         this.itemName = itemName;
         this.kind = kind;
@@ -94,7 +94,7 @@ public enum Curse {
 
     /** The curse effect, or null for a narrow totem. */
     @Nullable
-    public Holder<MobEffect> effect() {
+    public MobEffect effect() {
         return effect == null ? null : effect.get();
     }
 
@@ -175,7 +175,7 @@ public enum Curse {
 
     /** The curse whose effect this is, or null. */
     @Nullable
-    public static Curse forEffect(Holder<MobEffect> effect) {
+    public static Curse forEffect(MobEffect effect) {
         for (Curse curse : values()) {
             if (curse.effect != null && curse.effect().is(effect)) return curse;
         }

@@ -1,12 +1,11 @@
 package games.brennan.dungeontotems.curse;
 
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.PotionUtils;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -116,10 +115,8 @@ public final class ZombieGibberish {
 
     /** A potion, splash, lingering potion or tipped arrow with Weakness in it. */
     public static boolean weakens(ItemStack stack) {
-        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
-        if (contents == null) return false;
-        for (MobEffectInstance effect : contents.getAllEffects()) {
-            if (effect.is(MobEffects.WEAKNESS)) return true;
+        for (MobEffectInstance effect : PotionUtils.getMobEffects(stack)) {
+            if (effect.getEffect() == MobEffects.WEAKNESS) return true;
         }
         return false;
     }

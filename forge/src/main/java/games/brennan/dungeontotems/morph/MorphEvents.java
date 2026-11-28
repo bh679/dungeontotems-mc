@@ -1,5 +1,7 @@
 package games.brennan.dungeontotems.morph;
 
+import games.brennan.dungeontotems.data.TotemData;
+
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.net.MorphSyncPayload;
 import games.brennan.dungeontotems.registry.TotemRegistries;
@@ -62,7 +64,7 @@ public final class MorphEvents {
         if (Morphs.formOf(player).isEmpty()) return false;
         if (!(attacker instanceof Enemy)) return false;
         boolean hunter = attacker instanceof AbstractIllager || attacker.getType().is(TotemRegistries.HUNTS_ZOMBIE_PLAYERS);
-        if (hunter && player.hasEffect(TotemRegistries.ZOMBIFIED)) return false;
+        if (hunter && player.hasEffect(TotemRegistries.ZOMBIFIED.get())) return false;
         return attacker.getLastHurtByMob() != player;
     }
 
@@ -83,7 +85,7 @@ public final class MorphEvents {
     }
 
     private static boolean isFormCurse(MobEffectInstance instance) {
-        return instance.is(TotemRegistries.MORPHED) || instance.is(TotemRegistries.ZOMBIFIED);
+        return instance.is(TotemRegistries.MORPHED.get()) || instance.is(TotemRegistries.ZOMBIFIED.get());
     }
 
     /** Modifiers are transient, so a relog re-applies them; a form whose curse is gone is dropped. */
@@ -91,7 +93,7 @@ public final class MorphEvents {
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (Morphs.formOf(player).isEmpty()) return;
-        boolean cursed = player.hasEffect(TotemRegistries.MORPHED) || player.hasEffect(TotemRegistries.ZOMBIFIED);
+        boolean cursed = player.hasEffect(TotemRegistries.MORPHED.get()) || player.hasEffect(TotemRegistries.ZOMBIFIED.get());
         Morphs.setForm(player, cursed ? Morphs.formOf(player).get() : null);
     }
 
@@ -100,7 +102,7 @@ public final class MorphEvents {
         if (!(event.getTarget() instanceof Player target)) return;
         if (!(event.getEntity() instanceof ServerPlayer tracker)) return;
         Morphs.formOf(target).ifPresent(type -> TotemNetwork.sendTo(tracker,
-            new MorphSyncPayload(target.getId(), target.getData(TotemRegistries.FORM))));
+            new MorphSyncPayload(target.getId(), TotemData.get(target, TotemRegistries.FORM))));
     }
 
     /**
@@ -109,7 +111,8 @@ public final class MorphEvents {
      */
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
         if (player.tickCount % ZOMBIE_CHECK_EVERY_TICKS != 0) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == null || !UNDEAD_FORMS.contains(form)) return;

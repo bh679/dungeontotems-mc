@@ -43,7 +43,8 @@ public final class MorphFlight {
     /** Vanilla stops flight when you touch the ground; a flying form takes off again at once. */
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        Player player = event.getEntity();
+        if (event.phase != TickEvent.Phase.START) return;
+        Player player = event.player;
         if (!flies(Morphs.formOf(player).orElse(null))) return;
         Abilities abilities = player.getAbilities();
         if (abilities.flying && abilities.mayfly) return;

@@ -61,7 +61,6 @@ public final class MobGaits {
     private static final double PLAYER_INPUT = 0.98;
 
     public static final Map<EntityType<?>, Gait> GAITS = Map.ofEntries(
-        Map.entry(EntityType.ARMADILLO, Gait.of(1.0, 2.0)),
         // AxolotlAi#SPEED_MULTIPLIER_ON_LAND, slowed again by its move control out of water; it swims at its own pace
         Map.entry(EntityType.AXOLOTL, Gait.measured(0.15, 0.15, 0.24, 0.24)),
         Map.entry(EntityType.CAMEL, Gait.ridden(2.0, 0.1).tuned(2.85, 0.0)), // twice its stroll; it dashes on jump

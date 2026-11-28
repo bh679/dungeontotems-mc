@@ -34,7 +34,8 @@ public final class FormFlop {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.getEntity() instanceof LocalPlayer player) || player != Minecraft.getInstance().player) return;
+        if (event.phase != TickEvent.Phase.START) return;
+        if (!(event.player instanceof LocalPlayer player) || player != Minecraft.getInstance().player) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == EntityType.RABBIT) {
             hop(player);
