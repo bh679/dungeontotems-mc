@@ -156,8 +156,9 @@ public final class TotemRegistries {
     private static Map<Curse, DeferredItem<TotemItem>> registerTotems() {
         Map<Curse, DeferredItem<TotemItem>> totems = new EnumMap<>(Curse.class);
         for (Curse curse : Curse.values()) {
-            totems.put(curse, ITEMS.register(curse.itemName(),
-                () -> new TotemItem(curse, new Item.Properties().stacksTo(curse.maxStack()).rarity(Rarity.UNCOMMON))));
+            // registerItem gives the properties the item's id, which 26.x requires.
+            totems.put(curse, ITEMS.registerItem(curse.itemName(),
+                properties -> new TotemItem(curse, properties.stacksTo(curse.maxStack()).rarity(Rarity.UNCOMMON))));
         }
         return Map.copyOf(totems);
     }
