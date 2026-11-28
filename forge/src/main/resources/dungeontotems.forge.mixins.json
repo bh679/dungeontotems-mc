@@ -1,5 +1,5 @@
 {
-  "required": true,
+  "required": false,
   "minVersion": "0.8",
   "refmap": "dungeontotems.refmap.json",
   "package": "games.brennan.dungeontotems.forge.mixin",
@@ -8,6 +8,6 @@
     "ForgeGameTestHooksMixin"
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }

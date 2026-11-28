@@ -10,6 +10,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
+/**
+ * Sends on Fabric's per-packet channels. A joining client's channels are already known when the login event
+ * fires (checked on a dedicated server: the morph and zombie-pack syncs at login go straight out), as on Forge.
+ */
 public final class FabricNetworkService implements NetworkService {
 
     @Override

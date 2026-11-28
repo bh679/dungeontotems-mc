@@ -108,6 +108,8 @@ import java.util.UUID;
 public final class DungeonTotemsGameTests {
 
     private static final String EMPTY = "empty";
+    /** Ticks for the sky light to reach down a column just opened ({@link #openTheSky}). */
+    private static final int SKY_LIT_TICKS = 20;
     private static final float LETHAL = 1000.0F;
     private static final int SPAWN_INVULNERABLE_TICKS = 61;
     private static final int LOOT_ROLLS = 50;
@@ -590,22 +592,27 @@ public final class DungeonTotemsGameTests {
     @GameTest(template = EMPTY)
     public static void nightTryAlwaysSpawnsPhantoms(GameTestHelper helper) {
         ServerPlayer player = player(helper);
-        var level = helper.getLevel();
-        long time = level.getDayTime();
-        level.setDayTime(18000);
-        level.updateSkyBrightness();
-        try {
-            int spawned = 0;
-            for (int i = 0; i < 5 && spawned == 0; i++) {
-                spawned = InsomniaPhantoms.trySpawnAt(level, player.blockPosition(), level.getRandom());
-            }
-            check(helper, spawned > 0, "a night try should spawn phantoms, even below sea level in a flat world");
-        } finally {
-            level.setDayTime(time);
+        openTheSky(helper, player.blockPosition());
+        // Then the sky light has to reach down the opened column: wait for it.
+        helper.runAfterDelay(SKY_LIT_TICKS, () -> {
+            var level = helper.getLevel();
+            long time = level.getDayTime();
+            level.setDayTime(18000);
             level.updateSkyBrightness();
-            level.getEntitiesOfClass(Phantom.class, player.getBoundingBox().inflate(64)).forEach(Phantom::discard);
-        }
-        helper.succeed();
+            try {
+                int spawned = 0;
+                for (int i = 0; i < 5 && spawned == 0; i++) {
+                    spawned = InsomniaPhantoms.trySpawnAt(level, player.blockPosition(), level.getRandom());
+                }
+                check(helper, spawned > 0, "a night try should spawn phantoms, even below sea level in a flat world (sees sky "
+                    + level.canSeeSky(player.blockPosition()) + ")");
+            } finally {
+                level.setDayTime(time);
+                level.updateSkyBrightness();
+                level.getEntitiesOfClass(Phantom.class, player.getBoundingBox().inflate(64)).forEach(Phantom::discard);
+            }
+            helper.succeed();
+        });
     }
 
     @GameTest(template = EMPTY)
@@ -1011,6 +1018,16 @@ public final class DungeonTotemsGameTests {
             double mobSpeed = DefaultAttributes.getSupplier((EntityType<? extends LivingEntity>) entry.getKey()).getBaseValue(Attributes.MOVEMENT_SPEED);
             lanes.add(new GaitLane(entry.getKey(), false, gait.walk(), MobGaits.toBlocksPerSecond(MobGaits.strollSpeed(gait, mobSpeed))));
             if (!gait.ridden()) lanes.add(new GaitLane(entry.getKey(), true, gait.run(), MobGaits.toBlocksPerSecond(MobGaits.mobRunSpeed(gait, mobSpeed))));
+        }
+        // The lanes float in open air, as on Forge's flat world; vanilla's GameTest world (Fabric's) is solid
+        // stone up to here, where a mob could stroll off its lane.
+        for (int x = -3; x < LANES_PER_BATCH * LANE_SPACING + 3; x++) {
+            for (int z = -4; z <= LANE_LENGTH + 3; z++) {
+                for (int y = 50; y < 66; y++) {
+                    BlockPos air = helper.absolutePos(new BlockPos(x, y, z));
+                    if (!helper.getLevel().getBlockState(air).isAir()) helper.getLevel().setBlock(air, Blocks.AIR.defaultBlockState(), 2);
+                }
+            }
         }
         for (int x = 0; x < LANES_PER_BATCH * LANE_SPACING; x++) {
             for (int z = -1; z <= LANE_LENGTH; z++) {
@@ -1841,6 +1858,17 @@ public final class DungeonTotemsGameTests {
     private static boolean criterionDone(ServerPlayer player, String id, String criterion) {
         CriterionProgress done = progress(player, id).getCriterion(criterion);
         return done != null && done.isDone();
+    }
+
+    /**
+     * Clears every block above {@code pos} to the top of the world. Vanilla's GameTest world (Fabric's) puts the tests
+     * in a cleared pocket under stone; Forge's runs on an open flat world.
+     */
+    private static void openTheSky(GameTestHelper helper, BlockPos pos) {
+        var level = helper.getLevel();
+        for (BlockPos above = pos.above(); above.getY() < level.getMaxBuildHeight(); above = above.above()) {
+            if (!level.getBlockState(above).isAir()) level.setBlockAndUpdate(above, Blocks.AIR.defaultBlockState());
+        }
     }
 
     private static void tick(ServerPlayer player, int ticks) {

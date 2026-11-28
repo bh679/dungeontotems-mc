@@ -1,7 +1,7 @@
 # Dungeon Totems for Minecraft 1.20.1 (Forge, NeoForge, Fabric)
 
 This branch (`mc1.20.1`) is the 1.20.1 line of Dungeon Totems, ported from main (NeoForge 1.21.1).
-Two jars: one runs on **Forge 47** and **NeoForge 20.1**, the other on **Fabric** (Loader 0.15+, Fabric API).
+Two jars: one runs on **Forge 47** and **NeoForge 20.1**, the other on **Fabric** (Loader 0.16.10+, Fabric API 0.92.6+).
 
 **Dungeon Train never uses this line.** Its releases are tagged `v<version>+mc1.20.1` with the jars
 `dungeontotems-forge-1.20.1-<version>.jar` and `dungeontotems-fabric-1.20.1-<version>.jar`; Dungeon Train
@@ -77,7 +77,11 @@ morph table, the Great and Small advancement and the self-tests. Everything else
 | Jade `@WailaPlugin` | `jade` entrypoint, same class |
 | PlayerMob gift compat | Off (PlayerMob is Forge-only) |
 
-Runs: `./gradlew :fabric:runClient`, `:fabric:runServer` (in `fabric/run-server`), `:fabric:runGametest`,
+GameTests: `gametest/LoaderHookGameTests` drives each loader hook through vanilla's own entry points (the
+other suites post events straight to the bus). Fabric's GameTest world is vanilla's, which puts the tests in a
+pocket under stone: a test that needs open sky or open air makes it (`openTheSky`, the gait lanes).
+
+Runs: `./gradlew :fabric:runClient`, `:fabric:runJoinServer` (a client joining `runServer` as "Tester"), `:fabric:runServer` (in `fabric/run-server`), `:fabric:runGametest`,
 `:fabric:runSelfTest` (same `-D` options as Forge's; needs a clean "New World" save in `fabric/run-selftest/saves`).
 
 ## Releasing

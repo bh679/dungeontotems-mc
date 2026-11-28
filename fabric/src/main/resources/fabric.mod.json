@@ -18,7 +18,8 @@
     "fabric-gametest": [
       "games.brennan.dungeontotems.gametest.DungeonTotemsGameTests",
       "games.brennan.dungeontotems.gametest.StackingGameTests",
-      "games.brennan.dungeontotems.gametest.ZombieGameTests"
+      "games.brennan.dungeontotems.gametest.ZombieGameTests",
+      "games.brennan.dungeontotems.gametest.LoaderHookGameTests"
     ],
     "jade": ["games.brennan.dungeontotems.compat.jade.ZombieJadePlugin"]
   },
@@ -30,6 +31,6 @@
     "fabricloader": ">=${fabric_loader_min}",
     "minecraft": "${minecraft_version}",
     "java": ">=17",
-    "fabric-api": "*"
+    "fabric-api": ">=0.92.6"
   }
 }
