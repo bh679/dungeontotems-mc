@@ -104,8 +104,8 @@ public final class AdvancementSelfTest {
     private static void open(Minecraft minecraft) {
         ClientAdvancements advancements = minecraft.player.connection.getAdvancements();
         minecraft.setScreen(new AdvancementsScreen(advancements));
-        AdvancementNode root = advancements.getTree().get(DungeonTotems.id("terms_and_conditions"));
-        if (root != null) advancements.setSelectedTab(root.holder(), true);
+        Advancement root = advancements.getAdvancements().get(DungeonTotems.id("terms_and_conditions"));
+        if (root != null) advancements.setSelectedTab(root, true);
     }
 
     /** Moves the mouse onto the advancement's icon, as {@code AdvancementTab} centres and places it. */
@@ -113,11 +113,11 @@ public final class AdvancementSelfTest {
         ClientAdvancements advancements = minecraft.player.connection.getAdvancements();
         List<DisplayInfo> tab = new ArrayList<>();
         for (ResourceLocation each : tab()) {
-            AdvancementNode node = advancements.getTree().get(each);
-            if (node != null) node.holder().value().display().ifPresent(tab::add);
+            Advancement node = advancements.getAdvancements().get(each);
+            if (node != null) if (node.getDisplay() != null) tab.add(node.getDisplay());
         }
-        AdvancementNode node = advancements.getTree().get(id);
-        if (node == null || node.holder().value().display().isEmpty() || tab.isEmpty()) {
+        Advancement node = advancements.getAdvancements().get(id);
+        if (node == null || node.getDisplay() == null || tab.isEmpty()) {
             REPORT.add(id + ": not on the screen");
             return;
         }
@@ -129,7 +129,7 @@ public final class AdvancementSelfTest {
             minY = Math.min(minY, y);
             maxY = Math.max(maxY, y + 27);
         }
-        DisplayInfo display = node.holder().value().display().get();
+        DisplayInfo display = node.getDisplay();
         int left = (minecraft.getWindow().getGuiScaledWidth() - WINDOW_WIDTH) / 2;
         int top = (minecraft.getWindow().getGuiScaledHeight() - WINDOW_HEIGHT) / 2;
         int x = left + INSIDE_X + (117 - (maxX + minX) / 2) + Mth.floor(display.getX() * 28.0F) + 13;
@@ -141,12 +141,12 @@ public final class AdvancementSelfTest {
 
     /** The tooltip text the widget draws, from the same code it uses. */
     private static void report(Minecraft minecraft, MinecraftServer server, ResourceLocation id) {
-        Advancement holder = server.getAdvancements().get(id);
+        Advancement holder = server.getAdvancements().getAdvancement(id);
         ServerPlayer player = server.getPlayerList().getPlayer(minecraft.player.getUUID());
-        if (holder == null || player == null || holder.display().isEmpty()) return;
+        if (holder == null || player == null || holder.getDisplay() == null) return;
         AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
-        AdvancementTooltips.Lines lines = AdvancementTooltips.lines(holder, holder.display().get(), progress);
-        StringBuilder text = new StringBuilder(id.getPath()).append(" (").append(progress.isDone() ? "earned" : progress.getProgressText() == null ? "not earned" : progress.getProgressText().getString()).append("): ");
+        AdvancementTooltips.Lines lines = AdvancementTooltips.lines(holder, holder.getDisplay(), progress);
+        StringBuilder text = new StringBuilder(id.getPath()).append(" (").append(progress.isDone() ? "earned" : progress.getProgressText() == null ? "not earned" : progress.getProgressText()).append("): ");
         if (lines == null) {
             text.append("vanilla tooltip");
         } else {

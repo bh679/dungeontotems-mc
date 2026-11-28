@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MorphFormTest {
 
     private static MorphForm parse(String json) {
-        return MorphForm.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString(json)).getOrThrow();
+        return MorphForm.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString(json)).getOrThrow(false, error -> {});
     }
 
     @Test
@@ -38,11 +38,11 @@ class MorphFormTest {
 
     @Test
     void everyShippedFormParses() {
-        var stream = MorphFormTest.class.getResourceAsStream("/data/dungeontotems/data_maps/entity_type/morph_forms.json");
+        var stream = MorphFormTest.class.getResourceAsStream("/data/dungeontotems/morph_forms/morph_forms.json");
         var values = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
             .getAsJsonObject().getAsJsonObject("values");
         values.entrySet().forEach(entry -> {
-            MorphForm form = MorphForm.CODEC.parse(JsonOps.INSTANCE, entry.getValue()).getOrThrow();
+            MorphForm form = MorphForm.CODEC.parse(JsonOps.INSTANCE, entry.getValue()).getOrThrow(false, error -> {});
             assertTrue(form.seconds() >= 1 && form.seconds() <= MorphForm.MAX_SECONDS, entry.getKey());
         });
     }

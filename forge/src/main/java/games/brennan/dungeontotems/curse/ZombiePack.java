@@ -109,7 +109,7 @@ public final class ZombiePack {
     public static boolean carriedBefore(Player player, ItemStack stack) {
         if (stack.isEmpty()) return false;
         for (ItemStack carried : TotemData.get(player, TotemRegistries.ZOMBIE_CARRIED)) {
-            if (ItemStack.isSameItemSameComponents(carried, stack)) return true;
+            if (ItemStack.isSameItemSameTags(carried, stack)) return true;
         }
         return false;
     }
@@ -153,7 +153,7 @@ public final class ZombiePack {
     }
 
     private static boolean hasRemainingSpaceFor(ItemStack inSlot, ItemStack stack) {
-        return !inSlot.isEmpty() && ItemStack.isSameItemSameComponents(inSlot, stack)
+        return !inSlot.isEmpty() && ItemStack.isSameItemSameTags(inSlot, stack)
             && inSlot.isStackable() && inSlot.getCount() < inSlot.getMaxStackSize();
     }
 
@@ -163,7 +163,7 @@ public final class ZombiePack {
     @SubscribeEvent
     public static void onEffectAdded(MobEffectEvent.Added event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (event.getEffectInstance().is(TotemRegistries.ZOMBIFIED.get()) && event.getOldEffectInstance() == null) remember(player);
+        if ((event.getEffectInstance().getEffect() == TotemRegistries.ZOMBIFIED.get()) && event.getOldEffectInstance() == null) remember(player);
     }
 
     /** Remembers what {@code player} carries as they turn: one of each hotbar and offhand item. */
@@ -190,7 +190,7 @@ public final class ZombiePack {
     }
 
     private static void clearIfZombified(Object entity, MobEffectInstance instance) {
-        if (entity instanceof ServerPlayer player && instance != null && instance.is(TotemRegistries.ZOMBIFIED.get())) {
+        if (entity instanceof ServerPlayer player && instance != null && (instance.getEffect() == TotemRegistries.ZOMBIFIED.get())) {
             setCarried(player, List.of());
         }
     }

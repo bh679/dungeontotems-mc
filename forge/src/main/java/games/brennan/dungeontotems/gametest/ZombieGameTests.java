@@ -132,7 +132,7 @@ public final class ZombieGameTests {
         ServerPlayer player = zombie(helper);
         Villager villager = helper.spawn(EntityType.VILLAGER, 2, 1, 3);
         villager.setVillagerData(villager.getVillagerData().setProfession(VillagerProfession.LIBRARIAN));
-        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager)).isCanceled();
+        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager));
         check(helper, refused, "the trade should not open");
         check(helper, villager.isRemoved(), "the villager should be gone");
         List<ZombieVillager> zombies = helper.getLevel().getEntitiesOfClass(ZombieVillager.class, villager.getBoundingBox().inflate(2));
@@ -146,7 +146,7 @@ public final class ZombieGameTests {
     public static void aHumanStillTrades(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         Villager villager = helper.spawn(EntityType.VILLAGER, 2, 1, 3);
-        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager)).isCanceled();
+        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager));
         check(helper, !refused && !villager.isRemoved(), "a human's trade goes ahead");
         helper.succeed();
     }
@@ -155,7 +155,7 @@ public final class ZombieGameTests {
     public static void aWanderingTraderDrinksAndRuns(GameTestHelper helper) {
         ServerPlayer player = zombie(helper);
         WanderingTrader trader = helper.spawn(EntityType.WANDERING_TRADER, 2, 1, 3);
-        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, trader)).isCanceled();
+        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, trader));
         check(helper, refused, "the trade should not open");
         check(helper, trader.hasEffect(MobEffects.INVISIBILITY), "the trader should drink invisibility");
         check(helper, trader.getLastHurtByMob() == player, "the trader should panic");
@@ -371,7 +371,7 @@ public final class ZombieGameTests {
         BlockPos stone = helper.absolutePos(new BlockPos(3, 1, 1));
         helper.getLevel().setBlockAndUpdate(stone, Blocks.STONE.defaultBlockState());
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.SHULKER_BOX));
-        check(helper, rightClick(player, stone).getUseItem() == TriState.FALSE, "a zombie shouldn't place a shulker box");
+        check(helper, rightClick(player, stone).getUseItem() == Event.Result.DENY, "a zombie shouldn't place a shulker box");
         helper.succeed();
     }
 
@@ -379,11 +379,11 @@ public final class ZombieGameTests {
     public static void aZombieCantOpenAShulkerBoxFromTheirHand(GameTestHelper helper) {
         ServerPlayer zombie = zombie(helper);
         zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BLUE_SHULKER_BOX));
-        check(helper, MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(zombie, InteractionHand.MAIN_HAND)).isCanceled(),
+        check(helper, MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(zombie, InteractionHand.MAIN_HAND)),
             "a zombie shouldn't use a shulker box in hand");
         ServerPlayer human = player(helper);
         human.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BLUE_SHULKER_BOX));
-        check(helper, !MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(human, InteractionHand.MAIN_HAND)).isCanceled(),
+        check(helper, !MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(human, InteractionHand.MAIN_HAND)),
             "a human still can");
         helper.succeed();
     }
@@ -433,11 +433,11 @@ public final class ZombieGameTests {
         BlockPos box = helper.absolutePos(new BlockPos(1, 1, 1));
         BlockState state = Blocks.RED_SHULKER_BOX.defaultBlockState();
         helper.getLevel().setBlockAndUpdate(box, state);
-        check(helper, MinecraftForge.EVENT_BUS.post(new PlayerEvent.BreakSpeed(player, state, 1.0F, box)).isCanceled(),
+        check(helper, MinecraftForge.EVENT_BUS.post(new PlayerEvent.BreakSpeed(player, state, 1.0F, box)),
             "a zombie shouldn't crack a shulker box");
-        check(helper, MinecraftForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player)).isCanceled(),
+        check(helper, MinecraftForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player)),
             "a zombie shouldn't break a shulker box");
-        check(helper, !MinecraftForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player(helper))).isCanceled(),
+        check(helper, !MinecraftForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player(helper))),
             "a human still can");
         helper.succeed();
     }
@@ -453,13 +453,13 @@ public final class ZombieGameTests {
 
     private static void feedAndCheck(GameTestHelper helper, ServerPlayer zombie, Wolf wolf) {
         zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE, 4));
-        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, wolf)).isCanceled();
+        boolean refused = MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, wolf));
         check(helper, refused, "the wolf shouldn't take a zombie's bone");
         check(helper, zombie.getMainHandItem().getCount() == 4, "the bone isn't used");
         check(helper, wolf.getNavigation().isInProgress(), "the wolf should run");
         Cow cow = helper.spawn(EntityType.COW, 3, 1, 3);
         zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WHEAT));
-        check(helper, MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, cow)).isCanceled(),
+        check(helper, MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, cow)),
             "a cow shouldn't take a zombie's wheat");
         ServerPlayer human = player(helper);
         for (int i = 0; i < TAME_TRIES && !wolf.isTame(); i++) {
@@ -485,23 +485,25 @@ public final class ZombieGameTests {
 
     private static PlayerInteractEvent.RightClickBlock rightClick(ServerPlayer player, BlockPos pos) {
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
-        return MinecraftForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit));
+        PlayerInteractEvent.RightClickBlock event = new PlayerInteractEvent.RightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit);
+        MinecraftForge.EVENT_BUS.post(event);
+        return event;
     }
 
     // ---- reading ----
 
     @GameTest(template = EMPTY)
     public static void zombieGibberishIsStableAndMumbled(GameTestHelper helper) {
-        int seed = ItemStack.hashItemAndComponents(new ItemStack(Items.IRON_SWORD));
+        int seed = games.brennan.dungeontotems.util.Stacks.hash(new ItemStack(Items.IRON_SWORD));
         for (int line = 0; line < GIBBERISH_LINES; line++) {
             String first = ZombieGibberish.line(seed, line).getString();
             check(helper, first.equals(ZombieGibberish.line(seed, line).getString()), "a line must read the same every time");
             check(helper, !first.isBlank(), "a line is never empty");
         }
         check(helper, !ZombieGibberish.line(seed, 0).getString().equals(
-            ZombieGibberish.line(ItemStack.hashItemAndComponents(new ItemStack(Items.BREAD)), 0).getString())
+            ZombieGibberish.line(games.brennan.dungeontotems.util.Stacks.hash(new ItemStack(Items.BREAD)), 0).getString())
             || !ZombieGibberish.line(seed, 1).getString().equals(
-            ZombieGibberish.line(ItemStack.hashItemAndComponents(new ItemStack(Items.BREAD)), 1).getString()),
+            ZombieGibberish.line(games.brennan.dungeontotems.util.Stacks.hash(new ItemStack(Items.BREAD)), 1).getString()),
             "different items should mostly read differently");
         helper.succeed();
     }
@@ -559,7 +561,7 @@ public final class ZombieGameTests {
     @GameTest(template = EMPTY)
     public static void weaknessPotionsGiveThemselvesAway(GameTestHelper helper) {
         Set<String> labels = new HashSet<>();
-        for (Holder<Potion> potion : List.of(Potions.WEAKNESS, Potions.LONG_WEAKNESS)) {
+        for (Potion potion : List.of(Potions.WEAKNESS, Potions.LONG_WEAKNESS)) {
             for (Item item : List.of(Items.POTION, Items.SPLASH_POTION, Items.LINGERING_POTION, Items.TIPPED_ARROW)) {
                 ItemStack stack = PotionUtils.setPotion(new ItemStack(item), potion);
                 check(helper, ZombieGibberish.weakens(stack), stack + " should read as weakness");
@@ -629,7 +631,7 @@ public final class ZombieGameTests {
 
     /** Whether starting to eat {@code food} was refused. */
     private static boolean startEating(ServerPlayer player, ItemStack food) {
-        return MinecraftForge.EVENT_BUS.post(new LivingEntityUseItemEvent.Start(player, food, InteractionHand.MAIN_HAND, EAT_TICKS)).isCanceled();
+        return MinecraftForge.EVENT_BUS.post(new LivingEntityUseItemEvent.Start(player, food, EAT_TICKS));
     }
 
     private static ServerPlayer zombie(GameTestHelper helper) {

@@ -30,10 +30,10 @@ public final class TabComplete {
     public static void onEarned(AdvancementEvent.AdvancementEarnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !TAB.contains(event.getAdvancement().getId())) return;
         ServerAdvancementManager advancements = player.server.getAdvancements();
-        Advancement fulfilled = advancements.get(FULFILLED);
+        Advancement fulfilled = advancements.getAdvancement(FULFILLED);
         if (fulfilled == null) return;
         for (ResourceLocation id : TAB) {
-            Advancement holder = advancements.get(id);
+            Advancement holder = advancements.getAdvancement(id);
             if (holder == null || !player.getAdvancements().getOrStartProgress(holder).isDone()) return;
         }
         player.getAdvancements().award(fulfilled, CRITERION);

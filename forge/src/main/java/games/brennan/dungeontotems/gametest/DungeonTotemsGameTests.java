@@ -732,7 +732,7 @@ public final class DungeonTotemsGameTests {
         check(helper, form != null, "player should have a form");
         check(helper, Morphs.formData(form).filter(f -> f.pool() == MorphForm.Pool.LAND && f.weight() > 0).isPresent(),
             "form should come from the land pool: " + form);
-        check(helper, player.getBbHeight() == form.getDimensions().height(), "hitbox should be the form's");
+        check(helper, player.getBbHeight() == form.getDimensions().height, "hitbox should be the form's");
         helper.succeed();
     }
 
@@ -887,17 +887,12 @@ public final class DungeonTotemsGameTests {
     }
 
     @GameTest(template = EMPTY)
-    public static void chickenLaysAndArmadilloRolls(GameTestHelper helper) {
+    public static void chickenLays(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         Morphs.setForm(player, EntityType.CHICKEN);
         FormUse.use(player);
         check(helper, !helper.getLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(2),
             item -> item.getItem().is(Items.EGG) && item.hasPickUpDelay()).isEmpty(), "a chicken should lay an egg you see before picking up");
-        Morphs.setForm(player, EntityType.ARMADILLO);
-        FormUse.use(player);
-        check(helper, FormUse.isRolled(player) && player.getAttributeValue(Attributes.MOVEMENT_SPEED) == 0.0, "a rolled armadillo can't move");
-        Morphs.setForm(player, EntityType.COW);
-        check(helper, !FormUse.isRolled(player) && player.getAttributeValue(Attributes.MOVEMENT_SPEED) > 0.0, "changing form unrolls");
         helper.succeed();
     }
 
@@ -905,7 +900,7 @@ public final class DungeonTotemsGameTests {
     private enum Hit { NONE, MELEE, POISON, SHOT }
 
     private static final Map<EntityType<?>, Hit> FORM_HITS = Map.ofEntries(
-        Map.entry(EntityType.ALLAY, Hit.NONE), Map.entry(EntityType.ARMADILLO, Hit.NONE), Map.entry(EntityType.BAT, Hit.NONE),
+        Map.entry(EntityType.ALLAY, Hit.NONE), Map.entry(EntityType.BAT, Hit.NONE),
         Map.entry(EntityType.CAMEL, Hit.NONE), Map.entry(EntityType.CHICKEN, Hit.NONE), Map.entry(EntityType.COW, Hit.NONE),
         Map.entry(EntityType.DONKEY, Hit.NONE), Map.entry(EntityType.HORSE, Hit.NONE), Map.entry(EntityType.MULE, Hit.NONE),
         Map.entry(EntityType.MOOSHROOM, Hit.NONE), Map.entry(EntityType.PIG, Hit.NONE), Map.entry(EntityType.SHEEP, Hit.NONE),
@@ -1603,11 +1598,11 @@ public final class DungeonTotemsGameTests {
             .withParameter(LootContextParams.THIS_ENTITY, evoker)
             .withParameter(LootContextParams.ORIGIN, evoker.position())
             .withParameter(LootContextParams.DAMAGE_SOURCE, killer.damageSources().playerAttack(killer))
-            .withParameter(LootContextParams.ATTACKING_ENTITY, killer)
-            .withParameter(LootContextParams.DIRECT_ATTACKING_ENTITY, killer)
+            .withParameter(LootContextParams.KILLER_ENTITY, killer)
+            .withParameter(LootContextParams.DIRECT_KILLER_ENTITY, killer)
             .withParameter(LootContextParams.LAST_DAMAGE_PLAYER, killer)
             .create(LootContextParamSets.ENTITY);
-        LootTable table = helper.getLevel().getServer().reloadableRegistries()
+        LootTable table = helper.getLevel().getServer().getLootData()
             .getLootTable(EntityType.EVOKER.getDefaultLootTable());
         Set<Item> seen = new HashSet<>();
         boolean emerald = false;
@@ -1668,7 +1663,7 @@ public final class DungeonTotemsGameTests {
     public static void everyTotemAdvancementLoads(GameTestHelper helper) {
         List<ResourceLocation> ids = new ArrayList<>(TabComplete.TAB);
         ids.add(TabComplete.FULFILLED);
-        for (ResourceLocation id : ids) check(helper, helper.getLevel().getServer().getAdvancements().get(id) != null, id + " didn't load");
+        for (ResourceLocation id : ids) check(helper, helper.getLevel().getServer().getAdvancements().getAdvancement(id) != null, id + " didn't load");
         helper.succeed();
     }
 
@@ -1747,7 +1742,7 @@ public final class DungeonTotemsGameTests {
 
     @GameTest(template = EMPTY)
     public static void greatAndSmallHasEveryForm(GameTestHelper helper) {
-        Set<String> criteria = helper.getLevel().getServer().getAdvancements().get(DungeonTotems.id("great_and_small")).value().criteria().keySet();
+        Set<String> criteria = helper.getLevel().getServer().getAdvancements().getAdvancement(DungeonTotems.id("great_and_small")).getCriteria().keySet();
         Set<String> forms = new HashSet<>();
         games.brennan.dungeontotems.morph.MorphFormTable.all().keySet().forEach(key -> forms.add(key.location().toString()));
         check(helper, criteria.equals(forms), "Great and Small should list every morph form (run scripts/make_advancements.py): "
@@ -1764,7 +1759,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         for (ResourceLocation id : TabComplete.TAB) {
             check(helper, !progress(player, TabComplete.FULFILLED.getPath()).isDone(), "fulfilled before " + id);
-            Advancement holder = helper.getLevel().getServer().getAdvancements().get(id);
+            Advancement holder = helper.getLevel().getServer().getAdvancements().getAdvancement(id);
             holder.getCriteria().keySet().forEach(criterion -> player.getAdvancements().award(holder, criterion));
         }
         check(helper, progress(player, TabComplete.FULFILLED.getPath()).isDone(), "every advancement should fulfil the terms");
@@ -1844,7 +1839,7 @@ public final class DungeonTotemsGameTests {
     }
 
     private static AdvancementProgress progress(ServerPlayer player, String id) {
-        return player.getAdvancements().getOrStartProgress(player.server.getAdvancements().get(DungeonTotems.id(id)));
+        return player.getAdvancements().getOrStartProgress(player.server.getAdvancements().getAdvancement(DungeonTotems.id(id)));
     }
 
     private static boolean criterionDone(ServerPlayer player, String id, String criterion) {
@@ -1858,9 +1853,9 @@ public final class DungeonTotemsGameTests {
 
     private static void expectEffect(GameTestHelper helper, ServerPlayer player, MobEffect effect, int duration) {
         MobEffectInstance instance = player.getEffect(effect);
-        check(helper, instance != null, "missing " + effect.getRegisteredName());
+        check(helper, instance != null, "missing " + String.valueOf(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(effect)));
         check(helper, instance.getDuration() == duration,
-            effect.getRegisteredName() + " lasts " + instance.getDuration() + ", expected " + duration);
+            String.valueOf(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(effect)) + " lasts " + instance.getDuration() + ", expected " + duration);
     }
 
     private static void check(GameTestHelper helper, boolean ok, String message) {

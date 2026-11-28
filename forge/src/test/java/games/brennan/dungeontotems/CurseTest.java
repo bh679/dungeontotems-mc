@@ -76,7 +76,7 @@ class CurseTest {
         for (Curse curse : Curse.values()) {
             boolean narrow = curse == Curse.VOID || curse == Curse.FEATHER || curse == Curse.BOOM || curse == Curse.FIRE;
             assertEquals(narrow, curse.isNarrow(), curse.name());
-            assertEquals(narrow, curse.effect() == null, curse.name() + " should leave a curse unless it is narrow");
+            assertEquals(narrow, !curse.hasEffect(), curse.name() + " should leave a curse unless it is narrow");
         }
         assertTrue(Curse.FIRE.givesFireResistance());
         assertFalse(Curse.BOOM.givesFireResistance());

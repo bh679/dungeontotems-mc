@@ -121,8 +121,8 @@ public final class Morphs {
 
     /** Called when the Morphed or Zombified curse ends: falls back to whichever is still running. */
     public static void onCurseEnded(ServerPlayer player, MobEffect ending) {
-        boolean zombified = !ending.is(TotemRegistries.ZOMBIFIED.get()) && player.hasEffect(TotemRegistries.ZOMBIFIED.get());
-        boolean morphed = !ending.is(TotemRegistries.MORPHED.get()) && player.hasEffect(TotemRegistries.MORPHED.get());
+        boolean zombified = !(ending == TotemRegistries.ZOMBIFIED.get()) && player.hasEffect(TotemRegistries.ZOMBIFIED.get());
+        boolean morphed = !(ending == TotemRegistries.MORPHED.get()) && player.hasEffect(TotemRegistries.MORPHED.get());
         if (zombified) setForm(player, EntityType.ZOMBIE);
         else if (morphed) startRandomMorph(player);
         else setForm(player, null);

@@ -150,13 +150,13 @@ final class AdvancementPlayTest {
         List<ResourceLocation> tab = new ArrayList<>(TabComplete.TAB);
         tab.add(TabComplete.FULFILLED);
         for (ResourceLocation id : tab) {
-            Advancement holder = server.getAdvancements().get(id);
+            Advancement holder = server.getAdvancements().getAdvancement(id);
             if (holder == null) {
                 out.add(id.getPath() + ": NOT LOADED");
                 continue;
             }
             AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
-            Component text = progress.getProgressText();
+            Component text = progress.getProgressText() == null ? null : Component.literal(progress.getProgressText());
             List<String> missing = new ArrayList<>();
             progress.getRemainingCriteria().forEach(missing::add);
             out.add(String.format("%-32s %s", id.getPath(), progress.isDone() ? "EARNED"

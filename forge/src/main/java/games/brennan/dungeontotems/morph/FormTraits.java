@@ -95,8 +95,8 @@ public final class FormTraits {
             double mobSpeed = DefaultAttributes.getSupplier((EntityType<? extends LivingEntity>) form).getBaseValue(Attributes.MOVEMENT_SPEED);
             wanted = MobGaits.runSpeed(gait, mobSpeed) / (MobGaits.walkSpeed(gait, mobSpeed) * MobGaits.PLAYER_SPRINT) - 1.0;
         }
-        AttributeModifier current = speed.getModifier(RUN_ID);
-        if (current == null ? wanted == 0.0 : current.amount() == wanted) return;
+        AttributeModifier current = speed.getModifier(Modifiers.uuid(RUN_ID));
+        if (current == null ? wanted == 0.0 : current.getAmount() == wanted) return;
         Modifiers.remove(speed, RUN_ID);
         if (wanted != 0.0) speed.addTransientModifier(Modifiers.of(RUN_ID, wanted, AttributeModifier.Operation.MULTIPLY_TOTAL));
     }

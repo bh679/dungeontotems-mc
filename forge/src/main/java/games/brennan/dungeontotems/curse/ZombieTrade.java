@@ -67,10 +67,10 @@ public final class ZombieTrade {
         ZombieVillager zombie = villager.convertTo(EntityType.ZOMBIE_VILLAGER, false);
         if (zombie == null) return null;
         zombie.finalizeSpawn(level, level.getCurrentDifficultyAt(zombie.blockPosition()), MobSpawnType.CONVERSION,
-            new Zombie.ZombieGroupData(false, true));
+            new Zombie.ZombieGroupData(false, true), null);
         zombie.setVillagerData(villager.getVillagerData());
         zombie.setGossips(villager.getGossips().store(NbtOps.INSTANCE));
-        zombie.setTradeOffers(villager.getOffers().copy());
+        zombie.setTradeOffers(villager.getOffers().createTag());
         zombie.setVillagerXp(villager.getVillagerXp());
         ForgeEventFactory.onLivingConvert(villager, zombie);
         if (!villager.isSilent()) level.levelEvent(null, ZOMBIE_INFECTED_EVENT, villager.blockPosition(), 0);

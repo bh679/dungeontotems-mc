@@ -31,11 +31,23 @@ public record MorphForm(Pool pool, int weight, int seconds) {
         }
     }
 
-    public static final Codec<MorphForm> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    private static final Codec<MorphForm> UNCHECKED = RecordCodecBuilder.create(instance -> instance.group(
         Pool.CODEC.fieldOf("pool").forGetter(MorphForm::pool),
         Codec.intRange(0, Integer.MAX_VALUE).fieldOf("weight").forGetter(MorphForm::weight),
-        Codec.intRange(1, MAX_SECONDS).optionalFieldOf("seconds", DEFAULT_SECONDS).forGetter(MorphForm::seconds)
+        Codec.INT.optionalFieldOf("seconds", DEFAULT_SECONDS).forGetter(MorphForm::seconds)
     ).apply(instance, MorphForm::new));
+
+    /**
+     * 1.20.1's DataFixerUpper turns a bad optional field into its default rather than an error, so
+     * {@code seconds} is checked here: out of 1..{@value #MAX_SECONDS} is refused, as on main.
+     */
+    public static final Codec<MorphForm> CODEC = UNCHECKED.flatXmap(MorphForm::checked, MorphForm::checked);
+
+    private static com.mojang.serialization.DataResult<MorphForm> checked(MorphForm form) {
+        return form.seconds >= 1 && form.seconds <= MAX_SECONDS
+            ? com.mojang.serialization.DataResult.success(form)
+            : com.mojang.serialization.DataResult.error(() -> "seconds out of range [1, " + MAX_SECONDS + "]: " + form.seconds);
+    }
 
     /** How long a morph into this form lasts, in ticks. */
     public int ticks() {

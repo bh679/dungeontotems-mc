@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class AbstractContainerMenuMixin {
 
     @WrapOperation(method = "moveItemStackTo", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/item/ItemStack;isSameItemSameComponents(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Z"))
+            target = "Lnet/minecraft/world/item/ItemStack;isSameItemSameTags(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Z"))
     private boolean dungeontotems$noMergeIntoInventory(ItemStack moving, ItemStack inSlot, Operation<Boolean> original,
                                                        @Local Slot slot) {
         if (slot.container instanceof Inventory && TotemStacking.keptApart(moving)) {

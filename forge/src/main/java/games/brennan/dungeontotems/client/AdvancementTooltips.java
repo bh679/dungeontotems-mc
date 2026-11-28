@@ -47,7 +47,7 @@ public final class AdvancementTooltips {
     @Nullable
     public static Lines lines(Advancement holder, DisplayInfo display, AdvancementProgress progress) {
         if (!holder.getId().getNamespace().equals(DungeonTotems.MOD_ID)) return null;
-        Style colour = Style.EMPTY.withColor(display.getType().getChatColor());
+        Style colour = Style.EMPTY.withColor(display.getFrame().getChatColor());
         Component text = display.getDescription();
         String hintKey = hintKey(text);
         if (!progress.isDone() && hintKey != null && I18n.exists(hintKey)) text = Component.translatable(hintKey);
@@ -68,7 +68,7 @@ public final class AdvancementTooltips {
     private static Component animals(Advancement holder, AdvancementProgress progress) {
         MutableComponent list = Component.empty();
         // The client gets an advancement's requirements but not its criteria: one requirement per form.
-        List<String> forms = new ArrayList<>(holder.requirements().names());
+        List<String> forms = new ArrayList<>(holder.getCriteria().keySet());
         forms.sort(null);
         for (int i = 0; i < forms.size(); i++) {
             if (i > 0) list.append(Component.literal(", ").withStyle(ChatFormatting.DARK_GRAY));

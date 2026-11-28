@@ -81,8 +81,17 @@ public final class WaterLife {
     /** Whether the form's mob never runs out of air under water (land forms; water forms breathe here). */
     public static boolean breathesUnderWater(@Nullable EntityType<?> form) {
         if (form == null || FormTraits.isWaterForm(form)) return false;
-        return form == EntityType.IRON_GOLEM || form.is(EntityTypeTags.CAN_BREATHE_UNDER_WATER);
+        return form == EntityType.IRON_GOLEM || BREATHES_UNDER_WATER.contains(form);
     }
+
+    /**
+     * 1.21's {@code #minecraft:can_breathe_under_water}, which 1.20.1 lacks (its mobs override
+     * {@code canBreatheUnderwater} instead): the undead, and the water mobs that also live on land.
+     */
+    private static final java.util.Set<EntityType<?>> BREATHES_UNDER_WATER = java.util.Set.of(
+        EntityType.AXOLOTL, EntityType.FROG, EntityType.TURTLE, EntityType.SKELETON_HORSE, EntityType.ZOMBIE_HORSE,
+        EntityType.ZOMBIFIED_PIGLIN, EntityType.ZOMBIE, EntityType.ZOMBIE_VILLAGER, EntityType.HUSK,
+        EntityType.DROWNED, EntityType.SKELETON, EntityType.STRAY, EntityType.WITHER_SKELETON, EntityType.ARMOR_STAND);
 
     @SubscribeEvent
     public static void onBreathe(LivingBreatheEvent event) {

@@ -34,7 +34,7 @@ public final class ZombieReading {
         if (!cantRead(event.getEntity())) return;
         List<Component> lines = event.getToolTip();
         ItemStack stack = event.getItemStack();
-        int seed = ItemStack.hashItemAndComponents(stack);
+        int seed = games.brennan.dungeontotems.util.Stacks.hash(stack);
         for (int i = 0; i < lines.size(); i++) {
             Component line = lines.get(i);
             if (line.getString().isBlank()) continue; // spacing between sections stays
@@ -44,7 +44,7 @@ public final class ZombieReading {
 
     /** The name shown over the hotbar when you switch items. */
     public static Component name(ItemStack stack, Component name) {
-        return nameLine(stack, ItemStack.hashItemAndComponents(stack)).withStyle(name.getStyle());
+        return nameLine(stack, games.brennan.dungeontotems.util.Stacks.hash(stack)).withStyle(name.getStyle());
     }
 
     /** A potion of Weakness gives itself away, so a zombie can still find half the cure. */

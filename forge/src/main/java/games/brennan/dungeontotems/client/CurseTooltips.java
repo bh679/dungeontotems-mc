@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.client;
 
+import games.brennan.dungeontotems.util.Modifiers;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.effect.HeartbreakEffect;
@@ -53,7 +54,7 @@ public final class CurseTooltips {
         List<DrawnEffectRows.Row> rows = DrawnEffectRows.rows();
         if (rows.isEmpty() || rows.get(0).width() < WIDE_PANEL) return; // compact: vanilla's tooltip plus onEffectTooltip
         List<MobEffectInstance> effects = player.getActiveEffects().stream()
-            .filter(ClientHooks::shouldRenderEffect).sorted().toList();
+            .filter(net.minecraftforge.client.ForgeHooksClient::shouldRenderEffect).sorted().toList();
         int index = DrawnEffectRows.hovered(rows, event.getMouseX(), event.getMouseY());
         if (index < 0 || index >= effects.size()) return;
         List<Component> lines = lines(effects.get(index), player);
@@ -67,17 +68,17 @@ public final class CurseTooltips {
     /** Also added to vanilla's narrow-list tooltip, by {@code mixin/client/EffectRenderingInventoryScreenMixin}. */
     public static List<Component> lines(MobEffectInstance effect, Player player) {
         List<Component> lines = new ArrayList<>();
-        if (effect.is(TotemRegistries.HEARTBREAK.get())) {
+        if ((effect.getEffect() == TotemRegistries.HEARTBREAK.get())) {
             lines.add(Component.translatable("effect.dungeontotems.heartbreak.hearts", heartsTaken(effect, player)).withStyle(ChatFormatting.GRAY));
-        } else if (effect.is(TotemRegistries.ZOMBIFIED.get())) {
+        } else if ((effect.getEffect() == TotemRegistries.ZOMBIFIED.get())) {
             lines.add(Component.translatable("effect.dungeontotems.zombified.cure").withStyle(ChatFormatting.GRAY));
-        } else if (effect.is(TotemRegistries.RAGE.get())) {
+        } else if ((effect.getEffect() == TotemRegistries.RAGE.get())) {
             lines.add(timer("rage", ClientPayloads.secondsLeft(Curse.RAGE)));
-        } else if (effect.is(TotemRegistries.BREATHLESS.get()) || effect.is(TotemRegistries.INSOMNIA.get())
-            || effect.is(TotemRegistries.VOW_OF_PEACE.get()) || effect.is(TotemRegistries.MELON_DIET.get()) || effect.is(TotemRegistries.RESTRAINED.get())) {
-            String id = effect.getEffect().unwrapKey().map(key -> key.location().getPath()).orElse("");
+        } else if ((effect.getEffect() == TotemRegistries.BREATHLESS.get()) || (effect.getEffect() == TotemRegistries.INSOMNIA.get())
+            || (effect.getEffect() == TotemRegistries.VOW_OF_PEACE.get()) || (effect.getEffect() == TotemRegistries.MELON_DIET.get()) || (effect.getEffect() == TotemRegistries.RESTRAINED.get())) {
+            String id = java.util.Optional.ofNullable(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(effect.getEffect())).map(net.minecraft.resources.ResourceLocation::getPath).orElse("");
             lines.add(Component.translatable("effect.dungeontotems." + id + ".rule").withStyle(ChatFormatting.GRAY));
-        } else if (effect.is(TotemRegistries.LONELY.get())) {
+        } else if ((effect.getEffect() == TotemRegistries.LONELY.get())) {
             lines.add(timer("lonely", ClientPayloads.secondsLeft(Curse.LONELINESS)));
         }
         return lines;
@@ -93,8 +94,8 @@ public final class CurseTooltips {
     /** Hearts Heartbreak takes right now (its last level may take less), as "2" or "9.5". */
     private static String heartsTaken(MobEffectInstance effect, Player player) {
         AttributeInstance maxHealth = player.getAttribute(Attributes.MAX_HEALTH);
-        AttributeModifier modifier = maxHealth == null ? null : maxHealth.getModifier(HeartbreakEffect.MODIFIER_ID);
-        double health = modifier != null ? -modifier.amount() : HeartbreakEffect.HEALTH_PER_LEVEL * (effect.getAmplifier() + 1);
+        AttributeModifier modifier = maxHealth == null ? null : maxHealth.getModifier(Modifiers.uuid(HeartbreakEffect.MODIFIER_ID));
+        double health = modifier != null ? -modifier.getAmount() : HeartbreakEffect.HEALTH_PER_LEVEL * (effect.getAmplifier() + 1);
         double hearts = health / 2.0;
         return hearts == Math.floor(hearts) ? Integer.toString((int) hearts) : Double.toString(hearts);
     }

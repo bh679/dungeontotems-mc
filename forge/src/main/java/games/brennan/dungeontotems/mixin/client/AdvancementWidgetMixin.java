@@ -33,15 +33,21 @@ public abstract class AdvancementWidgetMixin {
     @Shadow @Final @Mutable private List<FormattedCharSequence> description;
     @Shadow @Final @Mutable private int width;
 
-    @Shadow private int getMaxProgressWidth() { throw new AssertionError(); }
-
     @Shadow private List<FormattedText> findOptimalLines(Component component, int maxWidth) { throw new AssertionError(); }
+
+    /** 1.21's {@code getMaxProgressWidth}; 1.20.1 works it out inline in the constructor, the same way. */
+    private int dungeontotems$progressWidth() {
+        int required = advancement.getMaxCriteraRequired();
+        if (required <= 1) return 0;
+        int digits = String.valueOf(required).length();
+        return minecraft.font.width("  ") + minecraft.font.width("0") * digits * 2 + minecraft.font.width("/");
+    }
 
     @Inject(method = "setProgress", at = @At("TAIL"))
     private void dungeontotems$tooltip(AdvancementProgress progress, CallbackInfo ci) {
         AdvancementTooltips.Lines lines = AdvancementTooltips.lines(advancement, display, progress);
         if (lines == null) return;
-        int wrap = 29 + minecraft.font.width(title) + getMaxProgressWidth();
+        int wrap = 29 + minecraft.font.width(title) + dungeontotems$progressWidth();
         List<FormattedCharSequence> text = AdvancementTooltips.layout(minecraft.font, lines,
             Math.max(wrap, AdvancementTooltips.minWidth(lines)), this::findOptimalLines);
         int widest = wrap;

@@ -76,7 +76,7 @@ final class LandMoves {
 
     private static void dropSeed(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        LootTable table = level.getServer().reloadableRegistries().getLootTable(BuiltInLootTables.SNIFFER_DIGGING);
+        LootTable table = level.getServer().getLootData().getLootTable(BuiltInLootTables.SNIFFER_DIGGING);
         LootParams params = new LootParams.Builder(level)
             .withParameter(LootContextParams.ORIGIN, player.position())
             .withParameter(LootContextParams.THIS_ENTITY, player)

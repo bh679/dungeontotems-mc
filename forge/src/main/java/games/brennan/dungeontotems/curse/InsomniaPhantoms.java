@@ -98,7 +98,7 @@ public final class InsomniaPhantoms {
             Phantom phantom = EntityType.PHANTOM.create(level);
             if (phantom == null) continue;
             phantom.moveTo(at, 0.0F, 0.0F);
-            group = phantom.finalizeSpawn(level, difficulty, MobSpawnType.NATURAL, group);
+            group = phantom.finalizeSpawn(level, difficulty, MobSpawnType.NATURAL, group, null);
             if (day) phantom.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
             level.addFreshEntityWithPassengers(phantom);
             spawned++;

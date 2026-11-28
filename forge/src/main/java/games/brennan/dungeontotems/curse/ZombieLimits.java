@@ -64,7 +64,7 @@ public final class ZombieLimits {
             event.setCanceled(true);
             tell(player, "message.dungeontotems.zombified.shulker");
         } else if (isShulkerBox(event.getItemStack())) {
-            event.setUseItem(TriState.FALSE);
+            event.setUseItem(Event.Result.DENY);
             tell(player, "message.dungeontotems.zombified.shulker");
         }
     }
@@ -114,11 +114,15 @@ public final class ZombieLimits {
         if (!animal.level().isClientSide()) runFrom(animal, event.getEntity());
     }
 
+    /** 1.21's {@code #minecraft:parrot_food}: {@code Parrot.TAME_FOOD} in 1.20.1, which is private. */
+    private static final java.util.Set<net.minecraft.world.item.Item> PARROT_FOOD = java.util.Set.of(
+        Items.WHEAT_SEEDS, Items.MELON_SEEDS, Items.PUMPKIN_SEEDS, Items.BEETROOT_SEEDS, Items.TORCHFLOWER_SEEDS, Items.PITCHER_POD);
+
     /** Its breeding food, or what tames it (a wolf's bone, a parrot's seeds). */
     public static boolean wouldTake(Animal animal, ItemStack stack) {
         if (stack.isEmpty()) return false;
         if (animal.isFood(stack)) return true;
-        return (animal instanceof Wolf && stack.is(Items.BONE)) || (animal instanceof Parrot && stack.is(ItemTags.PARROT_FOOD));
+        return (animal instanceof Wolf && stack.is(Items.BONE)) || (animal instanceof Parrot && PARROT_FOOD.contains(stack.getItem()));
     }
 
     /** Off at a run to somewhere away from the zombie; straight away from them when no spot is found. */

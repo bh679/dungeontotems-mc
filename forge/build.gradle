@@ -95,6 +95,11 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// Unit tests are pure logic on Minecraft types (no game running): ModDev's unitTest block is NeoForge-only,
+// so the test classpath simply takes the main one.
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
+
 tasks.named('test', Test).configure {
     useJUnitPlatform()
     testLogging { events 'passed', 'skipped', 'failed' }

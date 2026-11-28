@@ -67,7 +67,7 @@ public final class FormAllies {
     @SubscribeEvent
     public static void onTarget(LivingChangeTargetEvent event) {
         LivingEntity mob = event.getEntity();
-        LivingEntity target = event.getNewAboutToBeSetTarget();
+        LivingEntity target = event.getNewTarget();
         if (target == null) return;
         boolean afraid = (mob instanceof Creeper || mob instanceof Phantom) && isCat(target);
         boolean kin = mob instanceof ZombifiedPiglin && is(target, EntityType.ZOMBIFIED_PIGLIN);

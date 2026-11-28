@@ -48,7 +48,7 @@ public final class SavedCurseShield {
         Curses.markSaved(player, curse, Curses.apply(player, curse, amplifier, curse.afterSaveTicks()));
         if (curse.isRule()) {
             player.displayClientMessage(Component.translatable("message.dungeontotems.spared",
-                curse.effect().value().getDisplayName()), false);
+                curse.effect().getDisplayName()), false);
         }
     }
 }

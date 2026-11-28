@@ -243,7 +243,7 @@ public final class FormAttacks {
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
         boolean block = state.is(Blocks.GRASS_BLOCK);
-        boolean tuft = state.is(Blocks.SHORT_GRASS) || state.is(Blocks.TALL_GRASS);
+        boolean tuft = state.is(Blocks.GRASS) || state.is(Blocks.TALL_GRASS);
         if (!block && !tuft) return;
         event.setCanceled(true);
         long now = level.getGameTime();

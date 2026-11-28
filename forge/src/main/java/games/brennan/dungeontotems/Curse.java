@@ -98,6 +98,11 @@ public enum Curse {
         return effect == null ? null : effect.get();
     }
 
+    /** Whether it leaves a curse at all, without looking the effect up (unit tests run with no registries). */
+    public boolean hasEffect() {
+        return effect != null;
+    }
+
     public int heldAmplifier() {
         return heldAmplifier;
     }
@@ -177,7 +182,7 @@ public enum Curse {
     @Nullable
     public static Curse forEffect(MobEffect effect) {
         for (Curse curse : values()) {
-            if (curse.effect != null && curse.effect().is(effect)) return curse;
+            if (curse.effect != null && curse.effect() == effect) return curse;
         }
         return null;
     }

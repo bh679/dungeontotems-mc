@@ -56,7 +56,7 @@ public final class MorphEvents {
      */
     @SubscribeEvent
     public static void onTarget(LivingChangeTargetEvent event) {
-        if (!(event.getNewAboutToBeSetTarget() instanceof Player player)) return;
+        if (!(event.getNewTarget() instanceof Player player)) return;
         if (ignoresMorphed(event.getEntity(), player)) event.setCanceled(true);
     }
 
@@ -85,7 +85,7 @@ public final class MorphEvents {
     }
 
     private static boolean isFormCurse(MobEffectInstance instance) {
-        return instance.is(TotemRegistries.MORPHED.get()) || instance.is(TotemRegistries.ZOMBIFIED.get());
+        return (instance.getEffect() == TotemRegistries.MORPHED.get()) || (instance.getEffect() == TotemRegistries.ZOMBIFIED.get());
     }
 
     /** Modifiers are transient, so a relog re-applies them; a form whose curse is gone is dropped. */
@@ -116,7 +116,7 @@ public final class MorphEvents {
         if (player.tickCount % ZOMBIE_CHECK_EVERY_TICKS != 0) return;
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == null || !UNDEAD_FORMS.contains(form)) return;
-        if (burnsInSun(player)) player.igniteForSeconds(SUNBURN_SECONDS);
+        if (burnsInSun(player)) player.setSecondsOnFire(SUNBURN_SECONDS);
         if (form != EntityType.ZOMBIE) return;
         AABB area = player.getBoundingBox().inflate(GOLEM_RADIUS);
         for (IronGolem golem : player.level().getEntitiesOfClass(IronGolem.class, area, g -> g.getTarget() == null)) {

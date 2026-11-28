@@ -48,7 +48,7 @@ public final class ZombieJadePlugin implements IWailaPlugin {
     private static void mumble(ITooltip tooltip, int seed, int[] line) {
         for (int i = 0; i < tooltip.size(); i++) {
             boolean hadText = false;
-            for (IElement.Align align : IElement.Align.VALUES) {
+            for (IElement.Align align : IElement.Align.values()) {
                 List<IElement> elements = tooltip.get(i, align);
                 for (int e = 0; e < elements.size(); e++) {
                     IElement element = elements.get(e);

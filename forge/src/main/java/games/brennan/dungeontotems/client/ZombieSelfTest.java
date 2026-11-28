@@ -246,7 +246,7 @@ public final class ZombieSelfTest {
             },
             (minecraft, player) -> {}, player -> ZombieGibberish.weakens(player.getInventory().getItem(3))),
         new Step("a lucid item thinks", true, MENU_HOTBAR + 2, player -> { packed(player); put(player, 2, thoughtfulBlade()); },
-            (minecraft, player) -> {}, player -> ZombieGibberish.thought(ItemStack.hashItemAndComponents(player.getInventory().getItem(2))) != null),
+            (minecraft, player) -> {}, player -> ZombieGibberish.thought(games.brennan.dungeontotems.util.Stacks.hash(player.getInventory().getItem(2))) != null),
         new Step("the hotbar name mumbles", false, NO_HOVER, CHECK - HOTBAR_NAME_LEAD,
             player -> { packed(player); put(player, 1, enchantedSword(player)); },
             (minecraft, player) -> minecraft.player.getInventory().selected = 1, // client side: the name pops up over the hotbar
@@ -332,8 +332,7 @@ public final class ZombieSelfTest {
         LevelSettings settings = new LevelSettings("Zombie Self Test " + System.currentTimeMillis(), GameType.SURVIVAL, false,
             Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
         minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, WorldOptions.defaultWithRandomSeed(),
-            registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
-            new TitleScreen());
+            registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
     }
 
     @SubscribeEvent
@@ -418,10 +417,9 @@ public final class ZombieSelfTest {
     /** A diamond sword with Sharpness V, Unbreaking III and Looting III: a long tooltip in rare colour. */
     private static ItemStack enchantedSword(ServerPlayer player) {
         ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-        var enchantments = player.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-        sword.enchant(enchantments.getOrThrow(Enchantments.SHARPNESS), 5);
-        sword.enchant(enchantments.getOrThrow(Enchantments.UNBREAKING), 3);
-        sword.enchant(enchantments.getOrThrow(Enchantments.LOOTING), 3);
+        sword.enchant(Enchantments.SHARPNESS, 5);
+        sword.enchant(Enchantments.UNBREAKING, 3);
+        sword.enchant(Enchantments.MOB_LOOTING, 3);
         return sword;
     }
 
@@ -430,7 +428,7 @@ public final class ZombieSelfTest {
         for (int n = 0; ; n++) {
             ItemStack blade = new ItemStack(Items.IRON_SWORD);
             blade.setHoverName(Component.literal("Old Blade " + n));
-            if (ZombieGibberish.thought(ItemStack.hashItemAndComponents(blade)) != null) return blade;
+            if (ZombieGibberish.thought(games.brennan.dungeontotems.util.Stacks.hash(blade)) != null) return blade;
         }
     }
 

@@ -7,7 +7,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.material.FluidState;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -22,14 +21,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
 
-    @Shadow
-    protected abstract float getBlockJumpFactor();
-
-    @Inject(method = "getJumpPower", at = @At("HEAD"), cancellable = true)
+    /** Vanilla returns {@code 0.42 * blockJumpFactor}: scale it by the attribute's value over its base. */
+    @Inject(method = "getJumpPower", at = @At("RETURN"), cancellable = true)
     private void dungeontotems$playerJumpStrength(CallbackInfoReturnable<Float> result) {
         if (!((Object) this instanceof Player player)) return;
         AttributeInstance jump = player.getAttribute(TotemAttributes.jumpStrength());
-        if (jump != null) result.setReturnValue((float) jump.getValue() * getBlockJumpFactor());
+        if (jump == null || jump.getValue() == TotemAttributes.PLAYER_JUMP) return;
+        result.setReturnValue((float) (result.getReturnValueF() * jump.getValue() / TotemAttributes.PLAYER_JUMP));
     }
 
     @Inject(method = "canStandOnFluid", at = @At("HEAD"), cancellable = true)

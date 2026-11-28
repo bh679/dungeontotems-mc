@@ -96,7 +96,7 @@ public final class VoidRescue {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer player)) return;
         if (player.tickCount % TRACK_EVERY_TICKS != 0) return;
-        if (!player.onGround() || player.isPassenger() || player.isInLiquid()) return;
+        if (!player.onGround() || player.isPassenger() || (player.isInWater() || player.isInLava())) return;
         BlockPos below = player.blockPosition().below();
         if (!player.level().getBlockState(below).isFaceSturdy(player.level(), below, Direction.UP)) return;
         LAST_SAFE.put(player.getUUID(), new SafeSpot(player.level().dimension(), player.position()));

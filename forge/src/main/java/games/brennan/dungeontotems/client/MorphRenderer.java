@@ -184,7 +184,6 @@ public final class MorphRenderer {
         dummy.hurtTime = player.hurtTime;
         dummy.deathTime = player.deathTime;
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (slot.getType() == EquipmentSlot.Type.ANIMAL_ARMOR) continue;
             dummy.setItemSlot(slot, player.getItemBySlot(slot));
         }
     }

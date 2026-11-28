@@ -1,6 +1,6 @@
 package games.brennan.dungeontotems.loot;
 
-import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import games.brennan.dungeontotems.DungeonTotems;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -34,13 +34,13 @@ public final class EvokerTotemLootModifier extends LootModifier {
     public static final TagKey<Item> EVOKER_TOTEMS =
         TagKey.create(Registries.ITEM, DungeonTotems.id("evoker_totems"));
 
-    public static final MapCodec<EvokerTotemLootModifier> CODEC = RecordCodecBuilder.mapCodec(
+    public static final Codec<EvokerTotemLootModifier> CODEC = RecordCodecBuilder.create(
         inst -> codecStart(inst).apply(inst, EvokerTotemLootModifier::new));
 
-    private static final DeferredRegister<MapCodec<? extends IGlobalLootModifier>> SERIALIZERS =
+    private static final DeferredRegister<Codec<? extends IGlobalLootModifier>> SERIALIZERS =
         DeferredRegister.create(ForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, DungeonTotems.MOD_ID);
 
-    public static final Supplier<MapCodec<EvokerTotemLootModifier>> SERIALIZER =
+    public static final Supplier<Codec<EvokerTotemLootModifier>> SERIALIZER =
         SERIALIZERS.register("evoker_totems", () -> CODEC);
 
     public EvokerTotemLootModifier(LootItemCondition[] conditions) {
@@ -70,7 +70,7 @@ public final class EvokerTotemLootModifier extends LootModifier {
     }
 
     @Override
-    public MapCodec<? extends IGlobalLootModifier> codec() {
+    public Codec<? extends IGlobalLootModifier> codec() {
         return CODEC;
     }
 }
