@@ -1,6 +1,7 @@
 // Dungeon Totems, Minecraft 26.3 line. See PORTING.md.
 plugins {
     id 'net.neoforged.moddev' version '2.0.149' apply false
+    id 'net.fabricmc.fabric-loom' version '1.19.6' apply false
 }
 
 subprojects {
