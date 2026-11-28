@@ -1,0 +1,18 @@
+// Vanilla-only code shared by every loader of the 1.20.1 line. Compiled against plain Minecraft:
+// nothing here may import net.minecraftforge or net.fabricmc.
+plugins {
+    id 'net.neoforged.moddev.legacyforge'
+}
+
+legacyForge {
+    mcpVersion = minecraft_version
+    parchment {
+        minecraftVersion = parchment_minecraft_version
+        mappingsVersion = parchment_mappings_version
+    }
+}
+
+dependencies {
+    compileOnly 'org.spongepowered:mixin:0.8.5'
+    compileOnly 'io.github.llamalad7:mixinextras-common:0.4.1'
+}

@@ -1,154 +1,26 @@
-// Dungeon Totems: NeoForge 1.21.1 gameplay mod.
-//
-// Totems of Undying that save you like the vanilla one but leave a curse behind
-// (weakness, fatigue, heartbreak, blindness, morphing, zombified), plus a Void
-// Totem. Dungeon Train bundles it (jar-in-jar) and points the Void Totem at the train.
-
+// Dungeon Totems, Minecraft 1.20.1 line. See settings.gradle.
 plugins {
-    id 'java-library'
-    id 'maven-publish'
-    id 'idea'
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.149' apply false
 }
 
 tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version
-group = mod_group_id
-
-// Jar name contract: build/libs/dungeontotems-neoforge-<version>.jar. Dungeon Train's ivy
-// repository resolves exactly that asset name from the GitHub release tagged v<version>.
-base {
-    archivesName = "${mod_id}-neoforge"
-}
-
-// Mojang ships Java 21 to end users in 1.21.1, so mods target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
-
-sourceSets.main.resources {
-    exclude '**/CLAUDE.md'   // authoring docs — never a MC resource
-}
-
-repositories {
-    mavenCentral()
-    // Jade, through Modrinth's Maven proxy (compile-only: see compat/jade).
-    exclusiveContent {
-        forRepository { maven { url = 'https://api.modrinth.com/maven' } }
-        filter { includeGroup 'maven.modrinth' }
+subprojects {
+    apply plugin: 'java-library'
+    version = mod_version
+    group = mod_group_id
+    java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-Xmaxerrs', '5000']
     }
-}
-
-neoForge {
-    version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
-
-    runs {
-        client {
-            client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            systemProperty 'dungeontotems.advancements', 'true' // dev runs load the advancement tab before launch
+    repositories {
+        mavenCentral()
+        exclusiveContent {
+            forRepository { maven { url = 'https://api.modrinth.com/maven' } }
+            filter { includeGroup 'maven.modrinth' }
         }
-
-        // ./gradlew runSelfTest: drives every morph form in a real client (client/FormSelfTest) and quits.
-        selfTest {
-            client()
-            gameDirectory = project.file('run-selftest')
-            systemProperty 'dungeontotems.selftest', 'true'
-            systemProperty 'dungeontotems.advancements', 'true'
-            systemProperty 'dungeontotems.selftest.forms', System.getProperty('forms', '')
-            systemProperty 'dungeontotems.selftest.advancements', System.getProperty('advancements', '')
-            systemProperty 'dungeontotems.selftest.stacking', System.getProperty('stacking', '')
-            systemProperty 'dungeontotems.selftest.zombie', System.getProperty('zombie', '') // add -PwithJade to see Jade's panel
-            programArguments.addAll '--quickPlaySingleplayer', 'New World'
-        }
-
-        server {
-            server()
-            programArgument '--nogui'
-        }
-
-        // ./gradlew runGameTestServer: runs gametest/DungeonTotemsGameTests and exits.
-        gameTestServer {
-            type = 'gameTestServer'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            systemProperty 'dungeontotems.advancements', 'true'
-        }
-
-        configureEach {
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            logLevel = org.slf4j.event.Level.DEBUG
-        }
-    }
-
-    mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
-        }
-    }
-
-    unitTest {
-        enable()
-        testedMod = mods.named(mod_id)
-    }
-}
-
-dependencies {
-    // Jade — optional. Compile-only for compat/jade/ZombieJadePlugin, which Jade finds by its @WailaPlugin
-    // annotation, so no Jade class loads without Jade. -PwithJade puts it in the dev runs to test.
-    // Same build Dungeon Train's modpack ships (its modpack.config.json -> jade.modrinth_version).
-    compileOnly "maven.modrinth:jade:${jade_version}"
-    if (project.hasProperty('withJade')) runtimeOnly "maven.modrinth:jade:${jade_version}"
-
-    // Unit tests — JUnit 5 Jupiter (pure-logic only; no live ModList).
-    testImplementation platform('org.junit:junit-bom:5.10.2')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-tasks.named('test', Test).configure {
-    useJUnitPlatform()
-    testLogging {
-        events 'passed', 'skipped', 'failed'
-    }
-}
-
-// Generate neoforge.mods.toml from its template.
-tasks.register('generateModMetadata', ProcessResources) {
-    var replaceProperties = [
-        minecraft_version       : minecraft_version,
-        minecraft_version_range : minecraft_version_range,
-        neo_version             : neo_version,
-        loader_version_range    : loader_version_range,
-        mod_id                  : mod_id,
-        mod_name                : mod_name,
-        mod_license             : mod_license,
-        mod_version             : mod_version,
-        mod_authors             : mod_authors,
-        mod_description         : mod_description,
-    ]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    from 'src/main/templates'
-    into "${layout.buildDirectory.get()}/generated/sources/modMetadata"
-}
-sourceSets.main.resources.srcDir tasks.named('generateModMetadata')
-neoForge.ideSyncTask tasks.named('generateModMetadata')
-
-tasks.named('jar', Jar).configure {
-    manifest {
-        attributes([
-            'Specification-Title'    : mod_id,
-            'Specification-Vendor'   : mod_authors,
-            'Specification-Version'  : '1',
-            'Implementation-Title'   : project.name,
-            'Implementation-Version' : project.jar.archiveVersion,
-            'Implementation-Vendor'  : mod_authors,
-        ])
     }
 }
