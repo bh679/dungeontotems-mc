@@ -8,7 +8,17 @@ neoForge {
     neoFormVersion = neoform_version
 }
 
+repositories {
+    // Jade, through Modrinth's Maven proxy (compile-only: see compat/jade).
+    exclusiveContent {
+        forRepository { maven { url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
 dependencies {
+    // Jade's API is the same on both loaders; the NeoForge build is only on the compile path.
+    compileOnly "maven.modrinth:jade:${jade_version}"
     compileOnly 'org.spongepowered:mixin:0.8.5'
     compileOnly 'io.github.llamalad7:mixinextras-common:0.5.0'
     testImplementation platform('org.junit:junit-bom:5.10.2')
