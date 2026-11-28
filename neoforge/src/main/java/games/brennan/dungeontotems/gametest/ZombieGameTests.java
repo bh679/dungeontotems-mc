@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.gametest;
 
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.curse.Curses;
@@ -125,13 +126,13 @@ public final class ZombieGameTests {
     public static void aVillagerAZombieTradesWithTurns(GameTestHelper helper) {
         ServerPlayer player = zombie(helper);
         Villager villager = helper.spawn(EntityTypes.VILLAGER, 2, 1, 3);
-        villager.setVillagerData(villager.getVillagerData().setProfession(VillagerProfession.LIBRARIAN));
-        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager)).isCanceled();
+        villager.setVillagerData(villager.getVillagerData().withProfession(villager.level().registryAccess(), VillagerProfession.LIBRARIAN));
+        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager, villager.position())).isCanceled();
         check(helper, refused, "the trade should not open");
         check(helper, villager.isRemoved(), "the villager should be gone");
         List<ZombieVillager> zombies = helper.getLevel().getEntitiesOfClass(ZombieVillager.class, villager.getBoundingBox().inflate(2));
         check(helper, zombies.size() == 1, "one zombie villager should stand there, found " + zombies.size());
-        check(helper, zombies.get(0).getVillagerData().getProfession() == VillagerProfession.LIBRARIAN, "it should still be a librarian");
+        check(helper, zombies.get(0).getVillagerData().profession().is(VillagerProfession.LIBRARIAN), "it should still be a librarian");
         zombies.get(0).discard();
         helper.succeed();
     }
@@ -140,7 +141,7 @@ public final class ZombieGameTests {
     public static void aHumanStillTrades(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         Villager villager = helper.spawn(EntityTypes.VILLAGER, 2, 1, 3);
-        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager)).isCanceled();
+        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, villager, villager.position())).isCanceled();
         check(helper, !refused && !villager.isRemoved(), "a human's trade goes ahead");
         helper.succeed();
     }
@@ -149,7 +150,7 @@ public final class ZombieGameTests {
     public static void aWanderingTraderDrinksAndRuns(GameTestHelper helper) {
         ServerPlayer player = zombie(helper);
         WanderingTrader trader = helper.spawn(EntityTypes.WANDERING_TRADER, 2, 1, 3);
-        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, trader)).isCanceled();
+        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(player, InteractionHand.MAIN_HAND, trader, trader.position())).isCanceled();
         check(helper, refused, "the trade should not open");
         check(helper, trader.hasEffect(MobEffects.INVISIBILITY), "the trader should drink invisibility");
         check(helper, trader.getLastHurtByMob() == player, "the trader should panic");
@@ -372,11 +373,11 @@ public final class ZombieGameTests {
     @DtGameTest
     public static void aZombieCantOpenAShulkerBoxFromTheirHand(GameTestHelper helper) {
         ServerPlayer zombie = zombie(helper);
-        zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BLUE_SHULKER_BOX));
+        zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DYED_SHULKER_BOX.blue()));
         check(helper, NeoForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(zombie, InteractionHand.MAIN_HAND)).isCanceled(),
             "a zombie shouldn't use a shulker box in hand");
         ServerPlayer human = player(helper);
-        human.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BLUE_SHULKER_BOX));
+        human.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DYED_SHULKER_BOX.blue()));
         check(helper, !NeoForge.EVENT_BUS.post(new PlayerInteractEvent.RightClickItem(human, InteractionHand.MAIN_HAND)).isCanceled(),
             "a human still can");
         helper.succeed();
@@ -425,13 +426,13 @@ public final class ZombieGameTests {
     public static void aZombieCantMineAShulkerBox(GameTestHelper helper) {
         ServerPlayer player = zombie(helper);
         BlockPos box = helper.absolutePos(new BlockPos(1, 1, 1));
-        BlockState state = Blocks.RED_SHULKER_BOX.defaultBlockState();
+        BlockState state = Blocks.DYED_SHULKER_BOX.red().defaultBlockState();
         helper.getLevel().setBlockAndUpdate(box, state);
         check(helper, NeoForge.EVENT_BUS.post(new PlayerEvent.BreakSpeed(player, state, 1.0F, box)).isCanceled(),
             "a zombie shouldn't crack a shulker box");
-        check(helper, NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player)).isCanceled(),
+        check(helper, NeoForge.EVENT_BUS.post(new BreakBlockEvent(helper.getLevel(), box, state, player)).isCanceled(),
             "a zombie shouldn't break a shulker box");
-        check(helper, !NeoForge.EVENT_BUS.post(new BlockEvent.BreakEvent(helper.getLevel(), box, state, player(helper))).isCanceled(),
+        check(helper, !NeoForge.EVENT_BUS.post(new BreakBlockEvent(helper.getLevel(), box, state, player(helper))).isCanceled(),
             "a human still can");
         helper.succeed();
     }
@@ -447,13 +448,13 @@ public final class ZombieGameTests {
 
     private static void feedAndCheck(GameTestHelper helper, ServerPlayer zombie, Wolf wolf) {
         zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE, 4));
-        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, wolf)).isCanceled();
+        boolean refused = NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, wolf, wolf.position())).isCanceled();
         check(helper, refused, "the wolf shouldn't take a zombie's bone");
         check(helper, zombie.getMainHandItem().getCount() == 4, "the bone isn't used");
         check(helper, wolf.getNavigation().isInProgress(), "the wolf should run");
         Cow cow = helper.spawn(EntityTypes.COW, 3, 1, 3);
         zombie.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WHEAT));
-        check(helper, NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, cow)).isCanceled(),
+        check(helper, NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(zombie, InteractionHand.MAIN_HAND, cow, cow.position())).isCanceled(),
             "a cow shouldn't take a zombie's wheat");
         ServerPlayer human = player(helper);
         for (int i = 0; i < TAME_TRIES && !wolf.isTame(); i++) {
@@ -638,7 +639,7 @@ public final class ZombieGameTests {
 
     @SuppressWarnings("removal")
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = MockPlayers.mock(helper);
         player.setGameMode(GameType.SURVIVAL);
         Vec3 at = helper.absoluteVec(new Vec3(2.5, 1, 2.5));
         player.teleportTo(at.x, at.y, at.z);

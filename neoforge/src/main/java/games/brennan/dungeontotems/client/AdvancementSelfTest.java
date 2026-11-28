@@ -84,7 +84,7 @@ public final class AdvancementSelfTest {
         if (at == 0) pointAt(minecraft, id);
         if (at == 5) {
             report(minecraft, server, id);
-            Screenshot.grab(minecraft.gameDirectory, "selftest_advancement_" + id.getPath() + ".png", minecraft.getMainRenderTarget(), message -> {});
+            Screenshot.grab(minecraft.gameDirectory, "selftest_advancement_" + id.getPath() + ".png", minecraft.gameRenderer.mainRenderTarget(), 1, message -> {});
         }
     }
 
@@ -104,36 +104,36 @@ public final class AdvancementSelfTest {
     private static void open(Minecraft minecraft) {
         ClientAdvancements advancements = minecraft.player.connection.getAdvancements();
         minecraft.gui.setScreen(new AdvancementsScreen(advancements));
-        AdvancementNode root = advancements.getTree().get(DungeonTotems.id("terms_and_conditions"));
+        AdvancementNode root = advancements.tree().get(DungeonTotems.id("terms_and_conditions"));
         if (root != null) advancements.setSelectedTab(root.holder(), true);
     }
 
     /** Moves the mouse onto the advancement's icon, as {@code AdvancementTab} centres and places it. */
     private static void pointAt(Minecraft minecraft, Identifier id) {
         ClientAdvancements advancements = minecraft.player.connection.getAdvancements();
-        List<DisplayInfo> tab = new ArrayList<>();
+        // 26.x keeps an advancement's place on its tree node, not its display.
+        List<AdvancementNode> tab = new ArrayList<>();
         for (Identifier each : tab()) {
-            AdvancementNode node = advancements.getTree().get(each);
-            if (node != null) node.holder().value().display().ifPresent(tab::add);
+            AdvancementNode node = advancements.tree().get(each);
+            if (node != null && node.holder().value().display().isPresent()) tab.add(node);
         }
-        AdvancementNode node = advancements.getTree().get(id);
+        AdvancementNode node = advancements.tree().get(id);
         if (node == null || node.holder().value().display().isEmpty() || tab.isEmpty()) {
             REPORT.add(id + ": not on the screen");
             return;
         }
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
-        for (DisplayInfo display : tab) {
-            int x = Mth.floor(display.getX() * 28.0F), y = Mth.floor(display.getY() * 27.0F);
+        for (AdvancementNode each : tab) {
+            int x = Mth.floor(each.x() * 28.0F), y = Mth.floor(each.y() * 27.0F);
             minX = Math.min(minX, x);
             maxX = Math.max(maxX, x + 28);
             minY = Math.min(minY, y);
             maxY = Math.max(maxY, y + 27);
         }
-        DisplayInfo display = node.holder().value().display().get();
         int left = (minecraft.getWindow().getGuiScaledWidth() - WINDOW_WIDTH) / 2;
         int top = (minecraft.getWindow().getGuiScaledHeight() - WINDOW_HEIGHT) / 2;
-        int x = left + INSIDE_X + (117 - (maxX + minX) / 2) + Mth.floor(display.getX() * 28.0F) + 13;
-        int y = top + INSIDE_Y + (56 - (maxY + minY) / 2) + Mth.floor(display.getY() * 27.0F) + 13;
+        int x = left + INSIDE_X + (117 - (maxX + minX) / 2) + Mth.floor(node.x() * 28.0F) + 13;
+        int y = top + INSIDE_Y + (56 - (maxY + minY) / 2) + Mth.floor(node.y() * 27.0F) + 13;
         // The mouse is in window points (GameRenderer scales it to the GUI), not framebuffer pixels.
         setMouse(minecraft.mouseHandler, x * (double) minecraft.getWindow().getScreenWidth() / minecraft.getWindow().getGuiScaledWidth(),
             y * (double) minecraft.getWindow().getScreenHeight() / minecraft.getWindow().getGuiScaledHeight());

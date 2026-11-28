@@ -117,7 +117,7 @@ public final class StackingGameTests {
     }
 
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = MockPlayers.mock(helper);
         player.setGameMode(GameType.SURVIVAL);
         Vec3 at = helper.absoluteVec(new Vec3(2.5, 1, 2.5));
         player.teleportTo(at.x, at.y, at.z);
@@ -126,7 +126,7 @@ public final class StackingGameTests {
     }
 
     private static void fillWithDirt(Inventory inventory) {
-        for (int i = 0; i < inventory.items.size(); i++) inventory.setItem(i, new ItemStack(Items.DIRT));
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) inventory.setItem(i, new ItemStack(Items.DIRT));
     }
 
     private static int totemsIn(Inventory inventory) {

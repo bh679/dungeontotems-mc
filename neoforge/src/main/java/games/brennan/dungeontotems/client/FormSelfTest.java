@@ -138,7 +138,7 @@ public final class FormSelfTest {
         if (t == 0) begin(server, player, form);
         if (t == 3) {
             minecraft.options.setCameraType(CameraType.FIRST_PERSON); // the form's eye view: its own arm or none
-            minecraft.options.hideGui = false;
+            if (minecraft.gui.hud.isHidden()) minecraft.gui.hud.toggle();
             handsBefore = MorphRenderer.handsReached();
             armsBefore = FormArms.drawn();
         }
@@ -153,7 +153,7 @@ public final class FormSelfTest {
         }
         if (t == 7) {
             minecraft.options.setCameraType(CameraType.THIRD_PERSON_FRONT); // its face, and its legs as it walks past
-            minecraft.options.hideGui = true;
+            if (!minecraft.gui.hud.isHidden()) minecraft.gui.hud.toggle();
         }
         if (t == 15) {
             shot(minecraft, name, "1_idle");
@@ -219,7 +219,7 @@ public final class FormSelfTest {
         if (t == 112) {
             ServerPlayer serverPlayer = server.getPlayerList().getPlayer(player.getUUID());
             if (MorphRenderer.standIn(player) instanceof net.minecraft.world.entity.animal.camel.Camel camel) REPORT.add(name + ": " + (camel.isCamelSitting() ? "sits on right-click" : "DIDN'T sit"));
-            if (MorphRenderer.standIn(player) instanceof net.minecraft.world.entity.animal.Cat cat) REPORT.add(name + ": " + (cat.isInSittingPose() ? "sits on right-click" : "DIDN'T sit"));
+            if (MorphRenderer.standIn(player) instanceof net.minecraft.world.entity.animal.feline.Cat cat) REPORT.add(name + ": " + (cat.isInSittingPose() ? "sits on right-click" : "DIDN'T sit"));
             if (form == EntityTypes.ARMADILLO) REPORT.add(name + ": " + (serverPlayer != null && FormUse.isRolled(serverPlayer) ? "rolled up on right-click" : "DIDN'T roll up"));
         }
         if (form == EntityTypes.ARMADILLO && t == 136) {
@@ -257,7 +257,7 @@ public final class FormSelfTest {
         ServerPlayer player = server.getPlayerList().getPlayer(id);
         if (player == null) return;
         BlockPos start = start(form);
-        player.teleportTo(player.level(), start.getX() + 0.5, start.getY(), start.getZ() + 0.5, 0.0F, 15.0F);
+        player.teleportTo(player.level(), start.getX() + 0.5, start.getY(), start.getZ() + 0.5, java.util.Set.of(), 0.0F, 15.0F, true);
     }
 
     /** Water forms start in the pool, the strider on the lava, the rest on the grass. */
@@ -415,7 +415,7 @@ public final class FormSelfTest {
     }
 
     private static void shot(Minecraft minecraft, String form, String moment) {
-        Screenshot.grab(minecraft.gameDirectory, "selftest_" + form + "_" + moment + ".png", minecraft.getMainRenderTarget(), message -> {});
+        Screenshot.grab(minecraft.gameDirectory, "selftest_" + form + "_" + moment + ".png", minecraft.gameRenderer.mainRenderTarget(), 1, message -> {});
     }
 
     private static void run(MinecraftServer server, String command) {

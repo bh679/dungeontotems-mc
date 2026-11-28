@@ -128,8 +128,7 @@ public final class StackingSelfTest {
                 if (!ok) failures++;
                 REPORT.add(String.format("%s  %-34s %s", ok ? "PASS" : "FAIL", step.name(), describe(player.getInventory())));
             });
-            Screenshot.grab(minecraft.gameDirectory, String.format("selftest_stacking_%02d.png", index + 1),
-                minecraft.getMainRenderTarget(), message -> {});
+            Screenshot.grab(minecraft.gameDirectory, String.format("selftest_stacking_%02d.png", index + 1), minecraft.gameRenderer.mainRenderTarget(), 1, message -> {});
         }
     }
 
@@ -147,7 +146,7 @@ public final class StackingSelfTest {
 
     private static void fillWithDirt(ServerPlayer player) {
         Inventory inventory = player.getInventory();
-        for (int i = 0; i < inventory.items.size(); i++) {
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
             if (inventory.getItem(i).isEmpty()) inventory.setItem(i, new ItemStack(Items.DIRT, 64));
         }
     }
@@ -163,7 +162,7 @@ public final class StackingSelfTest {
 
     /** A left click on a slot of the open menu, sent to the server as the player's own click. */
     private static void click(Minecraft minecraft, int slot, ContainerInput type) {
-        minecraft.gameMode.handleInventoryMouseClick(minecraft.player.containerMenu.containerId, slot, 0, type, minecraft.player);
+        minecraft.gameMode.handleContainerInput(minecraft.player.containerMenu.containerId, slot, 0, type, minecraft.player);
     }
 
     private static int count(Inventory inventory, int slot) {
@@ -184,7 +183,7 @@ public final class StackingSelfTest {
 
     private static String describe(Inventory inventory) {
         List<String> rows = new ArrayList<>();
-        for (int i = 0; i < inventory.items.size(); i++) {
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (stack.is(totem()) || (stack.is(Items.DIRT) && stack.getCount() < 64)) {
                 rows.add("slot " + i + ": " + stack.getCount() + "x " + (stack.is(Items.DIRT) ? "dirt" : "rage"));

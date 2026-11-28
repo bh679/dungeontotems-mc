@@ -1,5 +1,8 @@
 package games.brennan.dungeontotems.client;
 
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.item.component.WritableBookContent;
 import net.minecraft.world.entity.EntitySpawnReason;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
@@ -191,7 +194,7 @@ public final class ZombieSelfTest {
         new Step("a villager turns", false, player -> {
                 packed(player);
                 Villager villager = EntityTypes.VILLAGER.create(player.level(), EntitySpawnReason.LOAD);
-                villager.setVillagerData(villager.getVillagerData().setProfession(VillagerProfession.FARMER));
+                villager.setVillagerData(villager.getVillagerData().withProfession(villager.level().registryAccess(), VillagerProfession.FARMER));
                 villager.snapTo(player.getX(), player.getY(), player.getZ() + 2, 180.0F, 0.0F);
                 villager.setNoAi(true);
                 player.level().addFreshEntity(villager);
@@ -199,7 +202,7 @@ public final class ZombieSelfTest {
             },
             (minecraft, player) -> {
                 List<Villager> near = player.level().getEntitiesOfClass(Villager.class, player.getBoundingBox().inflate(4));
-                if (!near.isEmpty()) minecraft.gameMode.interact(minecraft.player, minecraft.player.level().getEntity(near.get(0).getId()), InteractionHand.MAIN_HAND);
+                if (!near.isEmpty()) interactWith(minecraft, minecraft.player.level().getEntity(near.get(0).getId()));
             },
             player -> !player.level().getEntitiesOfClass(ZombieVillager.class, player.getBoundingBox().inflate(4)).isEmpty()),
         new Step("a pillager comes for you", false, player -> {
@@ -254,7 +257,7 @@ public final class ZombieSelfTest {
             (minecraft, player) -> {}, player -> ZombieGibberish.thought(ItemStack.hashItemAndComponents(player.getInventory().getItem(2))) != null),
         new Step("the hotbar name mumbles", false, NO_HOVER, CHECK - HOTBAR_NAME_LEAD,
             player -> { packed(player); put(player, 1, enchantedSword(player)); },
-            (minecraft, player) -> minecraft.player.getInventory().selected = 1, // client side: the name pops up over the hotbar
+            (minecraft, player) -> minecraft.player.getInventory().setSelectedSlot(1), // client side: the name pops up over the hotbar
             player -> player.getInventory().getItem(1).isEnchanted()),
         new Step("a book reads as gibberish", false, NO_HOVER, ACT, ZombieSelfTest::packed,
             (minecraft, player) -> {
@@ -270,11 +273,11 @@ public final class ZombieSelfTest {
                     PlayerChatMessage.unsigned(player.getUUID(), "Has anyone seen my lost cat near the third carriage? She is grey and very fluffy."),
                     player, ChatType.bind(ChatType.CHAT, player));
             },
-            (minecraft, player) -> minecraft.gui.setScreen(new ChatScreen("")),
+            (minecraft, player) -> minecraft.gui.setScreen(new ChatScreen("", false)),
             player -> true),
         new Step("typing in chat mumbles", false, NO_HOVER, ACT, ZombieSelfTest::packed,
             (minecraft, player) -> {
-                ChatScreen chat = new ChatScreen("");
+                ChatScreen chat = new ChatScreen("", false);
                 minecraft.gui.setScreen(chat);
                 type(chat, TYPED);
                 written = chat.getFocused() instanceof EditBox input ? input.getValue() : "";
@@ -282,7 +285,7 @@ public final class ZombieSelfTest {
             player -> !written.equals(TYPED) && !written.isBlank()),
         new Step("writing in a book mumbles", false, NO_HOVER, ACT, ZombieSelfTest::packed,
             (minecraft, player) -> {
-                BookEditScreen book = new BookEditScreen(minecraft.player, new ItemStack(Items.WRITABLE_BOOK), InteractionHand.MAIN_HAND);
+                BookEditScreen book = new BookEditScreen(minecraft.player, new ItemStack(Items.WRITABLE_BOOK), InteractionHand.MAIN_HAND, WritableBookContent.EMPTY);
                 minecraft.gui.setScreen(book);
                 type(book, TYPED);
                 written = ((BookEditScreenAccess) book).dungeontotems$pageText();
@@ -334,8 +337,8 @@ public final class ZombieSelfTest {
     private static void createWorld(Minecraft minecraft) {
         if (!(minecraft.gui.screen() instanceof TitleScreen || minecraft.gui.screen() instanceof CreateWorldScreen)) return;
         worldRequested = true;
-        LevelSettings settings = new LevelSettings("Zombie Self Test " + System.currentTimeMillis(), GameType.SURVIVAL, false,
-            Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
+        LevelSettings settings = new LevelSettings("Zombie Self Test " + System.currentTimeMillis(), GameType.SURVIVAL,
+            new LevelSettings.DifficultySettings(Difficulty.NORMAL, false, false), true, WorldDataConfiguration.DEFAULT);
         minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, WorldOptions.defaultWithRandomSeed(),
             registries -> registries.lookupOrThrow(Registries.WORLD_PRESET).getOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
             new TitleScreen());
@@ -371,11 +374,11 @@ public final class ZombieSelfTest {
                 clearMobs(player);
                 player.level().setBlockAndUpdate(ahead(player), Blocks.AIR.defaultBlockState());
                 server.setDifficulty(Difficulty.NORMAL, true);
-                player.level().setDayTime(MIDNIGHT); // no sunburn
+                player.level().getServer().clockManager().setTotalTicks(player.level().registryAccess().get(net.minecraft.world.clock.WorldClocks.OVERWORLD).orElseThrow(), MIDNIGHT); // no sunburn
                 player.setGameMode(GameType.SURVIVAL);
                 player.removeEffect(TotemRegistries.ZOMBIFIED);
                 player.getInventory().clearContent();
-                player.getInventory().selected = 0;
+                player.getInventory().setSelectedSlot(0);
                 step.setup().run(player);
                 player.containerMenu.broadcastChanges();
             });
@@ -391,8 +394,7 @@ public final class ZombieSelfTest {
                     player.getInventory().getItem(0), player.isUsingItem(), player.hasEffect(MobEffects.HUNGER),
                     player.getFoodData().getFoodLevel()));
             });
-            Screenshot.grab(minecraft.gameDirectory, String.format("selftest_zombie_%02d.png", index + 1),
-                minecraft.getMainRenderTarget(), message -> {});
+            Screenshot.grab(minecraft.gameDirectory, String.format("selftest_zombie_%02d.png", index + 1), minecraft.gameRenderer.mainRenderTarget(), 1, message -> {});
         }
     }
 
@@ -438,10 +440,17 @@ public final class ZombieSelfTest {
         }
     }
 
+    /** Right-clicks {@code target} as the player's own use key does. */
+    private static void interactWith(Minecraft minecraft, net.minecraft.world.entity.Entity target) {
+        if (target == null) return;
+        net.minecraft.world.phys.EntityHitResult hit = new net.minecraft.world.phys.EntityHitResult(target);
+        minecraft.gameMode.interact(minecraft.player, target, hit, InteractionHand.MAIN_HAND);
+    }
+
     /** Types {@code text} into {@code screen} key by key, through the same hooks a keyboard goes through. */
     private static void type(Screen screen, String text) {
         for (char c : text.toCharArray()) {
-            if (!ClientHooks.onScreenCharTypedPre(screen, c, 0)) screen.charTyped(c, 0);
+            if (!ClientHooks.onScreenCharTypedPre(screen, new CharacterEvent(c))) screen.charTyped(new CharacterEvent(c));
         }
     }
 
@@ -517,8 +526,8 @@ public final class ZombieSelfTest {
             Field y = MouseHandler.class.getDeclaredField("ypos");
             x.setAccessible(true);
             y.setAccessible(true);
-            x.setDouble(minecraft.mouseHandler, (screen.getGuiLeft() + slot.x + 8) * scale);
-            y.setDouble(minecraft.mouseHandler, (screen.getGuiTop() + slot.y + 8) * scale);
+            x.setDouble(minecraft.mouseHandler, (((games.brennan.dungeontotems.mixin.client.AbstractContainerScreenAccess) screen).dungeontotems$leftPos() + slot.x + 8) * scale);
+            y.setDouble(minecraft.mouseHandler, (((games.brennan.dungeontotems.mixin.client.AbstractContainerScreenAccess) screen).dungeontotems$topPos() + slot.y + 8) * scale);
         } catch (ReflectiveOperationException e) {
             DungeonTotems.LOGGER.warn("Zombie self-test couldn't move the mouse", e);
         }
@@ -526,7 +535,7 @@ public final class ZombieSelfTest {
 
     /** A left click on a slot of the open menu, sent to the server as the player's own click. */
     private static void click(Minecraft minecraft, int slot, ContainerInput type) {
-        minecraft.gameMode.handleInventoryMouseClick(minecraft.player.containerMenu.containerId, slot, 0, type, minecraft.player);
+        minecraft.gameMode.handleContainerInput(minecraft.player.containerMenu.containerId, slot, 0, type, minecraft.player);
     }
 
     private static void finish(Minecraft minecraft) {

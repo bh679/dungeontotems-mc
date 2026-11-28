@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.gametest;
 
+import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.world.entity.EntitySpawnReason;
 import com.google.gson.JsonParser;
 import net.minecraft.server.packs.resources.Resource;
@@ -316,7 +317,7 @@ public final class DungeonTotemsGameTests {
         pop(player, Curse.RESTRAINT);
         tick(player, 20);
         player.setHealth(20.0F);
-        player.invulnerableTime = 0; // the pop's own hit would otherwise swallow the doom
+        player.setInvulnerableTime(0); // the pop's own hit would otherwise swallow the doom
         openBarrel(helper, player);
         tick(player, 2);
         check(helper, player.isAlive(), "a curse can't kill you after a save");
@@ -333,7 +334,7 @@ public final class DungeonTotemsGameTests {
         player.getFoodData().setFoodLevel(10);
         player.getFoodData().setSaturation(1.0F);
         ItemStack bread = new ItemStack(Items.BREAD);
-        NeoForge.EVENT_BUS.post(new LivingEntityUseItemEvent.Start(player, bread, 32));
+        NeoForge.EVENT_BUS.post(new LivingEntityUseItemEvent.Start(player, bread, InteractionHand.MAIN_HAND, 32));
         player.getFoodData().eat(5, 6.0F); // what eating the bread did
         EventHooks.onItemUseFinish(player, bread, 0, ItemStack.EMPTY);
         check(helper, player.getFoodData().getFoodLevel() == 10, "bread should not fill you, food " + player.getFoodData().getFoodLevel());
@@ -367,7 +368,7 @@ public final class DungeonTotemsGameTests {
     public static void takingDamageKeepsTheVow(GameTestHelper helper) {
         ServerPlayer player = holding(helper, Curse.PACIFISM);
         Pig pig = helper.spawn(EntityTypes.PIG, 2, 1, 2);
-        player.invulnerableTime = 0;
+        player.setInvulnerableTime(0);
         player.hurt(player.damageSources().mobAttack(pig), 1.0F);
         tick(player, 2);
         check(helper, !player.getMainHandItem().isEmpty(), "being hurt does not break the vow");
@@ -435,7 +436,7 @@ public final class DungeonTotemsGameTests {
         Curses.apply(player, Curse.RAGE, 1, 400);
         player.setHealth(1.0F);
         overdue(player, TotemRegistries.LAST_HIT, 1);
-        player.invulnerableTime = 0;
+        player.setInvulnerableTime(0);
         tick(player, 1);
         check(helper, player.isAlive() && player.getHealth() == 1.0F, "rage after a save stops at half a heart");
         MobEffectInstance rage = player.getEffect(TotemRegistries.RAGE);
@@ -449,7 +450,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = holding(helper, Curse.RAGE);
         tick(player, HeldCurses.CHECK_TICKS);
         player.setHealth(1.0F);
-        player.invulnerableTime = 0;
+        player.setInvulnerableTime(0);
         overdue(player, TotemRegistries.LAST_HIT, 0);
         tick(player, 1);
         check(helper, player.isAlive(), "the held totem should save you from its own rage");
@@ -498,7 +499,7 @@ public final class DungeonTotemsGameTests {
         tick(player, 1);
         check(helper, player.getHealth() == 20.0F, "lonely should not hurt at Poison's rate, health " + player.getHealth());
         player.setData(TotemRegistries.LAST_GIFT, player.level().getGameTime() - timer - 50);
-        player.invulnerableTime = 0;
+        player.setInvulnerableTime(0);
         tick(player, 1);
         check(helper, player.getHealth() < 20.0F, "lonely should hurt every 50 ticks once overdue");
         helper.succeed();
@@ -590,7 +591,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         var level = helper.getLevel();
         long time = level.getOverworldClockTime();
-        level.setDayTime(18000);
+        MockPlayers.setDayTime(level, 18000);
         level.updateSkyBrightness();
         try {
             int spawned = 0;
@@ -599,7 +600,7 @@ public final class DungeonTotemsGameTests {
             }
             check(helper, spawned > 0, "a night try should spawn phantoms, even below sea level in a flat world");
         } finally {
-            level.setDayTime(time);
+            MockPlayers.setDayTime(level, time);
             level.updateSkyBrightness();
             level.getEntitiesOfClass(Phantom.class, player.getBoundingBox().inflate(64)).forEach(Phantom::discard);
         }
@@ -1076,7 +1077,7 @@ public final class DungeonTotemsGameTests {
                 if (mob.getBrain().checkMemory(MemoryModuleType.WALK_TARGET, MemoryStatus.REGISTERED)) {
                     mob.getBrain().setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(target, modifier, 0));
                 } else {
-                    mob.getNavigation().snapTo(target.x, target.y, target.z, modifier);
+                    mob.getNavigation().moveTo(target.x, target.y, target.z, modifier);
                 }
                 if (t >= STROLL_WARM_UP && last.get(i) != null) steps.get(i).add(mob.position().subtract(last.get(i)).horizontalDistance());
                 last.set(i, mob.position());
@@ -1097,7 +1098,7 @@ public final class DungeonTotemsGameTests {
                     helper.getLevel().setBlockAndUpdate(helper.absolutePos(new BlockPos(x, 59, z)), Blocks.STONE.defaultBlockState());
                 }
             }
-            forced.forEach(chunk -> helper.getLevel().setChunkForced(chunk.x, chunk.z, false));
+            forced.forEach(chunk -> helper.getLevel().setChunkForced(chunk.x(), chunk.z(), false));
             DungeonTotems.LOGGER.info("Mob gaits:\n{}", String.join("\n", rows));
             check(helper, wrong.isEmpty(), wrong.size() + " gaits off: " + String.join("; ", wrong));
             helper.succeed();
@@ -1138,7 +1139,7 @@ public final class DungeonTotemsGameTests {
     @DtGameTest
     public static void morphCommandStepsThroughForms(GameTestHelper helper) {
         ServerPlayer player = player(helper);
-        net.minecraft.commands.CommandSourceStack source = player.createCommandSourceStack().withPermission(2).withSuppressedOutput();
+        net.minecraft.commands.CommandSourceStack source = player.createCommandSourceStack().withPermission(LevelBasedPermissionSet.GAMEMASTER).withSuppressedOutput();
         net.minecraft.commands.Commands commands = helper.getLevel().getServer().getCommands();
         commands.performPrefixedCommand(source, "morph minecraft:cow");
         check(helper, Morphs.formOf(player).orElse(null) == EntityTypes.COW, "/morph cow makes a cow");
@@ -1153,7 +1154,7 @@ public final class DungeonTotemsGameTests {
         check(helper, Morphs.formOf(player).isEmpty(), "/morph off turns you back");
         commands.performPrefixedCommand(source, "morph prev");
         check(helper, Morphs.formOf(player).orElse(null) == EntityTypes.ZOMBIFIED_PIGLIN, "prev from nothing wraps to the last form");
-        commands.performPrefixedCommand(player.createCommandSourceStack().withPermission(0).withSuppressedOutput(), "morph off");
+        commands.performPrefixedCommand(player.createCommandSourceStack().withPermission(LevelBasedPermissionSet.ALL).withSuppressedOutput(), "morph off");
         check(helper, Morphs.formOf(player).isPresent(), "only ops can morph");
         helper.succeed();
     }
@@ -1373,7 +1374,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer milker = player(helper);
         Morphs.setForm(mooshroom, EntityTypes.MOOSHROOM);
         milker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BOWL));
-        NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(milker, InteractionHand.MAIN_HAND, mooshroom));
+        NeoForge.EVENT_BUS.post(new PlayerInteractEvent.EntityInteract(milker, InteractionHand.MAIN_HAND, mooshroom, mooshroom.position()));
         check(helper, milker.getMainHandItem().is(Items.MUSHROOM_STEW), "a bowl on a mooshroom should give stew");
         helper.succeed();
     }
@@ -1387,7 +1388,7 @@ public final class DungeonTotemsGameTests {
         piglin.setTarget(player);
         check(helper, piglin.getTarget() == null, "zombified piglins don't turn on their own");
         Pig pig = helper.spawn(EntityTypes.PIG, 4, 1, 2);
-        player.invulnerableTime = 0;
+        player.setInvulnerableTime(0);
         player.hurt(player.damageSources().mobAttack(pig), 1.0F);
         check(helper, piglin.getTarget() == pig, "the pack turns on whoever hurts you");
         helper.succeed();
@@ -1610,7 +1611,7 @@ public final class DungeonTotemsGameTests {
             .withParameter(LootContextParams.LAST_DAMAGE_PLAYER, killer)
             .create(LootContextParamSets.ENTITY);
         LootTable table = helper.getLevel().getServer().reloadableRegistries()
-            .getLootTable(EntityTypes.EVOKER.getDefaultLootTable());
+            .getLootTable(EntityTypes.EVOKER.getDefaultLootTable().orElseThrow());
         Set<Item> seen = new HashSet<>();
         boolean emerald = false;
         for (int roll = 0; roll < LOOT_ROLLS; roll++) {
@@ -1698,7 +1699,7 @@ public final class DungeonTotemsGameTests {
         ServerPlayer player = player(helper);
         pop(player, Curse.WEAKNESS);
         check(helper, player.getData(TotemRegistries.CURSE_TRIALS).contains("weakness"), "a pop starts a trial");
-        player.invulnerableTime = 0;
+        player.setInvulnerableTime(0);
         player.hurt(player.damageSources().generic(), LETHAL);
         check(helper, !player.isAlive() && player.getData(TotemRegistries.CURSE_TRIALS).isEmpty(), "dying ends every trial");
         helper.succeed();
@@ -1777,7 +1778,7 @@ public final class DungeonTotemsGameTests {
 
     @SuppressWarnings("removal")
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = MockPlayers.mock(helper);
         player.setGameMode(GameType.SURVIVAL);
         Vec3 at = helper.absoluteVec(new Vec3(2.5, 1, 2.5));
         player.teleportTo(at.x, at.y, at.z);
@@ -1841,7 +1842,7 @@ public final class DungeonTotemsGameTests {
     /** Pops {@code curse}'s totem on the player. */
     private static void pop(ServerPlayer player, Curse curse) {
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(TotemRegistries.TOTEMS.get(curse).get()));
-        player.invulnerableTime = 0; // vanilla ignores a second hit this soon
+        player.setInvulnerableTime(0); // vanilla ignores a second hit this soon
         player.hurt(player.damageSources().generic(), LETHAL);
     }
 

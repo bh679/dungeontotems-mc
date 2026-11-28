@@ -13,13 +13,13 @@ import snownee.jade.api.ITooltip;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.ui.ITextElement;
+import net.minecraft.client.gui.layouts.LayoutElement;
+import snownee.jade.api.ui.BoxElement;
+import snownee.jade.api.ui.JadeUI;
+import snownee.jade.api.ui.TextElement;
 import snownee.jade.impl.Tooltip;
-import snownee.jade.impl.ui.TextElement;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 /**
@@ -41,38 +41,56 @@ public final class ZombieJadePlugin implements IWailaPlugin {
         registration.addTooltipCollectedCallback(AFTER_EVERYONE, ZombieJadePlugin::mumble);
     }
 
-    private static void mumble(IBoxElement box, Accessor<?> accessor) {
+    private static void mumble(BoxElement box, Accessor<?> accessor) {
         if (!ZombieReading.cantRead(accessor.getPlayer())) return;
         mumble(box.getTooltip(), seedOf(accessor), new int[] {0});
     }
 
     /** Swaps every text element for a mumble; {@code line} counts lines across nested boxes. */
-    private static void mumble(ITooltip tooltip, int seed, int[] line) {
-        for (int i = 0; i < tooltip.size(); i++) {
+    private static void mumble(Tooltip tooltip, int seed, int[] line) {
+        boolean changed = false;
+        for (Tooltip.Line row : tooltip.lines) {
+            List<LayoutElement> elements = row.elements();
             boolean hadText = false;
-            for (IElement.Align align : IElement.Align.VALUES) {
-                List<IElement> elements = tooltip.get(i, align);
-                for (int e = 0; e < elements.size(); e++) {
-                    IElement element = elements.get(e);
-                    if (element instanceof IBoxElement nested) {
-                        mumble(nested.getTooltip(), seed, line);
-                    } else if (element instanceof ITextElement) {
-                        Component text = ZombieGibberish.line(seed, line[0]).withStyle(styleOf(element));
-                        elements.set(e, IElementHelper.get().text(text));
-                        hadText = true;
-                    }
+            for (int e = 0; e < elements.size(); e++) {
+                LayoutElement element = elements.get(e);
+                if (element instanceof BoxElement nested) {
+                    mumble(nested.getTooltip(), seed, line);
+                } else if (element instanceof TextElement text) {
+                    Component mumble = ZombieGibberish.line(seed, line[0]).withStyle(styleOf(text));
+                    elements.set(e, JadeUI.text(mumble));
+                    hadText = true;
                 }
             }
             if (hadText) {
                 line[0]++;
-                // Jade caches a line's width; re-measure it for the new words, or they run past the box.
-                if (tooltip instanceof Tooltip impl) impl.lines.get(i).markDirty();
+                changed = true;
             }
+        }
+        // Jade caches the layout; re-measure it for the new words, or they run past the box.
+        if (changed) tooltip.isDirty = true;
+    }
+
+    /** Jade 26.x keeps a text element's component in a protected field; read once, by reflection. */
+    private static final Field TEXT = textField();
+
+    private static Field textField() {
+        try {
+            Field field = Class.forName("snownee.jade.impl.ui.TextElementImpl").getDeclaredField("text");
+            field.setAccessible(true);
+            return field;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return null;
         }
     }
 
-    private static Style styleOf(IElement element) {
-        return element instanceof TextElement text && text.text instanceof Component component ? component.getStyle() : Style.EMPTY;
+    private static Style styleOf(TextElement element) {
+        if (TEXT == null || !TEXT.getDeclaringClass().isInstance(element)) return Style.EMPTY;
+        try {
+            return TEXT.get(element) instanceof Component component ? component.getStyle() : Style.EMPTY;
+        } catch (IllegalAccessException e) {
+            return Style.EMPTY;
+        }
     }
 
     /** A block reads by its kind; a mob by itself, so two zombies mumble differently. */
