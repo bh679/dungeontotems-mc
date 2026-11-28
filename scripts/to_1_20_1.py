@@ -5,6 +5,8 @@ Run after copying data from main (for example output of make_advancements.py) in
 forge/src/main/resources/data. Idempotent: already-converted files are left alone.
 
 What changes between the two versions:
+  - folders back to 1.20.1's plural names (advancements, structures, tags/items, tags/entity_types);
+    the morph_forms data map moves to data/dungeontotems/morph_forms/; neoforge/ -> forge/
   - neoforge:conditions -> conditions (Forge's ConditionalAdvancement key)
   - advancement icons: {"id": x} -> {"item": x}
   - neoforge:loot_table_id -> forge:loot_table_id
@@ -21,6 +23,32 @@ MISSING_MOBS = {"minecraft:armadillo", "minecraft:breeze", "minecraft:bogged", "
 
 def write(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n")
+
+
+# main (1.21.1) folder -> 1.20.1 folder, under data/
+FOLDERS = {
+    "dungeontotems/advancement": "dungeontotems/advancements",
+    "dungeontotems/structure": "dungeontotems/structures",
+    "dungeontotems/tags/item": "dungeontotems/tags/items",
+    "dungeontotems/tags/entity_type": "dungeontotems/tags/entity_types",
+    "dungeontotems/data_maps/entity_type": "dungeontotems/morph_forms",
+    "neoforge/loot_modifiers": "forge/loot_modifiers",
+}
+
+
+def folders():
+    """Moves files from main's folder names into 1.20.1's (a later copy from main overwrites)."""
+    for old, new in FOLDERS.items():
+        src, dst = DATA / old, DATA / new
+        if not src.is_dir():
+            continue
+        dst.mkdir(parents=True, exist_ok=True)
+        for f in src.iterdir():
+            f.replace(dst / f.name)
+        src.rmdir()
+    for empty in (DATA / "dungeontotems/data_maps", DATA / "neoforge"):
+        if empty.is_dir() and not any(empty.iterdir()):
+            empty.rmdir()
 
 
 def advancements():
@@ -53,6 +81,7 @@ def loot_modifiers():
 
 
 def main():
+    folders()
     advancements()
     morph_forms()
     loot_modifiers()

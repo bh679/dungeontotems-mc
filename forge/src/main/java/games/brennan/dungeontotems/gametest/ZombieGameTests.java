@@ -646,7 +646,7 @@ public final class ZombieGameTests {
 
     @SuppressWarnings("removal")
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = MockPlayers.create(helper);
         player.setGameMode(GameType.SURVIVAL);
         Vec3 at = helper.absoluteVec(new Vec3(2.5, 1, 2.5));
         player.teleportTo(at.x, at.y, at.z);

@@ -90,7 +90,9 @@ public final class TotemNetwork {
     }
 
     public static void sendTo(ServerPlayer player, TotemPayload payload) {
-        if (player.connection == null || player.connection.connection == null) return;
+        // A GameTest mock player's connection has no netty channel, and Forge reads it to check ours.
+        if (player.connection == null || player.connection.connection == null
+            || player.connection.connection.channel() == null) return;
         if (!CHANNEL.isRemotePresent(player.connection.connection)) return;
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), payload);
     }
