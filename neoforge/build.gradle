@@ -52,6 +52,7 @@ neoForge {
             systemProperty 'dungeontotems.selftest.forms', System.getProperty('forms', '')
             systemProperty 'dungeontotems.selftest.advancements', System.getProperty('advancements', '')
             systemProperty 'dungeontotems.selftest.stacking', System.getProperty('stacking', '')
+            systemProperty 'dungeontotems.selftest.pop', System.getProperty('pop', '') // 26.3 line: screenshots totem pops
             systemProperty 'dungeontotems.selftest.zombie', System.getProperty('zombie', '') // add -PwithJade to see Jade's panel
             programArguments.addAll '--quickPlaySingleplayer', 'New World'
         }

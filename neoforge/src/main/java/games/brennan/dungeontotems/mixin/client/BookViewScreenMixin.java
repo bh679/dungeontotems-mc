@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(BookViewScreen.class)
 public abstract class BookViewScreenMixin {
 
-    @WrapOperation(method = "extractRenderState", at = @At(value = "INVOKE",
+    @WrapOperation(method = "visitText", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/screens/inventory/BookViewScreen$BookAccess;getPage(I)Lnet/minecraft/network/chat/Component;"))
     private Component dungeontotems$zombieCantRead(BookViewScreen.BookAccess book, int index, Operation<Component> original) {
         Component page = original.call(book, index);
