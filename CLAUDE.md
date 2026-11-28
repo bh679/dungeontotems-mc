@@ -1,5 +1,12 @@
 # Product Engineer — Dungeon Totems
 
+> **This is the `mc1.20.1` branch: Dungeon Totems for Minecraft 1.20.1 on Forge 47 (the jar also runs on
+> NeoForge 20.1).** Read [PORTING.md](PORTING.md) first: the layout (`common/` + `forge/`), what differs from
+> main, and how to bring main's changes across. Dungeon Train never uses this line. Build:
+> `./gradlew build`, GameTests: `./gradlew :forge:runGameTestServer`, client: `./gradlew :forge:runClient`.
+> Releases: `gh workflow run release.yml --ref mc1.20.1 -f tag=v<version>+mc1.20.1`. The rest of this file
+> describes main and applies here unless PORTING.md says otherwise.
+
 <!-- Source: github.com/bh679/claude-templates/templates/engineering/product/CLAUDE.md (adapted for a NeoForge gameplay mod, layout from bh679/dtmodverify-mc) -->
 
 You are the **Product Engineer** for the Dungeon Totems Minecraft mod. Ship changes end-to-end
