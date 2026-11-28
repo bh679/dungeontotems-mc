@@ -32,7 +32,8 @@
     "client.KeyboardHandlerHooksMixin",
     "client.LivingEntityRendererHooksMixin",
     "client.MinecraftHooksMixin",
-    "client.MultiPlayerGameModeHooksMixin"
+    "client.MultiPlayerGameModeHooksMixin",
+    "client.RecipeBookScreenForegroundMixin"
   ],
   "injectors": {
     "defaultRequire": 1

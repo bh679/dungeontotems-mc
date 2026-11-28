@@ -32,10 +32,12 @@ loom {
         useLegacyMixinAp = false
     }
     runs {
+        // ./gradlew :fabric:runClient [-Djoin=localhost:25599]: -Djoin joins a server straight away.
         client {
             client()
             property 'dungeontotems.advancements', 'true' // dev runs load the advancement tab before launch
             runDir 'run'
+            if (System.getProperty('join')) programArgs '--quickPlayMultiplayer', System.getProperty('join')
         }
         server {
             server()
@@ -56,6 +58,7 @@ loom {
             name 'Self Test'
             runDir 'run-selftest'
             property 'dungeontotems.selftest', 'true'
+            property 'dungeontotems.mixinaudit', System.getProperty('mixinaudit', 'false') // load every mixin target at start
             property 'dungeontotems.advancements', 'true'
             property 'dungeontotems.selftest.forms', System.getProperty('forms', '')
             property 'dungeontotems.selftest.advancements', System.getProperty('advancements', '')

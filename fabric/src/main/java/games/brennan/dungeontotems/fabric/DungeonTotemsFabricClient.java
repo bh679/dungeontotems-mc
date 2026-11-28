@@ -25,6 +25,8 @@ public final class DungeonTotemsFabricClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // -Dmixinaudit=true on runSelfTest: load every mixin target now, so a missed target fails at once.
+        if (Boolean.getBoolean("dungeontotems.mixinaudit")) org.spongepowered.asm.mixin.MixinEnvironment.getCurrentEnvironment().audit();
         ClientListeners.register();
         for (FabricNetwork.ClientHandler<?> handler : FabricNetwork.clientHandlers()) receive(handler);
         ClientTickEvents.END_CLIENT_TICK.register(client -> DtClientEvents.TICK.post(new ClientEvents.Tick()));

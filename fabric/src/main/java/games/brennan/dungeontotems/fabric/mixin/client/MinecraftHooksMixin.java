@@ -25,7 +25,7 @@ public abstract class MinecraftHooksMixin {
 
     @Shadow @Nullable public LocalPlayer player;
 
-    @Inject(method = "startAttack", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getAttackAnimation()Lnet/minecraft/world/item/SwingAnimation;"), cancellable = true)
+    @Inject(method = "startAttack", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getAttackAnimation()Lnet/minecraft/world/item/component/SwingAnimation;"), cancellable = true)
     private void dungeontotems$attackKey(CallbackInfoReturnable<Boolean> cir, @Local(name = "heldItem") ItemStack heldItem) {
         ClientEvents.InteractionKey event = DtClientEvents.INTERACTION_KEY.post(new ClientEvents.InteractionKey(false, InteractionHand.MAIN_HAND));
         if (!event.isCanceled()) return;
@@ -33,7 +33,7 @@ public abstract class MinecraftHooksMixin {
         cir.setReturnValue(false);
     }
 
-    @Inject(method = "startUseItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getInteractAnimation()Lnet/minecraft/world/item/SwingAnimation;"), cancellable = true)
+    @Inject(method = "startUseItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getInteractAnimation()Lnet/minecraft/world/item/component/SwingAnimation;"), cancellable = true)
     private void dungeontotems$useKey(CallbackInfo ci, @Local(name = "hand") InteractionHand hand, @Local(name = "heldItem") ItemStack heldItem) {
         ClientEvents.InteractionKey event = DtClientEvents.INTERACTION_KEY.post(new ClientEvents.InteractionKey(true, hand));
         if (!event.isCanceled()) return;

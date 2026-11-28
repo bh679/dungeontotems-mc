@@ -17,7 +17,8 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(Hud.class)
 public abstract class HudMixin {
 
-    @WrapOperation(method = "extractSelectedItemName(Lnet/minecraft/client/gui/GuiGraphicsExtractor;I)V", at = @At(value = "INVOKE",
+    // Every overload ("*"): NeoForge adds a (graphics, yShift) overload that does the drawing; vanilla (Fabric) has one.
+    @WrapOperation(method = "extractSelectedItemName*", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/item/ItemStack;getHoverName()Lnet/minecraft/network/chat/Component;"))
     private Component dungeontotems$zombieCantRead(ItemStack stack, Operation<Component> original) {
         Component name = original.call(stack);

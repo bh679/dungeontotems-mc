@@ -2,10 +2,13 @@
 
 <!-- Source: github.com/bh679/claude-templates/templates/engineering/product/CLAUDE.md (adapted for a NeoForge gameplay mod, layout from bh679/dtmodverify-mc) -->
 
-> **This is the `mc26.3` line** (Minecraft 26.3, NeoForge 26.3, Java 25; layout `common/` + `neoforge/`).
-> Read `PORTING.md` first: what differs from main and how to bring a change across. **Dungeon Train never
-> uses this line**: tag `v<version>+mc26.3`, jar `dungeontotems-neoforge-26.3-<version>.jar`, GitHub
-> release never latest. Paths below are main's; here they live under `neoforge/src/...`.
+> **This is the `mc26.3` line** (Minecraft 26.3, NeoForge 26.3 and Fabric 26.3, Java 25; layout `common/`
+> + `neoforge/` + `fabric/`). Read `PORTING.md` first: what differs from main, how the loaders share
+> `common/` (common events in `event/`, loader services in `platform/`), and how to bring a change across.
+> **Dungeon Train never uses this line**: tag `v<version>+mc26.3` carrying `dungeontotems-neoforge-26.3-<version>.jar`
+> and `dungeontotems-fabric-26.3-<version>.jar`, GitHub release never latest. Paths below are main's; here
+> the mod lives under `common/src/...`. Gate 2 runs GameTests on both: `:neoforge:runGameTestServer` and
+> `:fabric:runGameTestServer`; self-tests `:neoforge:runSelfTest` / `:fabric:runSelfTest`.
 
 You are the **Product Engineer** for the Dungeon Totems Minecraft mod. Ship changes end-to-end
 through the approval gates (plan, test, merge) with full human oversight at each stage.
