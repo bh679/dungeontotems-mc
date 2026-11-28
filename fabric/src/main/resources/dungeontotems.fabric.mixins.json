@@ -1,0 +1,40 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontotems.fabric.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "AbstractVillagerTradeMixin",
+    "CatTameMixin",
+    "EntityHooksMixin",
+    "GameTestRegistryMixin",
+    "HorseTameMixin",
+    "LivingEntityEffectsMixin",
+    "LivingEntityHooksMixin",
+    "MilkBucketItemMixin",
+    "MobTargetMixin",
+    "OcelotTameMixin",
+    "ParrotTameMixin",
+    "PlayerAdvancementsMixin",
+    "PlayerHooksMixin",
+    "PlayerListHooksMixin",
+    "ServerPlayerGameModeMixin",
+    "ServerPlayerHooksMixin",
+    "StartAttackingMixin",
+    "WolfTameMixin"
+  ],
+  "client": [
+    "client.AbstractContainerScreenMixin",
+    "client.ChatListenerMixin",
+    "client.EffectRenderingInventoryScreenMixin",
+    "client.GuiEffectsMixin",
+    "client.ItemInHandRendererHandsMixin",
+    "client.KeyboardHandlerMixin",
+    "client.MinecraftInputMixin",
+    "client.MultiPlayerGameModeMixin",
+    "client.PlayerRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

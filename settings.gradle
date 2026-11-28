@@ -12,8 +12,9 @@ plugins {
 }
 
 // Dungeon Totems, Minecraft 1.20.1 line (MultiLoader layout).
-// common/ is vanilla-only code; forge/ is the Forge 47 mod (its jar also runs on NeoForge 20.1).
-// A fabric/ project joins later. Dungeon Train never uses this line.
+// common/ is the mod itself, loader-free; forge/ is the Forge 47 jar (it also runs on NeoForge 20.1);
+// fabric/ is the Fabric jar. Dungeon Train never uses this line.
 rootProject.name = 'dungeontotems'
 include 'common'
 include 'forge'
+include 'fabric'

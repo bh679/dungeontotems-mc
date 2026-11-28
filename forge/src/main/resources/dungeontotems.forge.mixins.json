@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "refmap": "dungeontotems.refmap.json",
+  "package": "games.brennan.dungeontotems.forge.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "ForgeGameTestHooksMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

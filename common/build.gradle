@@ -1,5 +1,8 @@
-// Vanilla-only code shared by every loader of the 1.20.1 line. Compiled against plain Minecraft:
-// nothing here may import net.minecraftforge or net.fabricmc.
+// Code shared by every loader of the 1.20.1 line: the whole mod but its loader seams. Compiled against plain
+// Minecraft (no loader): nothing here may import net.minecraftforge or net.fabricmc. What it needs from a
+// loader goes through platform/Services (ServiceLoader) and the platform/event bus. Its sources and
+// resources compile into each loader's jar (forge/, fabric/); this project itself only checks that and
+// runs the unit tests.
 plugins {
     id 'net.neoforged.moddev.legacyforge'
 }
@@ -15,4 +18,20 @@ legacyForge {
 dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.5'
     compileOnly 'io.github.llamalad7:mixinextras-common:0.4.1'
+
+    // Jade, optional: compile-only for compat/jade/ZombieJadePlugin (Jade's API is the same on both loaders).
+    modCompileOnly "maven.modrinth:jade:${jade_version}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+    testLogging { events 'passed', 'skipped', 'failed' }
+}
+
+// Unit tests are pure logic on Minecraft types (no game running): the test classpath takes the main one.
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.compileClasspath

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": ["${mod_authors}"],
+  "contact": {
+    "homepage": "https://github.com/bh679/dungeontotems-mc",
+    "sources": "https://github.com/bh679/dungeontotems-mc",
+    "issues": "https://github.com/bh679/dungeontotems-mc/issues"
+  },
+  "license": "${mod_license}",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["games.brennan.dungeontotems.fabric.DungeonTotemsFabric"],
+    "client": ["games.brennan.dungeontotems.fabric.DungeonTotemsFabricClient"],
+    "fabric-gametest": [
+      "games.brennan.dungeontotems.gametest.DungeonTotemsGameTests",
+      "games.brennan.dungeontotems.gametest.StackingGameTests",
+      "games.brennan.dungeontotems.gametest.ZombieGameTests",
+      "games.brennan.dungeontotems.gametest.LoaderHookGameTests"
+    ],
+    "jade": ["games.brennan.dungeontotems.compat.jade.ZombieJadePlugin"]
+  },
+  "mixins": [
+    "dungeontotems.mixins.json",
+    "dungeontotems.fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_min}",
+    "minecraft": "${minecraft_version}",
+    "java": ">=17",
+    "fabric-api": ">=0.92.6"
+  }
+}
