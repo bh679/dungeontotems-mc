@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.NoteBlock;
 import net.minecraft.world.level.block.RepeaterBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
@@ -118,9 +119,10 @@ public final class FormUse {
     }
 
     /** Hurt, a squid inks, as the mob does. */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST) // main's LivingDamageEvent.Post: run after anything that changes or cancels the hit
     public static void onHurtAfter(LivingDamageEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || event.getAmount() <= 0.0F || !player.isAlive()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.getAmount() <= 0.0F
+            || player.getHealth() - event.getAmount() <= 0.0F) return; // Forge fires before health drops: a killing blow doesn't ink
         EntityType<?> form = Morphs.formOf(player).orElse(null);
         if (form == EntityType.SQUID || form == EntityType.GLOW_SQUID) {
             WaterMoves.ink(player);

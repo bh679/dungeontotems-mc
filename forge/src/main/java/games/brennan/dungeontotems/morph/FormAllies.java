@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -83,7 +84,7 @@ public final class FormAllies {
     }
 
     /** {@code ZombifiedPiglin#alertOthers}: hurt one of the pack and the pack comes for you. */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST) // main's LivingDamageEvent.Post: run after anything that changes or cancels the hit
     public static void onHurt(LivingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !is(player, EntityType.ZOMBIFIED_PIGLIN)) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker) || attacker == player) return;
