@@ -21,8 +21,8 @@ from pixel import Vanilla
 from totems import TOTEMS, pig_head_alternate
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ITEMS = ROOT / "src/main/resources/assets/dungeontotems/textures/item"
-EFFECTS = ROOT / "src/main/resources/assets/dungeontotems/textures/mob_effect"
+ITEMS = ROOT / "neoforge/src/main/resources/assets/dungeontotems/textures/item"
+EFFECTS = ROOT / "neoforge/src/main/resources/assets/dungeontotems/textures/mob_effect"
 ALTERNATES = ROOT / "art/alternates"
 
 

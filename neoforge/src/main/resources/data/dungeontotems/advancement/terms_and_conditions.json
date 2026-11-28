@@ -18,7 +18,7 @@
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false,
-    "background": "minecraft:textures/block/crying_obsidian.png"
+    "background": "minecraft:block/crying_obsidian"
   },
   "criteria": {
     "done": {

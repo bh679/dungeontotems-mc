@@ -13,7 +13,7 @@ free: each curse is its own criterion and requirement, and vanilla counts them.
 import json
 from pathlib import Path
 
-RES = Path(__file__).resolve().parent.parent / "src/main/resources"
+RES = Path(__file__).resolve().parent.parent / "neoforge/src/main/resources"  # 26.3 line layout
 OUT = RES / "data/dungeontotems/advancement"
 LANG = RES / "assets/dungeontotems/lang/en_us.json"
 FORMS = RES / "data/dungeontotems/data_maps/entity_type/morph_forms.json"
@@ -90,7 +90,7 @@ def main():
                    "description": {"translate": key + ".description"}, "frame": frame,
                    "show_toast": True, "announce_to_chat": True, "hidden": False}
         if parent is None:
-            display["background"] = "minecraft:textures/block/crying_obsidian.png"
+            display["background"] = "minecraft:block/crying_obsidian"
         # Off until launch: advancement/TotemAdvancements.LAUNCHED.
         advancement = {"neoforge:conditions": [{"type": "dungeontotems:advancements_launched"}]}
         if parent:
