@@ -1,129 +1,26 @@
-// Balanced Totems: Forge 1.20.1 gameplay mod (branch mc1.20.1; main is NeoForge 1.21.1).
-//
-// Totems of Undying that save you like the vanilla one but leave a curse behind
-// (weakness, fatigue, heartbreak, blindness, morphing, zombified), plus a Void
-// Totem. Dungeon Train bundles it (jar-in-jar) and points the Void Totem at the train.
-
+// Dungeon Totems, Minecraft 1.20.1 line. See settings.gradle.
 plugins {
-    id 'java-library'
-    id 'maven-publish'
-    id 'idea'
-    id 'net.neoforged.moddev.legacyforge' version '2.0.141'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.149' apply false
 }
 
 tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version
-group = mod_group_id
-
-// Jar name: build/libs/balancedtotems-forge-<version>+mc1.20.1.jar.
-base {
-    archivesName = "${mod_id}-forge"
-}
-version = "${mod_version}+mc${minecraft_version}"
-
-// Minecraft 1.20.1 runs on Java 17.
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-sourceSets.main.resources {
-    exclude '**/CLAUDE.md'   // authoring docs — never a MC resource
-}
-
-repositories {
-    mavenCentral()
-}
-
-legacyForge {
-    version = "${minecraft_version}-${forge_version}"
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
+subprojects {
+    apply plugin: 'java-library'
+    version = mod_version
+    group = mod_group_id
+    java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-Xmaxerrs', '5000']
     }
-
-    runs {
-        client {
-            client()
-            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+    repositories {
+        mavenCentral()
+        exclusiveContent {
+            forRepository { maven { url = 'https://api.modrinth.com/maven' } }
+            filter { includeGroup 'maven.modrinth' }
         }
-
-        server {
-            server()
-            programArgument '--nogui'
-        }
-
-        // ./gradlew runGameTestServer: runs gametest/BalancedTotemsGameTests and exits.
-        gameTestServer {
-            type = 'gameTestServer'
-            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-        }
-
-        configureEach {
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            logLevel = org.slf4j.event.Level.DEBUG
-        }
-    }
-
-    mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
-        }
-    }
-
-}
-
-dependencies {
-    // Unit tests — JUnit 5 Jupiter (pure-logic only; no live ModList).
-    testImplementation platform('org.junit:junit-bom:5.10.2')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-// ModDevGradle's legacy Forge plugin has no unitTest support: put Minecraft on the test classpath
-// directly. Unit tests stay pure logic, so nothing needs the game running.
-sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
-sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
-
-tasks.named('test', Test).configure {
-    useJUnitPlatform()
-    testLogging {
-        events 'passed', 'skipped', 'failed'
-    }
-}
-
-// Generate mods.toml from its template.
-tasks.register('generateModMetadata', ProcessResources) {
-    var replaceProperties = [
-        minecraft_version       : minecraft_version,
-        minecraft_version_range : minecraft_version_range,
-        forge_version           : forge_version,
-        loader_version_range    : loader_version_range,
-        mod_id                  : mod_id,
-        mod_name                : mod_name,
-        mod_license             : mod_license,
-        mod_version             : mod_version,
-        mod_authors             : mod_authors,
-        mod_description         : mod_description,
-    ]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    from 'src/main/templates'
-    into "${layout.buildDirectory.get()}/generated/sources/modMetadata"
-}
-sourceSets.main.resources.srcDir tasks.named('generateModMetadata')
-legacyForge.ideSyncTask tasks.named('generateModMetadata')
-
-tasks.named('jar', Jar).configure {
-    manifest {
-        attributes([
-            'Specification-Title'    : mod_id,
-            'Specification-Vendor'   : mod_authors,
-            'Specification-Version'  : '1',
-            'Implementation-Title'   : project.name,
-            'Implementation-Version' : project.jar.archiveVersion,
-            'Implementation-Vendor'  : mod_authors,
-        ])
     }
 }

@@ -1,0 +1,33 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "refmap": "dungeontotems.refmap.json",
+  "package": "games.brennan.dungeontotems.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "EntityDataMixin",
+    "ServerPlayerDataMixin",
+    "MobEffectInstanceMixin",
+    "LivingEntityTotemMixin",
+    "EntityMixin",
+    "LivingEntityMixin",
+    "PlayerMixin",
+    "MobInvoker",
+    "InventoryMixin",
+    "AbstractContainerMenuMixin",
+    "SlotMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "client.AdvancementWidgetMixin",
+    "client.BookEditScreenAccess",
+    "client.BookViewScreenMixin",
+    "client.EffectRenderingInventoryScreenMixin",
+    "client.GuiMixin",
+    "client.ItemInHandRendererMixin",
+    "client.ItemInHandRendererInvoker",
+    "client.ModelPartAccessor"
+  ]
+}
