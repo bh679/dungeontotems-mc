@@ -45,7 +45,7 @@ public final class FormFlop {
         if (lift == null || player.isInWater() || !player.onGround()) return;
         RandomSource random = player.getRandom();
         Vec3 flop;
-        if (player.input.jumping) {
+        if (player.input.keyPresses.jump()) {
             Vec3 look = player.getLookAngle().multiply(1.0, 0.0, 1.0).normalize();
             flop = look.scale(AIMED_FLOP);
         } else {
@@ -59,7 +59,7 @@ public final class FormFlop {
     /** A rabbit on the move hops as it lands; a jump is still its own, higher leap. */
     private static void hop(LocalPlayer player) {
         boolean moving = player.input.getMoveVector().lengthSquared() > 0.0F;
-        if (!moving || player.input.jumping || !player.onGround() || player.isInWater()) return;
+        if (!moving || player.input.keyPresses.jump() || !player.onGround() || player.isInWater()) return;
         Vec3 motion = player.getDeltaMovement();
         player.setDeltaMovement(motion.x, RABBIT_HOP, motion.z);
         player.setOnGround(false);

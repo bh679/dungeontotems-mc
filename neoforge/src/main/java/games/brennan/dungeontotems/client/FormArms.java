@@ -4,11 +4,11 @@ import games.brennan.dungeontotems.mixin.client.ModelPartAccessor;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
-import net.minecraft.client.model.HierarchicalModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.geom.PartPose;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -53,39 +53,45 @@ public final class FormArms {
         return drawn;
     }
 
-    /** Draws the form's arm on {@code side}, posed as vanilla poses a player's empty hand. */
-    static void render(Player player, HumanoidArm side, PoseStack pose, MultiBufferSource buffers, int light) {
+    /**
+     * Submits the form's arm on {@code side}, posed as vanilla poses a player's empty hand. 26.x submits
+     * parts for drawing later, so the arm is left hung down: the stand-in's model resets every part's pose
+     * (scale included) at the start of its next animation.
+     */
+    static void render(Player player, HumanoidArm side, PoseStack pose, SubmitNodeCollector collector, int light) {
         LivingEntity standIn = MorphRenderer.standInFor(player);
         if (standIn == null || standIn.isInvisible()) return;
-        EntityRenderer<? super LivingEntity> renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn);
-        EntityModel<?> model = model(standIn);
+        if (!(renderer(standIn) instanceof LivingEntityRenderer<?, ?, ?> living)) return;
+        EntityModel<?> model = living.getModel();
         ModelPart arm = arm(model, side);
         if (arm == null) return;
-        Identifier texture = renderer.getTextureLocation(standIn);
-        PartPose saved = arm.storePose();
-        float xScale = arm.xScale, yScale = arm.yScale, zScale = arm.zScale;
-        try {
-            hangDown(arm, side);
-            arm.render(pose, buffers.getBuffer(model.renderType(texture)), light, OverlayTexture.NO_OVERLAY);
-            drawn++;
-        } finally {
-            arm.loadPose(saved);
-            arm.xScale = xScale;
-            arm.yScale = yScale;
-            arm.zScale = zScale;
-        }
+        Identifier texture = texture(living, standIn);
+        if (texture == null) return;
+        hangDown(arm, side);
+        collector.submitModelPart(arm, pose, model.renderType(texture), light, OverlayTexture.NO_OVERLAY, null);
+        drawn++;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Nullable
+    private static Identifier texture(LivingEntityRenderer living, LivingEntity standIn) {
+        EntityRenderState state = Minecraft.getInstance().getEntityRenderDispatcher().extractEntity(standIn, 1.0F);
+        return state instanceof LivingEntityRenderState livingState ? living.getTextureLocation(livingState) : null;
+    }
+
+    private static EntityRenderer<?, ?> renderer(LivingEntity standIn) {
+        return Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn);
     }
 
     @Nullable
     private static EntityModel<?> model(LivingEntity standIn) {
-        EntityRenderer<?> renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(standIn);
-        return renderer instanceof LivingEntityRenderer<?, ?> living ? living.getModel() : null;
+        return renderer(standIn) instanceof LivingEntityRenderer<?, ?, ?> living ? living.getModel() : null;
     }
 
     @Nullable
     private static ModelPart arm(@Nullable EntityModel<?> model, HumanoidArm side) {
         if (model instanceof HumanoidModel<?> humanoid) return side == HumanoidArm.RIGHT ? humanoid.rightArm : humanoid.leftArm;
-        if (model instanceof HierarchicalModel<?> hierarchical) return find(hierarchical.root(), side == HumanoidArm.RIGHT ? RIGHT_ARM : LEFT_ARM);
+        if (model != null) return find(model.root(), side == HumanoidArm.RIGHT ? RIGHT_ARM : LEFT_ARM);
         return null;
     }
 

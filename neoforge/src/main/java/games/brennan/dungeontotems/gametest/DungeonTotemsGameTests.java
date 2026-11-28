@@ -1751,7 +1751,7 @@ public final class DungeonTotemsGameTests {
     public static void greatAndSmallHasEveryForm(GameTestHelper helper) {
         Set<String> criteria = helper.getLevel().getServer().getAdvancements().get(DungeonTotems.id("great_and_small")).value().criteria().keySet();
         Set<String> forms = new HashSet<>();
-        BuiltInRegistries.ENTITY_TYPE.getDataMap(MorphForm.DATA_MAP).keySet().forEach(key -> forms.add(key.location().toString()));
+        BuiltInRegistries.ENTITY_TYPE.getDataMap(MorphForm.DATA_MAP).keySet().forEach(key -> forms.add(key.identifier().toString()));
         check(helper, criteria.equals(forms), "Great and Small should list every morph form (run scripts/make_advancements.py): "
             + "missing " + forms.stream().filter(f -> !criteria.contains(f)).toList());
         ServerPlayer player = player(helper);

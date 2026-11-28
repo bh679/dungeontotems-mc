@@ -7,7 +7,11 @@ import games.brennan.dungeontotems.morph.Morphs;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -60,22 +64,42 @@ public final class MorphRenderer {
         DUMMIES.remove(player.getUUID());
     }
 
+    /**
+     * 26.x draws from render states: the player's submit is cancelled, and the stand-in is extracted to its
+     * own state and submitted in its place.
+     */
     @SubscribeEvent
-    @SuppressWarnings("unchecked")
-    public static void onRenderPlayer(RenderPlayerEvent.Pre event) {
-        Player player = event.getEntity();
+    public static void onRenderPlayer(RenderPlayerEvent.Pre<?> event) {
+        AvatarRenderState playerState = event.getRenderState();
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || !(level.getEntity(playerState.id) instanceof Player player)) return;
         LivingEntity dummy = dummyFor(player);
         if (dummy == null) return;
 
         event.setCanceled(true);
         poseLike(dummy, player);
-        EntityRenderer<Entity> renderer =
-            (EntityRenderer<Entity>) Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(dummy);
+        float partialTick = event.getPartialTick();
+        EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+        EntityRenderState formState = dispatcher.extractEntity(dummy, partialTick);
+        if (formState instanceof LivingEntityRenderState living && inPreview(playerState, player, partialTick)) {
+            // The inventory preview turns the player's state, not the player: the form follows the state there.
+            living.bodyRot = playerState.bodyRot;
+            living.yRot = playerState.yRot;
+            living.xRot = playerState.xRot;
+        }
+        formState.lightCoords = playerState.lightCoords;
+        formState.outlineColor = playerState.outlineColor;
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
-        tilt(pose, dummy, player, event.getPartialTick());
-        renderer.render(dummy, player.getYRot(), event.getPartialTick(), pose, event.getMultiBufferSource(), event.getPackedLight());
+        tilt(pose, dummy, player, partialTick);
+        CameraRenderState camera = Minecraft.getInstance().gameRenderer.gameRenderState().levelRenderState.cameraRenderState;
+        dispatcher.getRenderer(formState).submit(formState, pose, event.getSubmitNodeCollector(), camera);
         pose.popPose();
+    }
+
+    /** True when this player state was turned away from the player's own body: the inventory's preview. */
+    private static boolean inPreview(AvatarRenderState state, Player player, float partialTick) {
+        return Math.abs(Mth.wrapDegrees(state.bodyRot - Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot))) > 0.01F;
     }
 
     /** An attack's whole-body tilt ({@link FormAnimator#tiltDegrees}), forward about the axis across the body. */
@@ -85,7 +109,7 @@ public final class MorphRenderer {
         float pivot = FormAnimator.tiltsAboutMiddle(player.getUUID()) ? dummy.getBbHeight() / 2.0F : 0.0F;
         float yaw = Mth.lerp(partialTick, dummy.yBodyRotO, dummy.yBodyRot) * Mth.DEG_TO_RAD;
         pose.translate(0.0F, pivot, 0.0F);
-        pose.mulPose(new Quaternionf().rotateAxis(degrees * Mth.DEG_TO_RAD, Mth.cos(yaw), 0.0F, Mth.sin(yaw))); // nose toward the facing
+        pose.rotate(new Quaternionf().rotateAxis(degrees * Mth.DEG_TO_RAD, Mth.cos(yaw), 0.0F, Mth.sin(yaw))); // nose toward the facing
         pose.translate(0.0F, -pivot, 0.0F);
     }
 
@@ -105,11 +129,11 @@ public final class MorphRenderer {
 
     @SubscribeEvent
     public static void onRenderArm(RenderArmEvent event) {
-        Player player = event.getPlayer();
-        if (Morphs.formOf(player).isEmpty()) return;
+        Player player = Minecraft.getInstance().player; // first-person arms are only ever the local player's
+        if (player == null || Morphs.formOf(player).isEmpty()) return;
         event.setCanceled(true);
         if (FormArms.hasArms(player)) {
-            FormArms.render(player, event.getArm(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
+            FormArms.render(player, event.getArm(), event.getPoseStack(), event.getSubmitNodeCollector(), event.getLightCoords());
         } else {
             handsReached++;
         }
@@ -156,6 +180,8 @@ public final class MorphRenderer {
         LivingEntity existing = DUMMIES.get(player.getUUID());
         if (existing != null && existing.getType() == form) return existing;
         if (!(form.create(player.level(), EntitySpawnReason.LOAD) instanceof LivingEntity created)) return null;
+        // 26.x renderers read the entity id; real ids are positive, so a negative one never clashes.
+        created.setId(-1 - player.getId());
         if (created instanceof Bat bat) bat.setResting(false); // a new bat hangs upside down
         created.setSilent(true); // its own tick runs for animations; the player makes the sounds
         created.setPos(player.getX(), player.getY(), player.getZ());

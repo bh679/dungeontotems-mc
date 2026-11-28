@@ -95,7 +95,7 @@ final class AdvancementPlayTest {
         }),
         new Step("the rest of the animals (not playable here)", player -> {
             BuiltInRegistries.ENTITY_TYPE.getDataMap(MorphForm.DATA_MAP).keySet().forEach(key ->
-                TotemTriggers.BECAME_FORM.get().trigger(player, key.location().toString()));
+                TotemTriggers.BECAME_FORM.get().trigger(player, key.identifier().toString()));
         }),
         new Step("settle", player -> {}));
 

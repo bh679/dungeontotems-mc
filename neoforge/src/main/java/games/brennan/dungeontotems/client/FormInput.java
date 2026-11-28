@@ -55,7 +55,7 @@ public final class FormInput {
         if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && FormUse.isUsable(player.level(), block.getBlockPos())) return;
         event.setCanceled(true);
         event.setSwingHand(false);
-        ClientClientPacketDistributor.sendToServer(FormUsePayload.INSTANCE);
+        ClientPacketDistributor.sendToServer(FormUsePayload.INSTANCE);
     }
 
     @SubscribeEvent
@@ -67,7 +67,7 @@ public final class FormInput {
         if (!air) return; // mobs and blocks go the usual way
         event.setCanceled(true);
         event.setSwingHand(false);
-        ClientClientPacketDistributor.sendToServer(FormAttackPayload.INSTANCE);
+        ClientPacketDistributor.sendToServer(FormAttackPayload.INSTANCE);
     }
 
     @SubscribeEvent
@@ -77,13 +77,13 @@ public final class FormInput {
         EntityType<?> form = player == null ? null : Morphs.formOf(player).orElse(null);
         boolean jumpDown = minecraft.options.keyJump.isDown();
         if (form != null && FormUse.OWN_JUMP.contains(form) && jumpDown && !jumpWasDown && minecraft.gui.screen() == null) {
-            ClientClientPacketDistributor.sendToServer(FormJumpPayload.INSTANCE);
+            ClientPacketDistributor.sendToServer(FormJumpPayload.INSTANCE);
         }
         jumpWasDown = jumpDown;
 
         if (unrollWait > 0) unrollWait--;
         if (form == EntityTypes.ARMADILLO && unrollWait == 0 && FormAnimator.isCurled(player.getUUID()) && player.input.getMoveVector().lengthSquared() > 0.0F) {
-            ClientClientPacketDistributor.sendToServer(FormUsePayload.INSTANCE); // "use" toggles the roll: out it comes
+            ClientPacketDistributor.sendToServer(FormUsePayload.INSTANCE); // "use" toggles the roll: out it comes
             unrollWait = UNROLL_RETRY_TICKS;
         }
     }

@@ -6,7 +6,6 @@ import games.brennan.dungeontotems.effect.HeartbreakEffect;
 import games.brennan.dungeontotems.registry.TotemRegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -26,15 +25,11 @@ import java.util.Optional;
 
 /**
  * Hover text for curses in the inventory's effect list: hearts Heartbreak takes, how to cure Zombified,
- * each rule, and how long Rage or Lonely give you. Vanilla only shows effect tooltips on the narrow (icon-only) list, so on the wide list,
- * which has no tooltip of its own, this draws one for the curse under the mouse, hit-testing the rows where
- * they were actually drawn ({@link DrawnEffectRows}).
+ * each rule, and how long Rage or Lonely give you. 26.x asks for a tooltip on every row, wide or narrow, so
+ * NeoForge's tooltip event is all it takes (main's hit-testing of the wide list is gone on this line).
  */
 @EventBusSubscriber(modid = DungeonTotems.MOD_ID, value = Dist.CLIENT)
 public final class CurseTooltips {
-
-    /** Width of a wide (icon + name) effect row. */
-    private static final int WIDE_PANEL = 120;
 
     private CurseTooltips() {}
 
@@ -42,32 +37,6 @@ public final class CurseTooltips {
     public static void onEffectTooltip(GatherEffectScreenTooltipsEvent event) {
         Player player = Minecraft.getInstance().player;
         if (player != null) event.getTooltip().addAll(lines(event.getEffectInstance(), player));
-    }
-
-    @SubscribeEvent
-    public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
-        DrawnEffectRows.clear();
-    }
-
-    @SubscribeEvent
-    public static void onScreenRender(ScreenEvent.Render.Post event) {
-        if (!(event.getScreen() instanceof EffectRenderingInventoryScreen<?> screen)) return;
-        Player player = Minecraft.getInstance().player;
-        if (player == null) return;
-        if (screen.getSlotUnderMouse() != null) return; // an item tooltip is showing; never stack a hint on it
-        // Hit-test the rows as they were really drawn this frame: a mod may have moved the list
-        // (Edible Backpacks lifts it above or beside its right panel), so vanilla's spot can hold slots.
-        List<DrawnEffectRows.Row> rows = DrawnEffectRows.rows();
-        if (rows.isEmpty() || rows.get(0).width() < WIDE_PANEL) return; // compact: vanilla's tooltip plus onEffectTooltip
-        List<MobEffectInstance> effects = player.getActiveEffects().stream()
-            .filter(ClientHooks::shouldRenderEffect).sorted().toList();
-        int index = DrawnEffectRows.hovered(rows, event.getMouseX(), event.getMouseY());
-        if (index < 0 || index >= effects.size()) return;
-        List<Component> lines = lines(effects.get(index), player);
-        if (!lines.isEmpty()) {
-            event.getGuiGraphics().renderTooltip(Minecraft.getInstance().font, lines, Optional.empty(),
-                event.getMouseX(), event.getMouseY());
-        }
     }
 
     /** The extra lines for a curse, or none for any other effect. */
@@ -81,7 +50,7 @@ public final class CurseTooltips {
             lines.add(timer("rage", ClientPayloads.secondsLeft(Curse.RAGE)));
         } else if (effect.is(TotemRegistries.BREATHLESS) || effect.is(TotemRegistries.INSOMNIA)
             || effect.is(TotemRegistries.VOW_OF_PEACE) || effect.is(TotemRegistries.MELON_DIET) || effect.is(TotemRegistries.RESTRAINED)) {
-            String id = effect.getEffect().unwrapKey().map(key -> key.location().getPath()).orElse("");
+            String id = effect.getEffect().unwrapKey().map(key -> key.identifier().getPath()).orElse("");
             lines.add(Component.translatable("effect.dungeontotems." + id + ".rule").withStyle(ChatFormatting.GRAY));
         } else if (effect.is(TotemRegistries.LONELY)) {
             lines.add(timer("lonely", ClientPayloads.secondsLeft(Curse.LONELINESS)));

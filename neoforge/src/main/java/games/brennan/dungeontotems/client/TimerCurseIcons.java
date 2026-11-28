@@ -3,10 +3,16 @@ package games.brennan.dungeontotems.client;
 import games.brennan.dungeontotems.Curse;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.registry.TotemRegistries;
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
+import net.minecraft.client.gui.Hud;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffectUtil;
 import net.neoforged.neoforge.client.extensions.common.IClientMobEffectExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 
@@ -33,8 +39,11 @@ public final class TimerCurseIcons {
     private static final int PANEL_HEIGHT = 32;
     private static final int LARGE_PANEL = 120;
     private static final int SMALL_PANEL = 32;
-    private static final int LARGE_ICON_INSET = 6;
-    private static final int SMALL_ICON_INSET = 7;
+    /** Where 26.x hands the icon, from the box's corner. */
+    private static final int HUD_ICON_INSET = 3;
+    private static final int INVENTORY_ICON_INSET = 7;
+    /** {@code EffectsInInventory}'s gap after a wide panel's text. */
+    private static final int TEXT_MARGIN = 7;
 
     private TimerCurseIcons() {}
 
@@ -45,23 +54,38 @@ public final class TimerCurseIcons {
 
     private record Timed(Curse curse, int colour) implements IClientMobEffectExtensions {
 
+        /** 26.x hands the icon's spot: the HUD box is 3 out from it. */
         @Override
-        public boolean renderGuiIcon(MobEffectInstance instance, Gui gui, GuiGraphicsExtractor graphics, int x, int y, float z, float alpha) {
-            drawCountdown(graphics, x, y, HUD_BOX, HUD_BOX, curse, colour);
+        public boolean extractHudIcon(MobEffectInstance instance, Hud hud, GuiGraphicsExtractor graphics,
+                                      int x, int y, int width, int height, int color) {
+            drawCountdown(graphics, x - HUD_ICON_INSET, y - HUD_ICON_INSET, HUD_BOX, HUD_BOX, curse, colour);
             return false; // vanilla draws the icon on top
         }
 
+        /** The inventory panel is 7 out from the icon; 26.x sizes a wide panel to its text, as vanilla does here. */
         @Override
-        public boolean renderInventoryIcon(MobEffectInstance instance, EffectRenderingInventoryScreen<?> screen, GuiGraphicsExtractor graphics,
-                                           int x, int y, int blitOffset) {
-            int panelsAt = screen.getGuiLeft() + screen.getXSize() + 2;
-            if (x - LARGE_ICON_INSET == panelsAt) {
-                drawCountdown(graphics, panelsAt, y, LARGE_PANEL, PANEL_HEIGHT, curse, colour);
-            } else if (x - SMALL_ICON_INSET == panelsAt) {
-                drawCountdown(graphics, panelsAt, y, SMALL_PANEL, PANEL_HEIGHT, curse, colour);
-            }
+        public boolean extractInventoryIcon(MobEffectInstance instance, AbstractContainerScreen<?> screen, GuiGraphicsExtractor graphics,
+                                            int x, int y, int width, int height, int color) {
+            int panelX = x - INVENTORY_ICON_INSET;
+            drawCountdown(graphics, panelX, y - INVENTORY_ICON_INSET, panelWidth(instance, screen, panelX), PANEL_HEIGHT, curse, colour);
             return false;
         }
+    }
+
+    /** {@code EffectsInInventory#extractBackground}'s width: the text's, at most what fits right of the screen. */
+    private static int panelWidth(MobEffectInstance instance, AbstractContainerScreen<?> screen, int panelX) {
+        int available = screen.width - panelX;
+        if (available < LARGE_PANEL) return SMALL_PANEL;
+        Minecraft minecraft = Minecraft.getInstance();
+        Font font = screen.getFont();
+        MutableComponent name = instance.getEffect().value().getDisplayName().copy();
+        if (instance.getAmplifier() >= 1 && instance.getAmplifier() <= 9) {
+            name.append(CommonComponents.SPACE).append(Component.translatable("enchantment.level." + (instance.getAmplifier() + 1)));
+        }
+        float tickRate = minecraft.level == null ? 20.0F : minecraft.level.tickRateManager().tickrate();
+        Component duration = MobEffectUtil.formatDuration(instance, 1.0F, tickRate);
+        int textWidth = Math.max(font.width(name), font.width(duration));
+        return Math.min(available - TEXT_MARGIN, SMALL_PANEL + textWidth + TEXT_MARGIN);
     }
 
     /** Lights the part of the box's border still left on the timer, or flashes it all with a glow when the time is up. */

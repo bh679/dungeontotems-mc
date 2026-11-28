@@ -1,5 +1,6 @@
 package games.brennan.dungeontotems.client;
 
+import net.minecraft.world.item.component.SwingAnimation;
 import games.brennan.dungeontotems.DungeonTotems;
 import games.brennan.dungeontotems.morph.FormAction;
 import games.brennan.dungeontotems.morph.FormTraits;
@@ -117,7 +118,7 @@ final class FormAnimator {
         tickTimed(id);
         if (standIn instanceof Strider strider) strider.setSuffocating(!FormTraits.isWarmStrider(player)); // shivers off lava
         countDown(REARING, id, () -> {
-            if (standIn instanceof AbstractHorse horse) horse.setStanding(false);
+            if (standIn instanceof AbstractHorse horse) horse.clearStanding();
         });
         countDown(RAMMING, id, () -> standIn.handleEntityEvent((byte) 59)); // goat raises its head
         countDown(EATING, id, () -> {
@@ -173,7 +174,7 @@ final class FormAnimator {
                 if (standIn instanceof PolarBear bear) bear.setStanding(true);
                 STANDING.put(player, STAND_TICKS);
             }
-            case SWING_ARM -> standIn.swing(InteractionHand.MAIN_HAND);
+            case SWING_ARM -> standIn.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
             case DASH -> {
                 if (standIn instanceof Camel camel) camel.setDashing(true);
                 DASHING.put(player, DASH_TICKS);
@@ -327,7 +328,7 @@ final class FormAnimator {
     private static void onJump(LivingEntity standIn, UUID player) {
         if (standIn instanceof Rabbit) standIn.handleEntityEvent((byte) 1); // the hop
         if (standIn instanceof AbstractHorse horse) {
-            horse.setStanding(true);
+            horse.setStanding(HORSE_REAR_TICKS); // 26.x stands for a set time; FormAnimator still ends it
             REARING.put(player, HORSE_REAR_TICKS);
         }
     }

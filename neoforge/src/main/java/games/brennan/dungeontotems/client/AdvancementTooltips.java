@@ -47,10 +47,10 @@ public final class AdvancementTooltips {
     @Nullable
     public static Lines lines(AdvancementHolder holder, DisplayInfo display, AdvancementProgress progress) {
         if (!holder.id().getNamespace().equals(DungeonTotems.MOD_ID)) return null;
-        Style colour = Style.EMPTY.withColor(display.getType().getChatColor());
-        Component text = display.getDescription();
+        Style colour = Style.EMPTY.withColor(display.type().getChatColor());
+        Component text = display.description();
         String hintKey = hintKey(text);
-        if (!progress.isDone() && hintKey != null && I18n.exists(hintKey)) text = Component.translatable(hintKey);
+        if (!progress.isDone() && hintKey != null && Language.getInstance().has(hintKey)) text = Component.translatable(hintKey);
         Component list = holder.id().equals(GREAT_AND_SMALL) ? animals(holder, progress) : null;
         return new Lines(ComponentUtils.mergeStyles(text.copy(), colour), list);
     }
@@ -76,7 +76,7 @@ public final class AdvancementTooltips {
             Identifier id = Identifier.tryParse(forms.get(i));
             boolean been = criterion != null && criterion.isDone() && id != null;
             list.append(been
-                ? BuiltInRegistries.ENTITY_TYPE.get(id).getDescription().copy().withStyle(ChatFormatting.WHITE)
+                ? BuiltInRegistries.ENTITY_TYPE.getValue(id).getDescription().copy().withStyle(ChatFormatting.WHITE)
                 : Component.translatable("advancements.dungeontotems.great_and_small.unknown").withStyle(ChatFormatting.DARK_GRAY));
         }
         return list;
