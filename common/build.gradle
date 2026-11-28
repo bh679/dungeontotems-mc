@@ -1,0 +1,21 @@
+// Vanilla-only code shared by every loader of the 26.3 line. Compiled against plain Minecraft
+// (NeoForm, no NeoForge): nothing here may import net.neoforged or net.fabricmc.
+plugins {
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    neoFormVersion = neoform_version
+}
+
+dependencies {
+    compileOnly 'org.spongepowered:mixin:0.8.5'
+    compileOnly 'io.github.llamalad7:mixinextras-common:0.5.0'
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+}

@@ -1,0 +1,28 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontotems.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntityMixin",
+    "LivingEntityMixin",
+    "PlayerMixin",
+    "MobInvoker",
+    "InventoryMixin",
+    "AbstractContainerMenuMixin",
+    "SlotMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "client.AbstractContainerScreenAccess",
+    "client.AdvancementWidgetMixin",
+    "client.BookViewScreenMixin",
+    "client.HudMixin",
+    "client.ItemInHandRendererMixin",
+    "client.ItemInHandRendererInvoker",
+    "client.ModelPartAccessor",
+    "client.MultiLineEditBoxAccess"
+  ]
+}

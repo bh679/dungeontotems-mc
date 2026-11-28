@@ -1,57 +1,77 @@
-# Product Engineer — Balanced Totems
+# Product Engineer — Dungeon Totems
 
 <!-- Source: github.com/bh679/claude-templates/templates/engineering/product/CLAUDE.md (adapted for a NeoForge gameplay mod, layout from bh679/dtmodverify-mc) -->
 
-You are the **Product Engineer** for the Balanced Totems Minecraft mod. Ship changes end-to-end
+> **This is the `mc26.3` line** (Minecraft 26.3, NeoForge 26.3, Java 25; layout `common/` + `neoforge/`).
+> Read `PORTING.md` first: what differs from main and how to bring a change across. **Dungeon Train never
+> uses this line**: tag `v<version>+mc26.3`, jar `dungeontotems-neoforge-26.3-<version>.jar`, GitHub
+> release never latest. Paths below are main's; here they live under `neoforge/src/...`.
+
+You are the **Product Engineer** for the Dungeon Totems Minecraft mod. Ship changes end-to-end
 through the approval gates (plan, test, merge) with full human oversight at each stage.
 
 ---
 
 ## Project Overview
 
-- **Project:** Balanced Totems (`balancedtotems`): Totems of Undying that save you like the vanilla
-  totem (same pop and buffs) but leave a curse. One `Curse` enum row per totem:
-  Weakness (20 min), Fatigue (Mining Fatigue II, 20 min, more pops add time), Heartbreak (-2 hearts
-  per level, 20 min, never below half a heart), Blindness (30 s), Morphing (random animal form, 30 s),
-  Zombified (zombie form; golden apple while weakened within 10 min or die), Rage (id `rampage`; kill 3
-  players/PlayerMobs per level within 15 min or die), Void (void deaths only; chorus-fruit hop near the last safe ground, or the API rescue target,
-  no curse), Feather (deadly falls only, no curse), Boom (explosions only, no curse; the three single-purpose totems give no Fire Resistance), Loneliness (make 3 friends per level within 10 min or die), Pacifism (Vow of Peace: hurt anything within 20 min and die), Melon Diet (eat anything but
-  melon within 20 min and die), Restraint (open a chest, barrel or ender chest within 20 min and die). Curse totems are named
-  "Totem of X"; Void and Feather keep "X Totem". Curses stack, level up, and survive death.
+- **Project:** Dungeon Totems (`dungeontotems`): Totems of Undying that save you like the vanilla
+  totem (same pop and buffs) but curse you for carrying them. One `Curse` enum row per totem, of three kinds:
+  - HELD (curse while in either hand, then for a while after a save): Weakness, Fatigue (Mining Fatigue I),
+    Heartbreak (-3 hearts), Hunger, Slowness, Breathlessness, Insomnia (4 min after a save); Pacifism,
+    Restraint (4 min) and Melon Diet (10 min), whose held totem pops when you break the rule; Rage (hit
+    something, 60/40/30 s) and Loneliness (give a gift, 90/50/30 s) timers by level, level I while held, I for 1 min
+    after letting go, II for 5 min after a save. After a save a curse's own damage stops at half a heart
+    and restarts that curse.
+  - AFTER (curse only after the save): Blindness (30 s), Morphing (random animal form, 30 s), Zombified
+    (zombie form; golden apple while weakened within 10 min or die).
+  - NARROW (one death only, no curse): Void (chorus-fruit hop near the last safe ground, or the API rescue
+    target), Feather (falls), Boom (explosions), Fire (fire and lava, keeps Fire Resistance).
+  Curse totems are named "Totem of X"; the narrow ones "X Totem". After-save curses survive death.
+  Stacking (`Curse.maxStack`): Weakness 2; Fatigue, Heartbreak, Hunger, Slowness, Rage, Lonely 3; rest 1.
+  Each totem in a held stack adds a level, held and after the save; a pop uses one.
+  They only stack when you stack them (`TotemStacking`): a pickup or shift-click takes its own slot
+  (a pickup joins a stack only when no slot is free); the cursor stacks them.
 - **Built for Dungeon Train** (`bh679/dungeon-train-mc`), which jarJars it and sets the Void Totem's
   rescue target to the train. Works standalone: the Void Totem then uses the last safe ground.
-- **Mod Loader (this branch, `mc26.3`):** NeoForge 26.3 (`neo_version` 26.3.0.102), Java 25, deobfuscated
-  names (no Parchment). `main` stays NeoForge 1.21.1 for Dungeon Train; `mc1.20.1` is Forge 47. Port
-  gameplay changes between the version branches by hand. No mod dependencies; PlayerMob and Dungeon
-  Train compat stays soft and inactive here (neither exists for 26.3).
-- **Repo:** `bh679/balancedtotems-mc`. Board: Dungeon Train's Project #16.
+- **Mod Loader:** NeoForge 1.21.1 (`neo_version` 21.1.228), Java 21. No mod dependencies.
+- **Repo:** `bh679/dungeontotems-mc`. Board: Dungeon Train's Project #16.
 - **Sides:** BOTH (items, effects and a render hook; clients must have it).
-- **Jar name on this branch:** `balancedtotems-neoforge-<version>+mc26.3.jar` (main's bare
-  `balancedtotems-neoforge-<version>.jar` is the one Dungeon Train resolves).
-- **Asset name contract (main):** release tag `v<version>` carries `balancedtotems-neoforge-<version>.jar`.
+- **Asset name contract:** release tag `v<version>` carries `dungeontotems-neoforge-<version>.jar`.
   Dungeon Train resolves that asset by name, so never rename the jar.
 
 ### Code map
 
 | Where | What |
 |---|---|
-| `Curse`, `TotemItem`, `registry/BtRegistries` | The totem table, items, effects, attachments, tags, damage keys |
+| `Curse`, `TotemItem`, `registry/TotemRegistries` | The totem table, items, effects, attachments, tags, damage keys |
 | `TotemTriggerEvents`, `TotemPop` | `LivingDeathEvent` at HIGHEST → vanilla pop + curse; vanilla totem still wins |
-| `morph/` | Form engine: stats (`MorphStats`, pure + tested), hitbox, mob aggro, zombie sunburn |
-| `curse/DeadlineCurses` | Zombified, Rage, Lonely: cures and death on expiry |
-| `curse/Curses`, `CurseMemory` | Applying a curse (stacking, levels), keeping curses through death |
-| `curse/CurseGuard` | 26.x has no effect cures: no totem pop lifts a curse, milk leaves the uncurable ones (`MobEffectEvent.Remove`) |
-| `curse/Tallies`, `Targets`, `LonelyFriends` | Rage kills / Lonely friends; who counts (PlayerMobs, villagers without PlayerMob and Dungeon Train) |
-| `curse/VowOfPeace` | Pacifism: any damage you deal under the vow kills you next tick |
-| `curse/RuleCurses` | Melon Diet (food other than melon) and Restrained (chests, barrels, ender chests) |
-| `compat/PlayerMobGifts` | PlayerMob gifts both ways = a friend; chains PlayerMob's single gift observer by reflection |
+| `morph/` | Form engine: stats (`MorphStats`, pure + tested), hitbox, mob aggro, zombie sunburn, flight (`MorphFlight`), attacks (`FormAttacks`), empty-hand right-click moves (`FormUse` → `LandMoves`/`WaterMoves`, `FormTimers`), traits (`FormTraits`), how mobs treat a form (`FormAllies`); `client/FormAnimator` plays each move on the stand-in |
+| `curse/HeldCurses` | Held curses on while the totem is in either hand, off (or Rage/Lonely II for 1 min) when let go |
+| `curse/Curses`, `CurseMemory` | Applying a curse; after-save curses and their shield time; keeping after-save curses through death |
+| `curse/SavedCurseShield` | After a save, a curse's own damage stops at half a heart |
+| `curse/DeadlineCurses` | Zombified's cure and death on expiry; the rule curses' doom |
+| `curse/ZombieDiet`, `ZombieTrade`, `ZombiePack`, `ZombieLimits`, `ZombieGibberish` | Zombies can't read: every item name and tooltip line (and the hotbar name, `mixin/client/GuiMixin`) shows as mumbles, seeded per item, display only (`client/ZombieReading`); book pages (`mixin/client/BookViewScreenMixin`) and other players' chat with 1 word in 3 mumbled, the rest readable (`ZombieGibberish#read`), the game's own chat all mumbles (action-bar lines stay), and Jade's panel too when Jade is installed (`compat/jade/ZombieJadePlugin`, compile-only, `-PwithJade` puts it in the dev runs). Zombies can't write either (`client/ZombieWriting`): in chat and books each word turns to a mumble when its space is typed (a chat message's last word on send), 1 in 3 comes through at random, `/` commands untouched. Life as a Zombified player: no shulker boxes (open, place, mine, or open from your hand as Advanced Shulkerboxes allows; any shulker screen that opens shuts again: "Your zombie hands are too clumsy."); an animal offered its food or taming item runs away, silently and without using it, and `AnimalTameEvent` refuses every tame (ridden horses too); raw meat only (`#dungeontotems:zombie_food`, no Hunger from it); trading turns a villager into a zombie villager, a wandering trader drinks invisibility and flees; the 27 main inventory slots lock (`mixin/SlotMixin`, `InventoryMixin`, `AbstractContainerMenuMixin`; only what you carried when you turned goes back in, and only from your own inventory screen, never with a container open, synced by `ZombieCarriedPayload`; `client/ZombiePackOverlay` greys them, no tooltip; the exception is `ZombiePack#reachable`: a Weakness potion (drunk, splash or lingering, not a tipped arrow) or a Totem of Weakness can still be taken out, and its slot stays clear, so the cure is never locked away). Illagers and sculk mobs (`#dungeontotems:hunts_zombie_players`: warden, Deeper Darker's, optional entries) hunt a Zombified player (`morph/MorphEvents#ignoresMorphed`). A Weakness potion's name reads as one of six give-away labels (`ZombieGibberish#weaknessLabel`) so the cure can be found. GameTests: `ZombieGameTests`; `./gradlew runSelfTest -Dzombie=true` clicks it through in a real client and screenshots each step (client/`ZombieSelfTest`, makes its own flat world) |
+| `curse/CurseTimers`, `LonelyGifts` | Rage (hit, 60/40/30 s) and Lonely (gift, 90/50/30 s) timers by level; true damage when missed, Rage at Poison's rate (1.25 s), Lonely every 2.5 s |
+| `curse/VowOfPeace`, `RuleCurses` | Pacifism, Melon Diet, Restrained: a held totem pops; otherwise the curse dooms you |
+| `curse/Breathless`, `InsomniaPhantoms` | Air drains on land; phantoms by night (100%) and day (25%, Fire Resistance) |
+| `compat/PlayerMobGifts` | A gift you give a PlayerMob counts for Lonely; chains PlayerMob's single gift observer by reflection |
 | `voidtotem/VoidRescue` | Rescue target if set (DT: the train); else a chorus-fruit hop around the last safe ground (else spawn) |
-| `gametest/` | `@BtGameTest` methods, registered by `BtGameTestRegistry` (26.x has no `@GameTest`) |
+| `mixin/` | `InventoryMixin` + `AbstractContainerMenuMixin`: stackable totems take a free slot on pickup and shift-click (`TotemStacking`, GameTests `StackingGameTests`; `./gradlew runSelfTest -Dstacking=true` clicks it through in a real client, client/`StackingSelfTest`); `LivingEntityMixin`: a strider-form player stands on lava; `EntityMixin`: fire-immune forms don't burn; `PlayerMixin`: land forms' air speed follows their pace (`morph/FormAir`) |
 | `client/` | Pop animation with the right item; `MorphRenderer` draws the form instead of the player |
-| `api/BalancedTotemsApi` | `setRescueTarget`; a signature change is a MAJOR bump |
+| `advancement/`, `curse/CurseTrials` | The Dungeon Totems advancement tab (`scripts/make_advancements.py` writes the JSON and English): triggers `totem_popped`, `curse_survived`, `became_form`; `TabComplete` grants Terms and Conditions Fulfilled; `mixin/client/AdvancementWidgetMixin` shows hints until earned and Great and Small's animal list. `./gradlew runSelfTest -Dadvancements=true` screenshots the tooltips; `-Dadvancements=play` plays the whole tab (client/`AdvancementPlayTest`). Off until launch: every file needs `dungeontotems:advancements_launched`, true only when `TotemAdvancements.LAUNCHED` (dev runs set `-Ddungeontotems.advancements=true`) |
+| `api/DungeonTotemsApi` | `setRescueTarget`; a signature change is a MAJOR bump |
 
-Other mods find curses by effect id (`balancedtotems:zombified` etc.), with no compile dependency.
-Data: `tags/entity_type/morph_pool.json` (morph forms), `rampage_targets.json` (PlayerMob, optional).
+Other mods find curses by effect id (`dungeontotems:zombified` etc.), with no compile dependency.
+Data: `data_maps/entity_type/morph_forms.json` (morph forms: pool land/water/lava + weight, generated from
+Brennan's weight table https://claude.ai/artifact/PVn2fag5iJMDGtEvi7bsDe; pull it before committing),
+`tags/entity_type/flying_forms.json`.
+`MobGaits` gives land forms their mob's walk and run speed (vanilla's stroll and panic multipliers; GameTest
+`mobsWalkAtTheirOwnPace` measures the real mobs against it). `client/FormAnimator` runs each stand-in mob's own tick for vanilla animations; `FormAttacks` and
+`FormTraits` give forms their mob's attack and traits.
+Testing every form without a person: GameTest `everyFormFightsLikeItsMob` (server: each form's attack,
+moves, jump, flight) and `./gradlew runSelfTest [-Dforms=goat,llama]` (client/`FormSelfTest`: a real client
+plays each form, writes `run-selftest/selftest/report.txt` with walk-cycle rates and attack results, and
+screenshots to `run-selftest/screenshots/`). It needs a world named "New World" in `run-selftest/saves`.
 Textures come from `art/make_textures.py <client resources jar>` (NeoForge's moddev
 `client-extra-aka-minecraft-resources` jar): totems are grids over the vanilla totem in `art/totems.py`,
 effect icons combine vanilla sprites in `art/icons.py`. Build effect icons from vanilla sprites where they exist.
@@ -73,16 +93,16 @@ This project follows standards from `bh679/claude-templates`:
 
 ## Gate 1 — Plan Approval
 
-Enter plan mode, explore `src/main/java/games/brennan/balancedtotems/...`, write the plan, call out:
+Enter plan mode, explore `src/main/java/games/brennan/dungeontotems/...`, write the plan, call out:
 an API change (DT must change too), a new curse (lang in DT's 20 locales once bundled), a packet
-change (bump `BtNetwork.PROTOCOL_VERSION`), an MC/NeoForge bump. After approval rename the branch
+change (bump `TotemNetwork.PROTOCOL_VERSION`), an MC/NeoForge bump. After approval rename the branch
 to `dev/<feature-slug>`.
 
 ## Gate 2 — Testing Approval
 
 1. `./gradlew build` (runs `test`) must pass
-2. `./gradlew runClient`: `/give @s balancedtotems:<name>_totem`, hold it, `/damage @s 100`
-   (void: `/tp ~ -100 ~`). F2 screenshots
+2. `./gradlew runClient`: `/give @s dungeontotems:<name>_totem`, hold it, `/damage @s 100`
+   (void: `/tp ~ -100 ~`). Morph forms without a totem: `/morph next|prev|<form>|off`. F2 screenshots
 3. Morph and void changes: also test inside Dungeon Train on a moving train (Sable)
 4. Present the Gate 2 report in plan mode and wait for approval
 
@@ -90,22 +110,23 @@ to `dev/<feature-slug>`.
 
 Push, open a PR with a conventional title, CI green (`build.yml`), squash-merge on explicit approval,
 delete the branch, then the MINOR bump: commit `version: bump to X.Y.0 after Gate 3 merge (#PR)`
-directly to main.
+directly to main. **Not on this line:** `mod_version` here is the main version it was ported from; it moves
+only when a later main version is brought across (see `PORTING.md`).
 
 ### Releasing
 
-`gh workflow run release.yml -f tag=v<version>` (tag must equal `mod_version` on main). Never
+On this line: `gh workflow run release.yml --ref mc26.3 -f tag=v<version>+mc26.3` (see `PORTING.md`). Never
 `git tag` by hand. Store pages follow DT's `docs/guides/newmod.md`, and nothing goes public without
-Brennan's yes. After a release bump DT's `balancedtotems_version`.
+Brennan's yes. After a release bump DT's `dungeontotems_version`.
 
 ## Build
 
 ```bash
-JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-21-aarch64-os_x.2/jdk-21.0.11+10/Contents/Home ./gradlew build
+JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-25-aarch64-os_x.2/jdk-25.0.3+9/Contents/Home ./gradlew build
 ./gradlew runClient
 ```
 
 ## Versioning
 
 SemVer in `gradle.properties` `mod_version`: PATCH per dev commit, MINOR after a Gate 3 merge,
-MAJOR for an API break.
+MAJOR for an API break. On the `mc26.3` line it tracks the main version ported from instead.

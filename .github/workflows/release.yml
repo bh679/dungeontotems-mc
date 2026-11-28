@@ -1,17 +1,22 @@
-name: Release
+name: Release (26.3)
 
-# Releases are dispatch-only. There is intentionally no `push: tags` trigger:
-# the release workflow is the SOURCE of tags, not a consumer.
+# The 26.3 line's release. Dispatch it on this branch:
+#   gh workflow run release.yml --ref mc26.3 -f tag=v<mod_version>+mc26.3
+# Same file name as main's release so GitHub lets it be dispatched; it refuses any other branch.
+#
+# Dungeon Train must never use this build. DT resolves releases/download/v<v>/dungeontotems-neoforge-<v>.jar,
+# so this release's tag (v<v>+mc26.3) and jar (dungeontotems-neoforge-26.3-<v>.jar) can never match, and
+# the GitHub release is never marked latest. Uploads are files only: no listing text or settings change.
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to create + release (e.g. v0.1.0). Must match mod_version in gradle.properties."
+        description: "Tag to create + release: v<mod_version>+mc26.3 (e.g. v0.26.0+mc26.3)."
         required: true
         type: string
       notify_discord:
-        description: "Force a Discord announcement. Otherwise Discord only fires on a MAJOR bump (X.0.0)."
+        description: "Announce in Discord (off by default for this line)."
         required: false
         type: boolean
         default: false
@@ -23,28 +28,43 @@ jobs:
       contents: write
     env:
       RELEASE_TAG: ${{ inputs.tag }}
+      LINE_BRANCH: mc26.3
+      MC_VERSION: "26.3"
     steps:
+      - name: Refuse to run off the 26.3 branch
+        run: |
+          if [ "${GITHUB_REF_NAME}" != "${LINE_BRANCH}" ]; then
+            echo "::error::Dispatch this with --ref ${LINE_BRANCH} (got ${GITHUB_REF_NAME})."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ env.LINE_BRANCH }}
           fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       - uses: gradle/actions/setup-gradle@v3
 
-      - name: Verify input tag matches mod_version on main
+      - name: Verify the tag is v<mod_version>+mc26.3
         run: |
-          TAG="${RELEASE_TAG#v}"
           GRADLE_VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
-          if [ "$TAG" != "$GRADLE_VERSION" ]; then
-            echo "::error::Input tag $RELEASE_TAG does not match mod_version=$GRADLE_VERSION on main."
+          GRADLE_MC=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
+          if [ "$GRADLE_MC" != "$MC_VERSION" ]; then
+            echo "::error::minecraft_version=${GRADLE_MC} on ${LINE_BRANCH}, expected ${MC_VERSION}."
+            exit 1
+          fi
+          EXPECTED="v${GRADLE_VERSION}+mc${MC_VERSION}"
+          if [ "$RELEASE_TAG" != "$EXPECTED" ]; then
+            echo "::error::Tag must be ${EXPECTED} (mod_version=${GRADLE_VERSION} on ${LINE_BRANCH}); got ${RELEASE_TAG}."
             exit 1
           fi
           echo "MOD_VERSION=$GRADLE_VERSION" >> "$GITHUB_ENV"
+          echo "JAR=dungeontotems-neoforge-${MC_VERSION}-${GRADLE_VERSION}.jar" >> "$GITHUB_ENV"
 
       - name: Check tag does not already exist
         env:
@@ -55,14 +75,10 @@ jobs:
             exit 1
           fi
 
-      - name: Compute release type from tag
+      - name: Compute release type
         id: release_type
         run: |
-          TAG_NUMERIC="${RELEASE_TAG#v}"
-          MAJOR="${TAG_NUMERIC%%.*}"
-          REST="${TAG_NUMERIC#*.}"
-          MINOR="${REST%%.*}"
-          PATCH="${REST#*.}"
+          MAJOR="${MOD_VERSION%%.*}"
           if [ "$MAJOR" -gt 0 ] 2>/dev/null; then
             echo "type=release" >> "$GITHUB_OUTPUT"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
@@ -70,29 +86,30 @@ jobs:
             echo "type=beta" >> "$GITHUB_OUTPUT"
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           fi
-          if [ "$MAJOR" -gt 0 ] 2>/dev/null && [ "$MINOR" = "0" ] && [ "$PATCH" = "0" ]; then
-            echo "major_bump=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "major_bump=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - run: ./gradlew build --no-daemon
 
-      - name: Stage the NeoForge jar for release
+      - name: Stage the 26.3 jar
         run: |
           mkdir -p release-artifacts
-          cp build/libs/balancedtotems-neoforge-${MOD_VERSION}.jar release-artifacts/
+          cp "neoforge/build/libs/${JAR}" release-artifacts/
+          # Dungeon Train resolves exactly dungeontotems-neoforge-<version>.jar: this line must never ship that name.
+          if [ -e "release-artifacts/dungeontotems-neoforge-${MOD_VERSION}.jar" ]; then
+            echo "::error::Port jar must not use Dungeon Train's jar name"; exit 1
+          fi
           ls -la release-artifacts/
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (never latest)
         uses: softprops/action-gh-release@v2
         with:
-          name: Balanced Totems ${{ env.RELEASE_TAG }}
+          name: Dungeon Totems ${{ env.MOD_VERSION }} for Minecraft 26.3 (NeoForge)
           tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ env.LINE_BRANCH }}
           generate_release_notes: true
           files: release-artifacts/*.jar
           fail_on_unmatched_files: true
           prerelease: ${{ steps.release_type.outputs.prerelease == 'true' }}
+          make_latest: false
 
       - name: Check mod-platform publish prerequisites
         id: publish_check
@@ -104,21 +121,15 @@ jobs:
         run: |
           MODRINTH_READY=false
           CURSEFORGE_READY=false
-          if [ -n "$MODRINTH_TOKEN" ] && [ -n "$MODRINTH_PROJECT_ID" ]; then
-            MODRINTH_READY=true
-          else
-            echo "::warning::Modrinth secret/variable missing — skipping Modrinth publish."
-          fi
-          if [ -n "$CURSEFORGE_TOKEN" ] && [ -n "$CURSEFORGE_PROJECT_ID" ]; then
-            CURSEFORGE_READY=true
-          else
-            echo "::warning::CurseForge secret/variable missing — skipping CurseForge publish."
-          fi
+          if [ -n "$MODRINTH_TOKEN" ] && [ -n "$MODRINTH_PROJECT_ID" ]; then MODRINTH_READY=true
+          else echo "::warning::Modrinth secret/variable missing, skipping Modrinth."; fi
+          if [ -n "$CURSEFORGE_TOKEN" ] && [ -n "$CURSEFORGE_PROJECT_ID" ]; then CURSEFORGE_READY=true
+          else echo "::warning::CurseForge secret/variable missing, skipping CurseForge."; fi
           echo "modrinth=$MODRINTH_READY" >> "$GITHUB_OUTPUT"
           echo "curseforge=$CURSEFORGE_READY" >> "$GITHUB_OUTPUT"
 
-      - name: Publish NeoForge to Modrinth + CurseForge
-        id: publish_neoforge
+      # A file on the same projects as main (CurseForge 1800270, Modrinth dungeontotems), tagged 26.3 + NeoForge.
+      - name: Publish to Modrinth + CurseForge (26.3, NeoForge)
         if: steps.publish_check.outputs.modrinth == 'true' || steps.publish_check.outputs.curseforge == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -126,59 +137,26 @@ jobs:
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: ${{ steps.publish_check.outputs.curseforge == 'true' && vars.CURSEFORGE_PROJECT_ID || '' }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          files: release-artifacts/balancedtotems-neoforge-${{ env.MOD_VERSION }}.jar
-          name: Balanced Totems ${{ env.RELEASE_TAG }}
-          version: ${{ env.RELEASE_TAG }}
+          files: release-artifacts/${{ env.JAR }}
+          name: Dungeon Totems ${{ env.MOD_VERSION }} (26.3 NeoForge)
+          version: ${{ env.MOD_VERSION }}+mc26.3
           version-type: ${{ steps.release_type.outputs.type }}
           loaders: neoforge
-          game-versions: 1.21.1
-          java: 21
+          game-versions: "26.3"
+          java: 25
           retry-attempts: 2
           retry-delay: 10000
           fail-mode: warn
           dependencies: ""
 
-      - name: Set Modrinth side metadata (client required, server required)
-        if: steps.publish_check.outputs.modrinth == 'true'
-        env:
-          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
-        run: |
-          # Items, effects and a player-render hook: both sides need it.
-          # mc-publish cannot set these; re-assert each release.
-          HTTP_CODE=$(curl -sS -o /tmp/modrinth_env.out -w "%{http_code}" \
-            -X PATCH "https://api.modrinth.com/v2/project/${MODRINTH_PROJECT_ID}" \
-            -H "Authorization: ${MODRINTH_TOKEN}" \
-            -H "User-Agent: bh679/balancedtotems-mc (release CI)" \
-            -H "Content-Type: application/json" \
-            -d '{"client_side":"required","server_side":"required"}')
-          echo "Modrinth PATCH /project responded ${HTTP_CODE}"
-          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-            cat /tmp/modrinth_env.out || true
-            echo "::warning::Could not update Modrinth side metadata (HTTP ${HTTP_CODE}) — set it manually in project settings."
-          fi
-
-      - name: Check Discord webhook prerequisites
-        id: discord_check
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::DISCORD_WEBHOOK_URL secret not set — skipping Discord notification."
-          fi
-
       - name: Notify Discord
-        if: ${{ always() && steps.discord_check.outputs.ready == 'true' && env.RELEASE_TAG != '' && (inputs.notify_discord || steps.release_type.outputs.major_bump == 'true') }}
+        if: ${{ inputs.notify_discord && env.RELEASE_TAG != '' }}
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
           REPO: ${{ github.repository }}
-          PRERELEASE: ${{ steps.release_type.outputs.prerelease }}
-          GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_URL="https://github.com/${REPO}/releases/tag/${RELEASE_TAG}"
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then echo "::warning::DISCORD_WEBHOOK_URL not set"; exit 0; fi
+          TAG_URL=$(python3 -c "import urllib.parse,os;print(urllib.parse.quote(os.environ['RELEASE_TAG']))")
           curl -s -H "Content-Type: application/json" \
-            -d "{\"content\":\"**Balanced Totems ${RELEASE_TAG}** released! ${RELEASE_URL}\"}" \
+            -d "{\"content\":\"**Dungeon Totems ${MOD_VERSION} for Minecraft 26.3** released! https://github.com/${REPO}/releases/tag/${TAG_URL}\"}" \
             "$DISCORD_WEBHOOK_URL"
