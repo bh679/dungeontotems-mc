@@ -4,6 +4,11 @@
       "type": "dungeontotems:advancements_launched"
     }
   ],
+  "fabric:load_conditions": [
+    {
+      "condition": "dungeontotems:advancements_launched"
+    }
+  ],
   "display": {
     "icon": {
       "id": "dungeontotems:heartbreak_totem"
